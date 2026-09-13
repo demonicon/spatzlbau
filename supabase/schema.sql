@@ -1,5 +1,5 @@
 -- =====================================================================
---  Umzugs-PWA – Supabase schema (full state for a fresh project)
+--  Spatzlbau – Supabase schema (full state for a fresh project)
 --
 --  How to use (Sebastian):
 --    1. Replace the two e-mail addresses in the block marked ">>> HIER ANPASSEN <<<".

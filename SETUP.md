@@ -1,4 +1,4 @@
-# SETUP – Klickanleitung für Sebastian
+# SETUP – Spatzlbau: Klickanleitung für Sebastian
 
 Reihenfolge: Supabase → SQL → Auth → GitHub → Rückmeldung an Claude Code. Dauer ca. 15 Minuten.
 Alles, was du eintippst oder kopierst, steht in Codeblöcken. Geheimnisse (Service-Role-Key, Export-Token) nur in die lokale `.env`, nie ins Repo.
@@ -8,7 +8,7 @@ Alles, was du eintippst oder kopierst, steht in Codeblöcken. Geheimnisse (Servi
 ## 1. Supabase-Projekt anlegen
 
 1. https://supabase.com → einloggen/registrieren → **New project**.
-2. Name: `umzug` (egal), **Region: EU (Frankfurt)**, Datenbank-Passwort generieren lassen und im Passwortmanager ablegen (brauchen wir sonst nicht).
+2. Name: `spatzlbau` (egal), **Region: EU (Frankfurt)**, Datenbank-Passwort generieren lassen und im Passwortmanager ablegen (brauchen wir sonst nicht).
 3. Warten bis das Projekt „Active“ ist (1–2 Minuten).
 4. **Project Settings → Data API**: die **Project URL** kopieren (`https://xxxx.supabase.co`).
 5. **Project Settings → API Keys**: zwei Schlüssel kopieren.

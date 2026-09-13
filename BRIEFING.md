@@ -1,6 +1,6 @@
-# Briefing: Umzugs-PWA für Sebastian & Anna
+# Briefing: Spatzlbau – Umzugs-PWA für Sebastian & Anna
 
-Du (Claude Code) baust eine kleine, gemeinsam genutzte Progressive Web App, mit der zwei Personen ihren Umzug steuern – zwei Wohnungen werden zu einer, beide Altverträge werden gekündigt. Das Konzept ist fertig durchdacht (mit Claude im Chat); deine Aufgabe ist die technische Umsetzung, das Deployment und danach die iterative Weiterentwicklung. Konzeptfragen klärt Sebastian mit Claude im Chat und bringt sie als Änderungsauftrag zu dir.
+Du (Claude Code) baust „Spatzlbau“, eine kleine, gemeinsam genutzte Progressive Web App, mit der zwei Personen ihren Umzug steuern – zwei Wohnungen werden zu einer, beide Altverträge werden gekündigt. Das Konzept ist fertig durchdacht (mit Claude im Chat); deine Aufgabe ist die technische Umsetzung, das Deployment und danach die iterative Weiterentwicklung. Konzeptfragen klärt Sebastian mit Claude im Chat und bringt sie als Änderungsauftrag zu dir.
 
 ## 1. Was die App leisten muss
 
@@ -88,7 +88,7 @@ Anforderungen an die Umsetzung: mobile-first (~380 px), Tap-Ziele ≥ 44 px, sic
 ## 6. Repo-Struktur
 
 ```
-umzug/
+spatzlbau/
 ├── index.html
 ├── app/            main.js, state.js, views/*.js, ui/*.js, supabase.js
 ├── app.css
@@ -109,7 +109,7 @@ umzug/
 1. supabase.com → Konto → neues Projekt (Region EU, Frankfurt). Projekt-URL, Anon-Key und Service-Role-Key notieren.
 2. Authentication → Providers → Email: „Allow new users to sign up“ aus. Unter Users die zwei Konten mit Passwort anlegen (Auto Confirm).
 3. SQL Editor → Inhalt von `supabase/schema.sql` einfügen und ausführen (enthält Platzhalter für die zwei E-Mails und erzeugt das Export-Token).
-4. github.com → neues öffentliches Repo `umzug` (oder du erledigst das per `gh`, wenn eingeloggt).
+4. github.com → neues öffentliches Repo `spatzlbau` (oder du erledigst das per `gh`, wenn eingeloggt).
 
 **Du, Claude Code:**
 1. Repo-Gerüst anlegen, `schema.sql` schreiben, `SETUP.md` schreiben – **zuerst**, damit Sebastian parallel klicken kann.

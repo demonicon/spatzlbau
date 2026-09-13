@@ -1,4 +1,4 @@
-# Änderungsauftrag 001 – Login per E-Mail und Passwort statt Magic Link
+# Änderungsauftrag 001 – Spatzlbau: Login per E-Mail und Passwort statt Magic Link
 
 Stand: 13.09.2026 · Status: umgesetzt (001 auf `main`, Nachschärfung 001b per PR) · Betrifft: Auth, Login-Screen, SETUP.md, BRIEFING.md
 
@@ -46,5 +46,5 @@ Login-Screen bei 380 px: Felder untereinander, Tastatur verdeckt den Button nich
 ## Umsetzungsnotizen (Claude Code)
 
 - 001 (13.09.2026): Passwort-Login live, Smoke-Test von Sebastian bestanden.
-- 001b (13.09.2026): Login-Screen zeigt nur noch „Umzug“, E-Mail, Passwort, „Anmelden“; Tab-Titel und Kopfzeile tragen die Namen erst nach dem Login. Ein Text für falsches Passwort und unbekannte Adresse (Supabase antwortet in beiden Fällen 400; alle abgelehnten Anmeldungen zeigen „E-Mail oder Passwort stimmt nicht.“, nur Netzwerk-/Serverausfälle einen neutralen „später noch einmal“-Hinweis). Denied-Screen ohne Erklärung, nur Meldung, eigene Adresse, Abmelden.
+- 001b (13.09.2026): Login-Screen zeigt nur noch den App-Titel, E-Mail, Passwort, „Anmelden“; Tab-Titel und Kopfzeile tragen die Namen erst nach dem Login. Ein Text für falsches Passwort und unbekannte Adresse (Supabase antwortet in beiden Fällen 400; alle abgelehnten Anmeldungen zeigen „E-Mail oder Passwort stimmt nicht.“, nur Netzwerk-/Serverausfälle einen neutralen „später noch einmal“-Hinweis). Denied-Screen ohne Erklärung, nur Meldung, eigene Adresse, Abmelden.
 - Hinweis: Chrome loggt eine abgelehnte Anmeldung als „Failed to load resource: 400“ – Netzwerk-Log, kein JavaScript-Fehler, aus der App nicht unterdrückbar.

@@ -96,7 +96,7 @@ export function subscribeRealtime() {
     clearTimeout(reloadTimer);
     reloadTimer = setTimeout(() => loadAll().catch((e) => status('error', 'Aktualisieren fehlgeschlagen: ' + e.message)), 250);
   };
-  const ch = supabase.channel('umzug-db');
+  const ch = supabase.channel('spatzlbau-db');
   for (const table of ['settings', 'tasks', 'subtasks', 'comments']) {
     ch.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleReload);
   }

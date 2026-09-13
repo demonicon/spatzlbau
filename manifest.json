@@ -1,7 +1,7 @@
 {
-  "name": "Umzug – Sebastian & Anna",
-  "short_name": "Umzug",
-  "description": "Gemeinsamer Umzugsplaner",
+  "name": "Spatzlbau",
+  "short_name": "Spatzlbau",
+  "description": "Spatzlbau – gemeinsamer Umzugsplaner",
   "lang": "de",
   "start_url": "./",
   "scope": "./",

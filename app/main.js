@@ -28,14 +28,12 @@ import { claudeView } from './views/claude.js';
 import { phasesView } from './views/phases.js';
 
 const VIEWS = { week: weekView, focus: focusView, claude: claudeView, phases: phasesView };
-const UI_KEY = 'umzug-ui';
+const UI_KEY = 'spatzlbau-ui';
 
 /* ---------- screens ---------- */
 function show(screen) {
   for (const id of ['login', 'denied', 'app', 'loading']) $('#' + id).hidden = id !== screen;
-  // logged out, the page shows nothing but the bare app name (change 001: no names, no hints)
   const inApp = screen === 'app';
-  $('#title').textContent = document.title = inApp ? 'Umzug – Sebastian & Anna' : 'Umzug';
   $('#logout').hidden = !inApp;
   $('#version').hidden = !inApp;
 }

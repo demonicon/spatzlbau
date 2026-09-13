@@ -3,7 +3,7 @@
 import { supabase } from './supabase.js';
 import { $ } from './ui/dom.js';
 
-const EMAIL_KEY = 'umzug-email';
+const EMAIL_KEY = 'spatzlbau-email';
 
 export function getSession() {
   return supabase.auth.getSession().then((r) => r.data.session);

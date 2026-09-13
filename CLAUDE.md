@@ -1,4 +1,4 @@
-# CLAUDE.md – Umzugs-PWA
+# CLAUDE.md – Spatzlbau (Umzugs-PWA)
 
 Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entscheidungen und die Setup-Reihenfolge. Diese Datei enthält nur Arbeitskonventionen.
 
