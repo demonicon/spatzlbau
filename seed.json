@@ -1,30 +1,35 @@
 {
-  "version": 1,
+  "version": 2,
   "phases": [
     {
       "id": 1,
       "name": "Finden & Zusagen",
-      "gate": "Gate: Mietvertrag unterschrieben, Übergabetermin steht"
+      "gate": "Gate: Mietvertrag unterschrieben, Übergabetermin steht",
+      "short": "Finden & Zusagen"
     },
     {
       "id": 2,
       "name": "Bestehende Verträge lösen",
-      "gate": "Gate: beide Kündigungen zugestellt und bestätigt"
+      "gate": "Gate: beide Kündigungen zugestellt und bestätigt",
+      "short": "Verträge lösen"
     },
     {
       "id": 3,
       "name": "Umzug vorbereiten",
-      "gate": "Gate: Transport gebucht, gepackt, Halteverbot steht"
+      "gate": "Gate: Transport gebucht, gepackt, Halteverbot steht",
+      "short": "Umzug vorbereiten"
     },
     {
       "id": 4,
       "name": "Umzugstag & Einrichten",
-      "gate": "Gate: drei Übergabeprotokolle liegen vor"
+      "gate": "Gate: drei Übergabeprotokolle liegen vor",
+      "short": "Umzugstag"
     },
     {
       "id": 5,
       "name": "Nachlauf",
-      "gate": "Gate: Ummeldungen durch, Kautionen zurück"
+      "gate": "Gate: Ummeldungen durch, Kautionen zurück",
+      "short": "Nachlauf"
     }
   ],
   "tasks": [

@@ -1,7 +1,7 @@
 // Minimal service worker: caches the app shell so the PWA opens instantly.
 // Strategy: network first, cache as fallback (fresh code after every deploy, no stale JS).
 // Offline editing is deliberately out of scope; Supabase requests are never cached.
-const VERSION = 'spatzlbau-v0.1.1';
+const VERSION = 'spatzlbau-v0.2.0';
 const SHELL = [
   './',
   './index.html',
@@ -18,10 +18,8 @@ const SHELL = [
   './app/ui/labels.js',
   './app/ui/task.js',
   './app/ui/detail.js',
-  './app/views/week.js',
-  './app/views/focus.js',
-  './app/views/claude.js',
-  './app/views/phases.js',
+  './app/filters.js',
+  './app/views/dashboard.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
 ];

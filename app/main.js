@@ -1,7 +1,5 @@
 // App bootstrap: auth gate, rendering, event delegation, realtime, service worker.
-import { APP_VERSION } from './config.js';
-import { $, $$, esc, toast } from './ui/dom.js';
-import { OWN } from './ui/labels.js';
+import { $, esc, toast } from './ui/dom.js';
 import * as auth from './auth.js';
 import {
   state,
@@ -9,7 +7,7 @@ import {
   onChange,
   onStatus,
   byId,
-  einzug,
+  phases,
   loadAll,
   subscribeRealtime,
   updateTask,
@@ -22,36 +20,39 @@ import {
   setSetting,
   runSeedMerge,
 } from './state.js';
-import { weekView } from './views/week.js';
-import { focusView } from './views/focus.js';
-import { claudeView } from './views/claude.js';
-import { phasesView } from './views/phases.js';
+import { FILTERS } from './filters.js';
+import { dashboardView } from './views/dashboard.js';
 
-const VIEWS = { week: weekView, focus: focusView, claude: claudeView, phases: phasesView };
 const UI_KEY = 'spatzlbau-ui';
+
+// dashboard state (docs/changes/002): one active filter, "Diese Woche" on every open; phase is remembered per device
+ui.filter = 'week';
+ui.phase = null;
+ui.dateEdit = false;
 
 /* ---------- screens ---------- */
 function show(screen) {
   for (const id of ['login', 'denied', 'app', 'loading']) $('#' + id).hidden = id !== screen;
-  const inApp = screen === 'app';
-  $('#logout').hidden = !inApp;
-  $('#version').hidden = !inApp;
+  $('#top').hidden = screen === 'app';
 }
 
-/* ---------- status line ---------- */
+/* ---------- status line (inside the dashboard header) ---------- */
 let lastSaved = '';
 let live = false;
+let lastError = '';
 function renderStatus(kind, msg) {
-  const el = $('#status');
-  const who = state.person ? OWN[state.person] : '';
   if (kind === 'saved') lastSaved = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   if (kind === 'live') live = true;
-  if (kind === 'error') {
-    el.textContent = msg;
+  if (kind === 'error') lastError = msg;
+  if (kind === 'saved' || kind === 'saving') lastError = '';
+  const el = $('#status');
+  if (!el) return;
+  if (lastError) {
+    el.textContent = lastError;
     el.className = 'status err';
     return;
   }
-  const parts = [who ? 'Eingeloggt als ' + who : '', kind === 'saving' ? msg : lastSaved ? 'Gespeichert ' + lastSaved : '', live ? 'Live' : 'Verbinde …'];
+  const parts = [kind === 'saving' ? msg : lastSaved ? 'gespeichert ' + lastSaved : '', live ? 'Live' : 'verbinde …'];
   el.textContent = parts.filter(Boolean).join(' · ');
   el.className = 'status';
 }
@@ -63,6 +64,14 @@ function isTyping() {
   const a = document.activeElement;
   return a && $('#view').contains(a) && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type === 'text'));
 }
+function ensurePhase() {
+  const list = phases();
+  if (!list.length) return;
+  if (!list.some((p) => p.id === ui.phase)) {
+    const firstOpen = state.tasks.filter((t) => !t.done).sort((a, b) => a.phase - b.phase)[0];
+    ui.phase = firstOpen ? firstOpen.phase : list[0].id;
+  }
+}
 function render() {
   if (!state.loaded) return;
   if (isTyping()) {
@@ -70,15 +79,10 @@ function render() {
     return;
   }
   renderPending = false;
-  $('#einzug').value = einzug();
-  const total = state.tasks.length;
-  const done = state.tasks.filter((t) => t.done).length;
-  $('#pct').textContent = (total ? Math.round((done / total) * 100) : 0) + ' %';
-  $('#cnt').textContent = done + ' von ' + total + ' erledigt';
-  $$('.tabs button').forEach((b) => b.setAttribute('aria-selected', b.dataset.v === ui.view));
-  $('#view').innerHTML = VIEWS[ui.view]();
+  ensurePhase();
+  $('#view').innerHTML = dashboardView();
   if (ui.confirm === 'seed') {
-    $('#view').insertAdjacentHTML(
+    $('#view .list').insertAdjacentHTML(
       'afterbegin',
       `<div class="confirm block">Seed aktualisieren? Neue Stammaufgaben und Beratungstexte werden ergänzt, eure Häkchen, Kommentare und Änderungen bleiben. <button class="btn small primary" data-act="seed-yes">Ja, einspielen</button><button class="btn small" data-act="confirm-no">Nein</button></div>`,
     );
@@ -89,15 +93,13 @@ onChange(render);
 
 function saveUI() {
   try {
-    localStorage.setItem(UI_KEY, JSON.stringify({ view: ui.view, filter: ui.filter, phaseOpen: ui.phaseOpen }));
+    localStorage.setItem(UI_KEY, JSON.stringify({ phase: ui.phase }));
   } catch {}
 }
 function loadUI() {
   try {
     const u = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
-    if (VIEWS[u.view]) ui.view = u.view;
-    if (u.filter) ui.filter = u.filter;
-    if (u.phaseOpen) ui.phaseOpen = u.phaseOpen;
+    if (Number.isInteger(u.phase)) ui.phase = u.phase;
   } catch {}
 }
 
@@ -130,29 +132,16 @@ async function maybeAutoSeed() {
 const fail = (e) => e && toast('Nicht gespeichert – bitte nochmal versuchen');
 
 function wireEvents() {
-  $('#einzug').addEventListener('change', (e) => setSetting('einzugstermin', e.target.value || '').catch(fail));
-  $('.tabs').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-v]');
-    if (!b) return;
-    ui.view = b.dataset.v;
-    ui.expanded = null;
-    ui.confirm = null;
-    saveUI();
-    render();
-  });
-  $('#logout').addEventListener('click', () => auth.signOut());
-  $('#reload').addEventListener('click', () => location.reload());
-  $('#seed-btn').addEventListener('click', () => {
-    ui.confirm = 'seed';
-    render();
-    window.scrollTo({ top: 0 });
-  });
-
   const view = $('#view');
   view.addEventListener('focusout', () => setTimeout(() => renderPending && !isTyping() && render(), 0));
 
   view.addEventListener('change', (e) => {
     const el = e.target;
+    if (el.id === 'einzug') {
+      ui.dateEdit = false;
+      setSetting('einzugstermin', el.value || '').catch(fail);
+      return;
+    }
     const row = el.closest('.task');
     const t = row ? byId(row.dataset.id) : null;
     if (el.dataset.act === 'sub-done') {
@@ -167,7 +156,7 @@ function wireEvents() {
     }
     if (el.dataset.field && t) {
       const f = el.dataset.field;
-      let v = el.value;
+      let v = el.type === 'checkbox' ? el.checked : el.value;
       if (f === 'offset_days') v = parseInt(v || '0', 10);
       if (f === 'wait_on') v = v || null;
       const patch = { [f]: v };
@@ -186,9 +175,20 @@ function wireEvents() {
   });
 
   view.addEventListener('click', async (e) => {
-    const chip = e.target.closest('.chip[data-f]');
-    if (chip) {
-      ui.filter = chip.dataset.f;
+    // KPI tiles: exactly one active filter, tapping again clears it
+    const tile = e.target.closest('[data-filter]');
+    if (tile) {
+      const key = tile.dataset.filter;
+      ui.filter = ui.filter === key ? null : FILTERS[key] ? key : null;
+      ui.expanded = null;
+      render();
+      return;
+    }
+    // gate bar and phase tabs select the phase; the filter stays
+    const ph = e.target.closest('[data-phase]');
+    if (ph) {
+      ui.phase = parseInt(ph.dataset.phase, 10);
+      ui.expanded = null;
       saveUI();
       render();
       return;
@@ -201,21 +201,36 @@ function wireEvents() {
     const input = (sel, root = row) => $(sel, root);
     try {
       switch (act) {
+        case 'filter-clear':
+          ui.filter = null;
+          render();
+          return;
+        case 'date-toggle':
+          ui.dateEdit = !ui.dateEdit;
+          render();
+          if (ui.dateEdit) $('#einzug')?.focus();
+          return;
+        case 'logout':
+          auth.signOut();
+          return;
+        case 'reload':
+          location.reload();
+          return;
+        case 'seed':
+          ui.confirm = 'seed';
+          render();
+          $('#view .list')?.scrollIntoView({ block: 'start' });
+          return;
+        case 'seed-yes':
+          ui.confirm = null;
+          render();
+          await applySeed('Seed eingespielt');
+          return;
         case 'open':
           ui.expanded = ui.expanded === t.id ? null : t.id;
           ui.confirm = null;
           ui.editingAdvice = null;
           render();
-          return;
-        case 'phase-toggle': {
-          const p = b.closest('.phase').dataset.p;
-          ui.phaseOpen[p] = ui.phaseOpen[p] === false;
-          saveUI();
-          render();
-          return;
-        }
-        case 'crit':
-          await updateTask(t.id, { critical: !t.critical });
           return;
         case 'unblock':
           await updateTask(t.id, { blocked_by: (t.blocked_by || []).filter((id) => id !== b.dataset.ref) });
@@ -279,18 +294,13 @@ function wireEvents() {
           ui.confirm = null;
           render();
           return;
-        case 'seed-yes':
-          ui.confirm = null;
-          render();
-          await applySeed('Seed eingespielt');
-          return;
         case 'add': {
           const box = b.closest('.addbox');
           const title = input('[data-input=new-t]', box).value.trim();
           if (!title) return toast('Bitte einen Titel eingeben');
           const w = parseInt(input('[data-input=new-w]', box).value || '0', 10);
           const dir = parseInt(input('[data-input=new-dir]', box).value, 10);
-          await insertTask({
+          const id = await insertTask({
             phase: +box.dataset.p,
             title,
             owner: input('[data-input=new-o]', box).value,
@@ -298,16 +308,12 @@ function wireEvents() {
             critical: input('[data-input=new-c]', box).checked,
             type: input('[data-input=new-type]', box).value,
           });
-          toast('Aufgabe hinzugefügt');
-          return;
-        }
-        case 'add-claude': {
-          const inp = $('[data-input=new-claude]');
-          const title = inp.value.trim();
-          if (!title) return toast('Bitte einen Titel eingeben');
-          const id = await insertTask({ phase: 3, title, owner: 'B', offset_days: -28, type: 'claude' });
+          const nt = byId(id);
+          // keep the new task visible: drop the filter if it would hide it
+          if (nt && ui.filter && !FILTERS[ui.filter].test(nt)) ui.filter = null;
           ui.expanded = id;
           render();
+          toast('Aufgabe hinzugefügt');
           return;
         }
       }
@@ -343,6 +349,7 @@ async function enter(session) {
     $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
     return;
   }
+  ui.filter = 'week';
   show('app');
   render();
   subscribeRealtime();
@@ -355,7 +362,6 @@ async function main() {
   auth.initLoginForm();
   wireEvents();
   $('#denied-logout').addEventListener('click', () => auth.signOut());
-  $('#version').textContent = 'v' + APP_VERSION;
 
   auth.onAuthChange((session) => {
     // defer: supabase calls inside the auth callback itself can deadlock

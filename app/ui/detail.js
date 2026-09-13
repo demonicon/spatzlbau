@@ -26,6 +26,7 @@ export function detailHTML(t) {
       <select data-field="type" aria-label="Typ">${opts(t.type, Object.entries(TYPE))}</select>
       <select data-field="wait_on" aria-label="Wartet auf"><option value="">wartet auf niemanden</option>${opts(t.wait_on || '', [['S', 'wartet auf Sebastian'], ['A', 'wartet auf Anna'], ['C', 'wartet auf Claude']])}</select>
       <span class="row nowrap"><input type="number" inputmode="numeric" data-field="offset_days" value="${t.offset_days}" class="num" aria-label="Tage relativ zum Einzug"><span class="hint">Tage (− vor / + nach Einzug)</span></span>
+      <label class="check-label"><input type="checkbox" data-field="critical" ${t.critical ? 'checked' : ''}> fristkritisch</label>
     </div>
 
     <h3>Hängt ab von</h3>
@@ -47,7 +48,7 @@ export function detailHTML(t) {
       t.type === 'claude'
         ? `<h3>Delegation an Claude</h3>
     <div class="brief">
-      <div class="steps">${STEPS.map((s, i) => `<span class="${i === stepIdx ? 'cur' : i < stepIdx ? 'past' : ''}">${s[1]}</span>`).join('')}</div>
+      <ol class="steps" aria-label="Zustandsverlauf">${STEPS.map((s, i) => `<li class="${i === stepIdx ? 'cur' : i < stepIdx ? 'past' : ''}" ${i === stepIdx ? 'aria-current="step"' : ''}><i></i><span>${s[1]}</span></li>`).join('')}</ol>
       <div class="turn">Jetzt dran: <b>${STEP_OWNER[t.status] || 'ihr'}</b></div>
       <label>Ziel – was soll am Ende vorliegen?<textarea data-brief="goal" placeholder="z. B. Shortlist mit 3 Umzugsfirmen inkl. Preisrahmen und Verfügbarkeit im Zeitfenster">${esc(brief.goal)}</textarea></label>
       <label>Kontext & Rahmendaten – alles, was Claude wissen muss<textarea data-brief="ctx" placeholder="z. B. 3-Zimmer + 2-Zimmer, beide 3. OG ohne Aufzug, ~35 m³, Budget bis …, Wunschzeitraum …">${esc(brief.ctx)}</textarea></label>
