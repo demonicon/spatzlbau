@@ -33,7 +33,11 @@ const UI_KEY = 'umzug-ui';
 /* ---------- screens ---------- */
 function show(screen) {
   for (const id of ['login', 'denied', 'app', 'loading']) $('#' + id).hidden = id !== screen;
-  $('#logout').hidden = screen !== 'app';
+  // logged out, the page shows nothing but the bare app name (change 001: no names, no hints)
+  const inApp = screen === 'app';
+  $('#title').textContent = document.title = inApp ? 'Umzug – Sebastian & Anna' : 'Umzug';
+  $('#logout').hidden = !inApp;
+  $('#version').hidden = !inApp;
 }
 
 /* ---------- status line ---------- */
