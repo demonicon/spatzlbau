@@ -59,9 +59,9 @@ export function initLoginForm() {
     const { error } = await supabase.auth.signInWithPassword({ email: addr, password: pw });
     submit.disabled = false;
     if (error) {
-      // deliberately vague: no hint whether the account exists
-      const generic = error.status === 400 || /credentials/i.test(error.message);
-      return say(generic ? 'E-Mail oder Passwort stimmt nicht.' : 'Anmeldung nicht möglich: ' + error.message, true);
+      // one message for wrong password and unknown address alike; backend text never shown
+      const rejected = error.status === 400 || error.status === 401 || error.status === 403 || error.status === 422;
+      return say(rejected ? 'E-Mail oder Passwort stimmt nicht.' : 'Anmeldung gerade nicht möglich. Bitte später noch einmal versuchen.', true);
     }
     try {
       localStorage.setItem(EMAIL_KEY, addr);

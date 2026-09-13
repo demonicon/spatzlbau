@@ -1,6 +1,6 @@
 # Änderungsauftrag 001 – Login per E-Mail und Passwort statt Magic Link
 
-Stand: 13.09.2026 · Status: offen · Betrifft: Auth, Login-Screen, SETUP.md, BRIEFING.md
+Stand: 13.09.2026 · Status: umgesetzt (001 auf `main`, Nachschärfung 001b per PR) · Betrifft: Auth, Login-Screen, SETUP.md, BRIEFING.md
 
 ## Warum
 
@@ -42,3 +42,9 @@ Supabase versendet ohne eigenen SMTP-Server nur wenige Mails pro Stunde; beim Te
 ## Handy-Check
 
 Login-Screen bei 380 px: Felder untereinander, Tastatur verdeckt den Button nicht, Passwortmanager-Autofill erscheint.
+
+## Umsetzungsnotizen (Claude Code)
+
+- 001 (13.09.2026): Passwort-Login live, Smoke-Test von Sebastian bestanden.
+- 001b (13.09.2026): Login-Screen zeigt nur noch „Umzug“, E-Mail, Passwort, „Anmelden“; Tab-Titel und Kopfzeile tragen die Namen erst nach dem Login. Ein Text für falsches Passwort und unbekannte Adresse (Supabase antwortet in beiden Fällen 400; alle abgelehnten Anmeldungen zeigen „E-Mail oder Passwort stimmt nicht.“, nur Netzwerk-/Serverausfälle einen neutralen „später noch einmal“-Hinweis). Denied-Screen ohne Erklärung, nur Meldung, eigene Adresse, Abmelden.
+- Hinweis: Chrome loggt eine abgelehnte Anmeldung als „Failed to load resource: 400“ – Netzwerk-Log, kein JavaScript-Fehler, aus der App nicht unterdrückbar.
