@@ -18,11 +18,18 @@
 -- ---------------------------------------------------------------------
 -- Login e-mail addresses of the two people, mapped to their person code.
 -- Only these two addresses can read or write anything (see RLS below).
-drop table if exists _allowed;
-create temporary table _allowed (email text, person text) on commit drop;
-insert into _allowed (email, person) values
+-- Case does not matter; comparison is case-insensitive.
+create table if not exists public.allowlist (
+  email      text primary key,
+  person     text not null check (person in ('S', 'A')),
+  updated_at timestamptz not null default now()
+);
+alter table public.allowlist enable row level security;
+
+insert into public.allowlist (email, person) values
   ('sebastian@example.com', 'S'),   -- <- Sebastians Login-Adresse
-  ('anna@example.com',      'A');   -- <- Annas Login-Adresse
+  ('anna@example.com',      'A')    -- <- Annas Login-Adresse
+on conflict (email) do update set person = excluded.person;
 -- ---------------------------------------------------------------------
 
 create extension if not exists pgcrypto with schema extensions;
@@ -31,12 +38,7 @@ create extension if not exists pgcrypto with schema extensions;
 --  Tables
 -- ---------------------------------------------------------------------
 
--- Exactly two rows. Login identity (e-mail from the JWT) -> person code.
-create table if not exists public.allowlist (
-  email      text primary key,
-  person     text not null check (person in ('S', 'A')),
-  updated_at timestamptz not null default now()
-);
+-- allowlist: exactly two rows, created in the block at the top of this file.
 
 -- Key/value store: einzugstermin, export_token, seed_version, phases.
 create table if not exists public.settings (
@@ -328,10 +330,6 @@ alter table public.comments replica identity full;
 -- ---------------------------------------------------------------------
 --  Initial data
 -- ---------------------------------------------------------------------
-insert into public.allowlist (email, person)
-select lower(trim(email)), person from _allowed
-on conflict (email) do update set person = excluded.person;
-
 insert into public.settings (key, value) values
   ('einzugstermin', 'null'::jsonb),
   ('seed_version',  '0'::jsonb),
