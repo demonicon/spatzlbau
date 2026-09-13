@@ -1,6 +1,11 @@
 # Änderungsauftrag 001 – Login per E-Mail und Passwort statt Magic Link
 
-Stand: 13.09.2026 · Status: offen · Betrifft: Auth, Login-Screen, SETUP.md, BRIEFING.md
+Stand: 13.09.2026 · Status: umgesetzt auf `feature/passwort-login`, wartet auf Abnahme · Betrifft: Auth, Login-Screen, SETUP.md, BRIEFING.md
+
+Umsetzungsnotizen (Claude Code, 13.09.2026):
+- Lokal geprüft mit einem temporären Konto ohne Allowlist-Eintrag (danach gelöscht): falsches Passwort → „E-Mail oder Passwort stimmt nicht.“; richtiges Passwort → „Dieses Konto ist nicht freigeschaltet.“, alle Tabellen liefern 0 Zeilen; Sitzung überlebt Neuladen; Abmelden → Login-Screen.
+- Bei falschem Passwort loggt Chrome die abgelehnte Anfrage als „Failed to load resource: 400“ in der Konsole. Das ist das Netzwerk-Log des Browsers, kein JavaScript-Fehler, und lässt sich aus der App heraus nicht unterdrücken.
+- Offen (Sebastian): Schritte 3a/3b in SETUP.md; Kriterien 1, 3 und 4 mit den echten Konten im Smoke-Test bestätigen.
 
 ## Warum
 

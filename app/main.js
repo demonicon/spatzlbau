@@ -33,6 +33,7 @@ const UI_KEY = 'umzug-ui';
 /* ---------- screens ---------- */
 function show(screen) {
   for (const id of ['login', 'denied', 'app', 'loading']) $('#' + id).hidden = id !== screen;
+  $('#logout').hidden = screen !== 'app';
 }
 
 /* ---------- status line ---------- */

@@ -3,5 +3,6 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+  // password login only (docs/changes/001): no auth tokens ever arrive via URL
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 });
