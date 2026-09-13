@@ -24,7 +24,7 @@ Dazu die drei nicht verhandelbaren Rahmenbedingungen:
 | Frontend | Vanilla JS mit ES-Modulen, kein Framework, kein Build-Step | Deploy = git push; kleine App; leicht iterierbar |
 | Hosting | GitHub Pages aus öffentlichem Repo (Fallback Cloudflare Pages bei privatem Repo) | kostenlos, kein Server |
 | Daten | Supabase (Postgres) mit Realtime | Login, Allowlist, feldgenaue Updates, REST für Claude |
-| Auth | Supabase Auth, Magic Link per E-Mail | kein Passwort, ein Klick für Anna |
+| Auth | Supabase Auth, Magic Link per E-Mail; dieselbe Mail enthält zusätzlich einen 6-stelligen Code, der in der App eingetippt werden kann | kein Passwort, ein Klick für Anna; der Code deckt den Fall ab, dass die Home-Bildschirm-App (iOS) den Link im Safari-Tab statt in der App öffnet |
 | Zugriffsschutz | Row Level Security: nur E-Mails aus `allowlist` lesen/schreiben | echter Ausschluss, nicht nur Obscurity |
 | Claude-Lesezugriff | Postgres-Funktion `export_state(token text)` als RPC, `security definer`, gibt den Gesamtstand als JSON; Token in Tabelle `settings`, per SQL rotierbar | im Chat kann Claude nur GET-URLs abrufen, keine Header setzen → Token als Query-Parameter, `apikey` ebenfalls als Query-Parameter |
 | Claude-Schreibzugriff | Nur über Claude Code mit Service-Role-Key aus lokaler `.env` – niemals im Repo | |
@@ -37,13 +37,17 @@ Anon-Key und Projekt-URL dürfen im Repo stehen (per Design öffentlich, RLS sch
 
 Tabellen (alle mit `updated_at`, RLS aktiv):
 
-- `allowlist(email pk)` – genau zwei Einträge, von Sebastian im SQL gesetzt
-- `settings(key pk, value jsonb)` – `einzugstermin`, `export_token`, `seed_version`
-- `tasks` – `id text pk` (Slug aus seed oder `c_<ts>`), `phase int`, `title`, `owner` (`S` Sebastian / `A` Anna / `B` gemeinsam), `offset_days int`, `critical bool`, `type` (`self` / `assist` / `claude`), `done bool`, `wait_on` (`S`/`A`/`C`/null), `status` (nur bei type claude: `briefing` → `go` → `recherche` → `rueckfragen` → `arbeit` → `ergebnis`), `blocked_by text[]`, `brief jsonb` (`goal`, `ctx`, `result`), `advice jsonb` (Schlüssel `why`, `how`, `need`, `law`, `traps`), `sort int`, `deleted_at`
-- `subtasks(id pk, task_id fk, title, done, sort)`
-- `comments(id pk, task_id fk, author text ('S'/'A'/'C'), body text, created_at)`
+- `allowlist(email pk, person text 'S'/'A')` – genau zwei Einträge, von Sebastian im SQL gesetzt; `person` ist das Mapping Login-E-Mail → Kürzel
+- `settings(key pk, value jsonb)` – `einzugstermin`, `export_token`, `seed_version`, `phases` (Phasenliste aus `seed.json`, vom Seed-Skript geschrieben; Quelle bleibt `seed.json`)
+- `tasks` – `id text pk` (Slug aus seed oder `c_<ts>`), `phase int`, `title`, `owner` (`S` Sebastian / `A` Anna / `B` gemeinsam), `offset_days int`, `critical bool`, `type` (`self` / `assist` / `claude`), `done bool`, `wait_on` (`S`/`A`/`C`/null), `status` (nur bei type claude: `briefing` → `go` → `recherche` → `rueckfragen` → `arbeit` → `ergebnis`), `blocked_by text[]`, `brief jsonb` (`goal`, `ctx`, `result`), `advice jsonb` (Schlüssel `why`, `how`, `need`, `law`, `traps`), `sort int`, `seed_snapshot jsonb` (Seed-Werte, wie zuletzt eingespielt – nur für den Merge, nicht im Export), `deleted_at` (Soft-Delete; die App löscht nie hart), `created_at`
+- `subtasks(id uuid pk, task_id fk, title, done, sort, seed_key text, created_at)` – `seed_key` ist bei Seed-Teilschritten gesetzt, damit der Merge nur fehlende ergänzt
+- `comments(id uuid pk, task_id fk, author text ('S'/'A'/'C'), body text, created_at)`
+
+Alle Tabellen haben `updated_at` (Trigger). Vollständiger Stand: `supabase/schema.sql`.
 
 Seed: `seed.json` in diesem Ordner enthält Phasen und 48 Aufgaben inkl. Abhängigkeiten, Teilschritten und zwei ausgefüllten Beispielen. Beim ersten Start (oder per Admin-Knopf "Seed aktualisieren") werden Seed-Einträge **gemergt**: neue Tasks anlegen, bei bestehenden nur Felder überschreiben, die im Seed gesetzt sind und die Nutzer nicht geändert haben (`advice`, `subtasks` nur ergänzen). Häkchen, Kommentare, Briefings, eigene Tasks bleiben immer erhalten. Das ist der Migrationsmechanismus für spätere Inhaltslieferungen.
+
+Merge-Mechanik: Ein Feld gilt als "vom Nutzer geändert", wenn sein aktueller Wert vom `seed_snapshot` abweicht. Nur Felder, die noch dem Snapshot entsprechen, werden auf den neuen Seed-Wert gesetzt; danach wird der Snapshot aktualisiert. Teilschritte werden über `seed_key` (= Seed-Titel) abgeglichen und nur ergänzt, nie gelöscht oder umbenannt.
 
 Abgeleitete Logik (Frontend):
 - `blocked` = mindestens ein Task in `blocked_by` ist nicht `done`
