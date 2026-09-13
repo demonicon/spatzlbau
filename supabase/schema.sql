@@ -91,6 +91,9 @@ create table if not exists public.comments (
 create index if not exists tasks_phase_idx   on public.tasks (phase, sort);
 create index if not exists subtasks_task_idx on public.subtasks (task_id, sort);
 create index if not exists comments_task_idx on public.comments (task_id, created_at);
+-- Seeded subtasks are identified by (task_id, seed_key); makes the seed merge idempotent and
+-- race-safe (upsert on_conflict). Not partial: PostgREST cannot target partial indexes; NULLs never conflict.
+create unique index if not exists subtasks_task_seed_key_idx on public.subtasks (task_id, seed_key);
 
 -- ---------------------------------------------------------------------
 --  updated_at trigger

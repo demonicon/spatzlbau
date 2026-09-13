@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Umzug – Sebastian & Anna</title>
+<meta name="description" content="Gemeinsamer Umzugsplaner">
+<meta name="theme-color" content="#F4F6F2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Umzug">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="stylesheet" href="./app.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Umzug – Sebastian &amp; Anna</h1>
+    <span class="version" id="version"></span>
+  </header>
+
+  <section id="loading" class="screen">Lade …</section>
+
+  <section id="login" class="screen" hidden>
+    <form id="login-form" class="card" novalidate>
+      <h2>Einloggen</h2>
+      <p class="hint">Kein Passwort. Du bekommst eine Mail mit Link und Code.</p>
+      <label>E-Mail-Adresse
+        <input type="email" id="login-email" autocomplete="email" inputmode="email" placeholder="name@example.com">
+      </label>
+      <button type="button" class="btn primary wide" id="login-send">Login-Mail schicken</button>
+      <div id="login-code-step" hidden>
+        <label>Code aus der Mail
+          <input type="text" id="login-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="6" placeholder="123456">
+        </label>
+        <button type="button" class="btn wide" id="login-verify">Mit Code einloggen</button>
+      </div>
+      <p id="login-msg" class="msg" role="status"></p>
+    </form>
+  </section>
+
+  <section id="denied" class="screen" hidden>
+    <div class="card">
+      <h2>Nicht freigeschaltet</h2>
+      <p>Die Adresse <b id="denied-email"></b> ist für diese Liste nicht freigegeben.</p>
+      <button type="button" class="btn wide" id="denied-logout">Abmelden</button>
+    </div>
+  </section>
+
+  <main id="app" hidden>
+    <div class="status" id="status" role="status">Verbinde …</div>
+
+    <div class="anchor">
+      <div>
+        <label for="einzug">Einzugstermin (Schlüsselübergabe neue Wohnung)</label>
+        <input type="date" id="einzug">
+      </div>
+      <div class="progress"><b id="pct">0 %</b><span id="cnt"></span></div>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Sichten">
+      <button role="tab" data-v="week">Diese Woche</button>
+      <button role="tab" data-v="focus">Im Blick</button>
+      <button role="tab" data-v="claude">Bei Claude</button>
+      <button role="tab" data-v="phases">Phasen</button>
+    </nav>
+    <div id="view"></div>
+
+    <footer class="bar">
+      <button type="button" id="reload">Neu laden</button>
+      <button type="button" id="seed-btn">Seed aktualisieren</button>
+      <button type="button" id="logout">Abmelden</button>
+    </footer>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="./app/main.js"></script>
+</body>
+</html>

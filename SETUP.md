@@ -49,10 +49,10 @@ select value #>> '{}' as export_token from settings where key = 'export_token';
 
 ### 3b. URL-Konfiguration
 **Authentication → URL Configuration**:
-- **Site URL**: die GitHub-Pages-URL (bekommst du von Claude Code nach dem ersten Push, Form `https://<github-user>.github.io/umzug/`). Bis dahin kannst du `http://localhost:5500` eintragen.
+- **Site URL**: die GitHub-Pages-URL `https://demonicon.github.io/spatzlbau/`.
 - **Redirect URLs** (jeweils „Add URL“):
   ```
-  https://<github-user>.github.io/umzug/**
+  https://demonicon.github.io/spatzlbau/**
   http://localhost:5500/**
   http://127.0.0.1:5500/**
   ```
@@ -82,16 +82,16 @@ Der eingebaute Supabase-Mailversand ist für Tests gedacht und stark begrenzt (d
 
 ## 4. GitHub-Repo und Pages
 
-1. https://github.com/new → Name `umzug`, **Public**, ohne README/.gitignore/Lizenz (das Repo kommt aus dem lokalen Ordner) → **Create repository**.
-2. Die Repo-URL (`https://github.com/<user>/umzug.git`) an Claude Code geben – der Push kommt von dort.
+1. https://github.com/new → Name `spatzlbau`, **Public**, ohne README/.gitignore/Lizenz (das Repo kommt aus dem lokalen Ordner) → **Create repository**.
+2. Die Repo-URL (`https://github.com/demonicon/spatzlbau.git`) an Claude Code geben – der Push kommt von dort.
 3. Nach dem ersten Push: **Settings → Pages → Build and deployment → Source: „GitHub Actions“**. Der Workflow `.github/workflows/pages.yml` liegt im Repo und veröffentlicht bei jedem Push auf `main`.
-4. Die Pages-URL steht danach unter Settings → Pages (`https://<user>.github.io/umzug/`) → in Supabase als Site URL / Redirect eintragen (Schritt 3b).
+4. Die Pages-URL steht danach unter Settings → Pages (`https://demonicon.github.io/spatzlbau/`) → in Supabase als Site URL / Redirect eintragen (Schritt 3b).
 
 ---
 
 ## 5. Lokale Werkzeuge (auf dem PC)
 
-Für die Skripte (`scripts/seed.mjs`, `scripts/claude-result.mjs`) braucht Claude Code **Node.js** (LTS). Aktuell ist weder `node` noch `gh` installiert. Installation per Terminal (Admin nicht nötig):
+Für die Skripte (`scripts/seed.mjs`, `scripts/claude-result.mjs`) braucht Claude Code **Node.js** (LTS). Stand 13.09.2026: Node 24 ist installiert, `gh` nicht (nicht nötig). Falls auf einem anderen PC:
 ```bash
 winget install OpenJS.NodeJS.LTS
 ```
@@ -124,6 +124,18 @@ Damit der Build starten kann, im Chat mit Claude Code angeben:
 - Ob Node (und ggf. `gh`) installiert sind
 
 Danach: Claude Code baut, pusht, meldet die Pages-URL, spielt den Seed ein (`node scripts/seed.mjs`) und dokumentiert hier die Export-URL.
+
+## 7a. Skripte (Claude Code, lokal)
+
+```bash
+node scripts/seed.mjs --dry
+```
+zeigt, was ein Seed-Merge ändern würde; ohne `--dry` wird geschrieben (nie destruktiv). Dasselbe macht der Knopf „Seed aktualisieren“ in der App; beim ersten Öffnen bzw. wenn `seed.json` eine höhere `version` hat als die Datenbank, läuft der Merge automatisch.
+
+```bash
+node scripts/claude-result.mjs ergebnis.json
+```
+trägt Claude-Ergebnisse ein: `{"tasks":[{"id":"umzugsfirma","status":"rueckfragen","result":"…","comment":"…","sub_add":["…"]}]}` – Kommentare erscheinen als „Claude“.
 
 ---
 
