@@ -133,9 +133,13 @@ Nur-Lese-Zugriff auf den Gesamtstand als JSON. Aufbau:
 ```
 https://<projekt-ref>.supabase.co/rest/v1/rpc/export_state?token=<EXPORT_TOKEN>&apikey=<ANON_KEY>
 ```
-Die fertige URL enthält das Token → **nicht** ins Repo, nur im Chat an Claude geben (Claude kann sie per GET abrufen). Falscher/fehlender Token → HTTP 403 und keine Daten.
+Die fertige URL enthält das Token → **nicht** ins Repo, nur im Chat an Claude geben (Claude kann sie per GET abrufen). Falscher/fehlender Token → HTTP 401 und keine Daten.
 
-Wird ausgefüllt, sobald das Projekt steht: _Claude Code trägt hier Projekt-URL und Anon-Key ein, das Token bleibt in `.env`._
+Für dieses Projekt (Token aus `.env` einsetzen; Publishable-Key ist öffentlich und darf hier stehen):
+```
+https://rxhbwjbiwackxuswupuy.supabase.co/rest/v1/rpc/export_state?token=<EXPORT_TOKEN>&apikey=sb_publishable_sFPP1DbeeXoUBa0uWhI3-g_KjPQ0Qu3
+```
+Getestet am 13.09.2026: 200 + JSON mit richtigem Token, 401 mit falschem.
 
 ### Token rotieren
 Wenn die URL irgendwo gelandet ist, wo sie nicht hingehört (oder als Übung im Smoke-Test): SQL Editor →
