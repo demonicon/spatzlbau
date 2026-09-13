@@ -1,0 +1,697 @@
+{
+  "version": 1,
+  "phases": [
+    {
+      "id": 1,
+      "name": "Finden & Zusagen",
+      "gate": "Gate: Mietvertrag unterschrieben, Übergabetermin steht"
+    },
+    {
+      "id": 2,
+      "name": "Bestehende Verträge lösen",
+      "gate": "Gate: beide Kündigungen zugestellt und bestätigt"
+    },
+    {
+      "id": 3,
+      "name": "Umzug vorbereiten",
+      "gate": "Gate: Transport gebucht, gepackt, Halteverbot steht"
+    },
+    {
+      "id": 4,
+      "name": "Umzugstag & Einrichten",
+      "gate": "Gate: drei Übergabeprotokolle liegen vor"
+    },
+    {
+      "id": 5,
+      "name": "Nachlauf",
+      "gate": "Gate: Ummeldungen durch, Kautionen zurück"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "unterlagen",
+      "phase": 1,
+      "title": "Bewerbungsunterlagen aktuell halten (Schufa, Gehaltsnachweise, Mietschuldenfreiheit)",
+      "owner": "B",
+      "offset_days": -120,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "kosten",
+      "phase": 1,
+      "title": "Kostenmodell klären: Miete, Nebenkosten, Anschaffungen, gemeinsames Konto",
+      "owner": "B",
+      "offset_days": -100,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "vertrag-pruefen",
+      "phase": 1,
+      "title": "Neuen Mietvertrag prüfen: Staffel/Index, Kaution, Renovierungsklauseln, beide als Mieter",
+      "owner": "B",
+      "offset_days": -95,
+      "critical": true,
+      "type": "assist",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "vertrag",
+      "phase": 1,
+      "title": "Neuen Mietvertrag unterschreiben",
+      "owner": "B",
+      "offset_days": -90,
+      "critical": true,
+      "type": "self",
+      "blocked_by": [
+        "vertrag-pruefen"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "kaution",
+      "phase": 1,
+      "title": "Kaution finanzieren oder Kautionsbürgschaft klären",
+      "owner": "B",
+      "offset_days": -90,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "vertrag-pruefen"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "doppelmiete",
+      "phase": 1,
+      "title": "Doppelmiete-Zeitraum festlegen: mindestens 2 Wochen Überlappung",
+      "owner": "B",
+      "offset_days": -90,
+      "critical": true,
+      "type": "self",
+      "blocked_by": [
+        "vertrag"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "uebergabe-neu-termin",
+      "phase": 1,
+      "title": "Übergabetermin neue Wohnung schriftlich vereinbaren",
+      "owner": "S",
+      "offset_days": -85,
+      "critical": true,
+      "type": "self",
+      "blocked_by": [
+        "vertrag"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "wgb",
+      "phase": 1,
+      "title": "Wohnungsgeberbestätigung vom neuen Vermieter anfordern",
+      "owner": "A",
+      "offset_days": -14,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "vertrag"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "frist-s",
+      "phase": 2,
+      "title": "Kündigungsfrist im Mietvertrag Sebastian prüfen",
+      "owner": "S",
+      "offset_days": -100,
+      "critical": true,
+      "type": "assist",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "frist-a",
+      "phase": 2,
+      "title": "Kündigungsfrist im Mietvertrag Anna prüfen",
+      "owner": "A",
+      "offset_days": -100,
+      "critical": true,
+      "type": "assist",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "kuend-s",
+      "phase": 2,
+      "title": "Wohnung Sebastian kündigen",
+      "owner": "S",
+      "offset_days": -92,
+      "critical": true,
+      "type": "assist",
+      "blocked_by": [
+        "frist-s",
+        "vertrag"
+      ],
+      "subtasks": [
+        "Kündigungsschreiben erstellen (Vorlage von Claude)",
+        "Per Einschreiben mit Rückschein senden",
+        "Zugang beim Vermieter bestätigen lassen",
+        "Kündigungsbestätigung ablegen"
+      ],
+      "advice": {
+        "why": "Die Kündigung muss spätestens am 3. Werktag eines Monats zugehen, damit dieser Monat in die 3-Monats-Frist zählt. Ein Tag zu spät kostet einen ganzen Monat Doppelmiete.",
+        "how": "1. Frist und Form im Altvertrag prüfen (Sonderregeln?)\n2. Schreiben erstellen: beide Mieter unterschreiben, falls beide im Vertrag\n3. Zustellung nachweisbar (Einschreiben Rückschein oder Bote mit Zeugen)\n4. Schriftliche Bestätigung des Vermieters einfordern\n5. Auszugs-Übergabetermin vorschlagen",
+        "need": "Altvertrag, Vermieteradresse, Vorlage Kündigungsschreiben, Einschreiben-Beleg",
+        "law": "§573c BGB: 3 Monate, Zugang bis zum 3. Werktag. Schriftform (§568 BGB) – E-Mail reicht nicht. [Beim Build gegen aktuelle Rechtslage prüfen]",
+        "traps": "Laufender Konflikt mit der Vermieterin: Timing der Kündigung vor Absenden mit dem Staffelmiete-Thema abgleichen. Nicht per E-Mail oder mündlich ankündigen, was das Schreiben dann nicht deckt."
+      }
+    },
+    {
+      "id": "kuend-a",
+      "phase": 2,
+      "title": "Wohnung Anna kündigen",
+      "owner": "A",
+      "offset_days": -92,
+      "critical": true,
+      "type": "assist",
+      "blocked_by": [
+        "frist-a",
+        "vertrag"
+      ],
+      "subtasks": [
+        "Kündigungsschreiben erstellen (Vorlage von Claude)",
+        "Per Einschreiben mit Rückschein senden",
+        "Zugang beim Vermieter bestätigen lassen",
+        "Kündigungsbestätigung ablegen"
+      ],
+      "advice": {}
+    },
+    {
+      "id": "nachmieter",
+      "phase": 2,
+      "title": "Nachmieter-Option klären, falls Frist zu lang",
+      "owner": "B",
+      "offset_days": -85,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "frist-s",
+        "frist-a"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "schoenheit",
+      "phase": 2,
+      "title": "Schönheitsreparaturen-Pflicht in beiden Altverträgen prüfen",
+      "owner": "B",
+      "offset_days": -60,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "internet",
+      "phase": 2,
+      "title": "Internet für die neue Adresse: Verfügbarkeit prüfen, Umzug/Neuvertrag beauftragen",
+      "owner": "S",
+      "offset_days": -45,
+      "critical": true,
+      "type": "claude",
+      "blocked_by": [
+        "vertrag"
+      ],
+      "subtasks": [
+        "Verfügbarkeit an der neuen Adresse prüfen",
+        "Anbieter/Tarif vergleichen",
+        "Bestehende Verträge: Umzug oder Sonderkündigung",
+        "Beauftragen, Schalttermin bestätigen"
+      ],
+      "advice": {}
+    },
+    {
+      "id": "energie",
+      "phase": 2,
+      "title": "Strom & Gas: Umzug melden oder kündigen, neuen Vertrag abschließen",
+      "owner": "A",
+      "offset_days": -30,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "vertrag"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "versicherung",
+      "phase": 2,
+      "title": "Hausrat- und Haftpflichtversicherung: zusammenlegen, neue Adresse melden",
+      "owner": "B",
+      "offset_days": -14,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "uebergabe-alt-termin",
+      "phase": 2,
+      "title": "Übergabetermine Auszug beide Wohnungen vereinbaren",
+      "owner": "B",
+      "offset_days": -21,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [
+        "kuend-s",
+        "kuend-a"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "moebelplan",
+      "phase": 3,
+      "title": "Grundriss neue Wohnung + Möbelplan: was kommt mit, was ist doppelt",
+      "owner": "B",
+      "offset_days": -63,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "vertrag"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "ausmisten1",
+      "phase": 3,
+      "title": "Ausmisten Runde 1 (Keller, Schränke, Papier)",
+      "owner": "B",
+      "offset_days": -42,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "entsorgen",
+      "phase": 3,
+      "title": "Doppeltes verkaufen, spenden, entsorgen (Sperrmüll anmelden)",
+      "owner": "B",
+      "offset_days": -35,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [
+        "moebelplan",
+        "ausmisten1"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "umzugsfirma",
+      "phase": 3,
+      "title": "Umzugsunternehmen: Angebote einholen und buchen",
+      "owner": "B",
+      "offset_days": -56,
+      "critical": true,
+      "type": "claude",
+      "blocked_by": [
+        "moebelplan"
+      ],
+      "subtasks": [
+        "Umzugsvolumen und Rahmendaten festhalten",
+        "Shortlist 3–5 Firmen (Claude)",
+        "Anfragen versenden (Claude-Textvorlage)",
+        "Angebote vergleichen (Claude)",
+        "Entscheiden und buchen"
+      ],
+      "advice": {}
+    },
+    {
+      "id": "helfer",
+      "phase": 3,
+      "title": "Alternativ: Helfer anfragen und Transporter reservieren",
+      "owner": "S",
+      "offset_days": -42,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "moebel-neu",
+      "phase": 3,
+      "title": "Neue Möbel/Küche: Lieferzeiten prüfen und bestellen",
+      "owner": "B",
+      "offset_days": -56,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "moebelplan"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "urlaub",
+      "phase": 3,
+      "title": "Urlaub für Umzugstage einreichen",
+      "owner": "B",
+      "offset_days": -35,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [
+        "uebergabe-neu-termin"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "material",
+      "phase": 3,
+      "title": "Kartons, Klebeband, Luftpolster, Marker besorgen",
+      "owner": "A",
+      "offset_days": -35,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "halteverbot",
+      "phase": 3,
+      "title": "Halteverbotszonen beantragen für alle drei Adressen",
+      "owner": "S",
+      "offset_days": -21,
+      "critical": true,
+      "type": "claude",
+      "blocked_by": [
+        "uebergabe-neu-termin",
+        "uebergabe-alt-termin"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "nachsende",
+      "phase": 3,
+      "title": "Nachsendeauftrag Post einrichten – beide",
+      "owner": "B",
+      "offset_days": -14,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "vertrag"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "renovierung",
+      "phase": 3,
+      "title": "Renovierung/Malerarbeiten neue Wohnung organisieren",
+      "owner": "B",
+      "offset_days": -14,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "uebergabe-neu-termin"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "packsystem",
+      "phase": 3,
+      "title": "Packsystem: Raum + Nummer, Inhaltsliste, Erstversorgungskiste",
+      "owner": "A",
+      "offset_days": -10,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "werkzeug",
+      "phase": 3,
+      "title": "Werkzeug, Bohrmaschine, Lampen, Verlängerungskabel griffbereit",
+      "owner": "S",
+      "offset_days": -7,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "nachbarn",
+      "phase": 3,
+      "title": "Nachbarn/Hausverwaltung über Umzugstag informieren",
+      "owner": "A",
+      "offset_days": -7,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "uebergabe-neu",
+      "phase": 4,
+      "title": "Übergabe neue Wohnung: Protokoll, Fotos, Zählerstände, Schlüsselanzahl",
+      "owner": "B",
+      "offset_days": 0,
+      "critical": true,
+      "type": "assist",
+      "blocked_by": [
+        "uebergabe-neu-termin"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "zaehler-alt",
+      "phase": 4,
+      "title": "Zählerstände in beiden Altwohnungen fotografieren",
+      "owner": "B",
+      "offset_days": 0,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "klingel",
+      "phase": 4,
+      "title": "Klingel- und Briefkastenschild anbringen",
+      "owner": "S",
+      "offset_days": 0,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "technik",
+      "phase": 4,
+      "title": "Router, Lampen, Waschmaschine anschließen",
+      "owner": "S",
+      "offset_days": 1,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [
+        "internet"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "erstausstattung",
+      "phase": 4,
+      "title": "Erstausstattung Bad & Küche auspacken",
+      "owner": "A",
+      "offset_days": 1,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "reinigung",
+      "phase": 4,
+      "title": "Altwohnungen besenrein bzw. Endreinigung",
+      "owner": "B",
+      "offset_days": 2,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "uebergabe-s",
+      "phase": 4,
+      "title": "Übergabe Wohnung Sebastian: Protokoll, Fotos, alle Schlüssel",
+      "owner": "S",
+      "offset_days": 3,
+      "critical": true,
+      "type": "assist",
+      "blocked_by": [
+        "reinigung"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "uebergabe-a",
+      "phase": 4,
+      "title": "Übergabe Wohnung Anna: Protokoll, Fotos, alle Schlüssel",
+      "owner": "A",
+      "offset_days": 3,
+      "critical": true,
+      "type": "assist",
+      "blocked_by": [
+        "reinigung"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "ummeldung",
+      "phase": 5,
+      "title": "Ummeldung Bürgeramt – beide, innerhalb von 14 Tagen",
+      "owner": "B",
+      "offset_days": 10,
+      "critical": true,
+      "type": "assist",
+      "blocked_by": [
+        "wgb",
+        "uebergabe-neu"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "adressen",
+      "phase": 5,
+      "title": "Adressänderung: Arbeitgeber, Banken, Krankenkasse, Versicherungen, Abos, Ausweise",
+      "owner": "B",
+      "offset_days": 14,
+      "critical": false,
+      "type": "claude",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "rundfunk",
+      "phase": 5,
+      "title": "Rundfunkbeitrag: Zusammenlegung beantragen",
+      "owner": "A",
+      "offset_days": 14,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "ummeldung"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "kfz",
+      "phase": 5,
+      "title": "Kfz-Ummeldung, falls Auto",
+      "owner": "S",
+      "offset_days": 30,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "ummeldung"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "budget",
+      "phase": 5,
+      "title": "Neue Nebenkosten-Vorauszahlung und Haushaltsbudget festlegen",
+      "owner": "B",
+      "offset_days": 21,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "kaution-zurueck",
+      "phase": 5,
+      "title": "Kaution zurückfordern – beide Altwohnungen",
+      "owner": "B",
+      "offset_days": 30,
+      "critical": false,
+      "type": "assist",
+      "blocked_by": [
+        "uebergabe-s",
+        "uebergabe-a"
+      ],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "nk-alt",
+      "phase": 5,
+      "title": "Letzte Nebenkostenabrechnungen der Altwohnungen im Blick behalten",
+      "owner": "B",
+      "offset_days": 180,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    },
+    {
+      "id": "retro",
+      "phase": 5,
+      "title": "Kurze Retro: was hat gefehlt, was war zu spät",
+      "owner": "B",
+      "offset_days": 30,
+      "critical": false,
+      "type": "self",
+      "blocked_by": [],
+      "subtasks": [],
+      "advice": {}
+    }
+  ]
+}

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Umzug – Sebastian & Anna (v2)</title>
+<style>
+  :root{
+    --paper:#F4F6F2;--ink:#1E2B24;--ink-2:#4E5B54;--ink-3:#8A948D;--line:#D9DED8;--card:#FFFFFF;
+    --mark:#F7DE4A;--mark-deep:#8A7300;
+    --seb:#2E5A9C;--seb-bg:#E4ECF7;--anna:#9A3D64;--anna-bg:#F6E4EC;--both:#2F6F4E;--both-bg:#E1EFE6;
+    --claude:#6B4E16;--claude-bg:#F3E9D2;--danger:#B33A2E;--danger-bg:#F8E3E0;--ok:#2F6F4E;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"Avenir Next","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  .wrap{max-width:760px;margin:0 auto;padding:16px 14px 110px}
+  h1{font-size:26px;font-weight:600;letter-spacing:-.01em;margin:0}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .who{display:flex;gap:4px;align-items:center;font-size:14px;color:var(--ink-2)}
+  .who select{padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+  .status{font-size:13px;color:var(--ink-3);margin:4px 0 14px}
+  .status.err{color:var(--danger)}
+
+  .anchor{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+  .anchor label{display:block;font-size:14px;color:var(--ink-2)}
+  .anchor input[type=date]{width:100%;margin-top:4px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:17px}
+  .progress{text-align:right}.progress b{font-size:30px;font-weight:600;line-height:1}.progress span{display:block;font-size:13px;color:var(--ink-2)}
+
+  .tabs{display:flex;gap:4px;margin:18px 0 12px;border-bottom:2px solid var(--ink)}
+  .tabs button{background:none;border:0;padding:8px 10px;font-size:15px;color:var(--ink-2);border-bottom:3px solid transparent;margin-bottom:-2px}
+  .tabs button[aria-selected=true]{color:var(--ink);font-weight:600;border-bottom-color:var(--ink)}
+
+  h2.sec{font-size:17px;font-weight:600;margin:20px 0 6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  h2.sec small{font-weight:400;color:var(--ink-2);font-size:13px;margin-left:8px}
+  .focus{padding:12px 14px 4px;border-radius:12px;background:var(--mark)}
+  .focus h2{margin:0 0 4px;font-size:15px;font-weight:600;color:var(--mark-deep)}
+  .focus .task{border-color:rgba(0,0,0,.12)}
+  .empty{color:var(--ink-3);padding:8px 0;font-size:15px}
+  .focus .empty{color:var(--mark-deep)}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-size:14px}
+  .chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .phase{margin-top:16px}
+  .phase-head{width:100%;display:flex;align-items:baseline;gap:10px;background:none;border:0;padding:8px 0;text-align:left;border-bottom:2px solid var(--ink);flex-wrap:wrap}
+  .phase-head .n{font-size:13px;color:var(--ink-3);min-width:14px}.phase-head h2{margin:0;font-size:18px;font-weight:600;flex:1}
+  .phase-head .cnt{font-size:13px;color:var(--ink-2)}.phase-head .gate{display:block;width:100%;font-size:13px;color:var(--ink-2);padding:2px 0 0 24px}
+  .phase[data-open=false] .list{display:none}
+
+  .task{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--line)}
+  .task input[type=checkbox]{width:22px;height:22px;margin:2px 0 0;accent-color:var(--both)}
+  .task .t{font-size:16px;background:none;border:0;padding:0;text-align:left;width:100%;line-height:1.35}
+  .task .t:hover{text-decoration:underline}
+  .task.done .t{color:var(--ink-3);text-decoration:line-through}
+  .task.blocked .t{color:var(--ink-2)}
+  .meta{display:flex;gap:6px 8px;flex-wrap:wrap;align-items:center;margin-top:4px;font-size:13px;color:var(--ink-2)}
+  .own{border-radius:4px;padding:1px 7px;font-size:12px;font-weight:600}
+  .own.S{background:var(--seb-bg);color:var(--seb)}.own.A{background:var(--anna-bg);color:var(--anna)}.own.B{background:var(--both-bg);color:var(--both)}.own.C{background:var(--claude-bg);color:var(--claude)}
+  .tag{font-size:12px;padding:1px 7px;border-radius:4px;border:1px solid var(--line)}
+  .tag.wait{background:var(--danger-bg);color:var(--danger);border-color:transparent}
+  .tag.claude{background:var(--claude-bg);color:var(--claude);border-color:transparent}
+  .tag.block{color:var(--ink-3)}
+  .due.late{color:var(--danger);font-weight:600}.due.soon{color:var(--mark-deep);font-weight:600}
+  .ico{background:none;border:0;padding:4px 6px;border-radius:6px;color:var(--ink-3);font-size:16px;line-height:1}
+  .ico:hover{background:var(--line);color:var(--ink)}.ico.on{color:var(--mark-deep)}
+
+  /* detail panel */
+  .detail{grid-column:1/-1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:6px 0 4px}
+  .detail h3{font-size:14px;font-weight:600;margin:12px 0 6px;color:var(--ink-2)}
+  .detail h3:first-child{margin-top:0}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .row select,.row input[type=text],.row input[type=number],.detail textarea{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--paper);min-width:0}
+  .row input[type=text]{flex:1}
+  .detail textarea{width:100%;min-height:64px;resize:vertical}
+  .btn{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:7px 12px;font-size:14px}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.claude{background:var(--claude);color:#fff;border-color:var(--claude)}
+  .btn.danger{color:var(--danger)}
+  .btn.small{padding:4px 9px;font-size:13px}
+  .sub{display:flex;gap:8px;align-items:center;padding:5px 0}
+  .sub input[type=checkbox]{width:18px;height:18px;accent-color:var(--both)}
+  .sub span{flex:1}.sub.done span{color:var(--ink-3);text-decoration:line-through}
+  .com{padding:6px 0;border-top:1px solid var(--line);font-size:15px}
+  .com .h{font-size:12px;color:var(--ink-3)}
+  .com .h b{color:var(--ink-2)}
+  .com.C{background:var(--claude-bg);margin:0 -14px;padding:8px 14px}
+  details.adv{border:1px solid var(--line);border-radius:8px;padding:0 10px;margin:6px 0}
+  details.adv summary{cursor:pointer;padding:8px 0;font-size:14px;font-weight:600}
+  details.adv .body{padding:0 0 10px;font-size:15px;white-space:pre-wrap}
+  details.adv .body.none{color:var(--ink-3);font-style:italic}
+  .brief{background:var(--claude-bg);border-radius:8px;padding:10px 12px;margin-top:6px}
+  .brief label{display:block;font-size:13px;color:var(--claude);margin-top:6px}
+  .steps{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}
+  .steps span{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid rgba(0,0,0,.15);color:var(--ink-2)}
+  .steps span.cur{background:var(--claude);color:#fff;border-color:var(--claude)}
+  .steps span.past{background:rgba(0,0,0,.08)}
+  .confirm{display:inline-flex;gap:6px;align-items:center;background:var(--danger-bg);padding:4px 8px;border-radius:8px;font-size:14px}
+
+  .addbox{margin:8px 0 4px;background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
+  .addbox .row{margin-top:8px}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:8px 10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+  .bar button{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:7px 10px;font-size:13px}
+  .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+  .toast.show{opacity:1}
+  .hidden{display:none!important}
+  :focus-visible{outline:2px solid var(--seb);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media (max-width:440px){.anchor{grid-template-columns:1fr}.progress{text-align:left}.task{grid-template-columns:26px 1fr}.task .actions{grid-column:2}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Umzug – Sebastian & Anna</h1>
+    <div class="who"><label for="who">Ich bin</label><select id="who"><option value="S">Sebastian</option><option value="A">Anna</option></select></div>
+  </div>
+  <div class="status" id="status">Lade …</div>
+
+  <div class="anchor">
+    <div><label for="einzug">Einzugstermin (Schlüsselübergabe neue Wohnung)</label><input type="date" id="einzug"></div>
+    <div class="progress"><b id="pct">0 %</b><span id="cnt"></span></div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" data-v="week">Diese Woche</button>
+    <button role="tab" data-v="focus">Im Blick</button>
+    <button role="tab" data-v="claude">Bei Claude</button>
+    <button role="tab" data-v="phases">Phasen</button>
+  </div>
+  <div id="view"></div>
+</div>
+
+<div class="bar">
+  <button data-cmd="export">Backup (JSON)</button>
+  <button data-cmd="import">Import (JSON)</button>
+  <button data-cmd="handover">Übergabe an Claude</button>
+  <button data-cmd="merge">Claude-Ergebnis einlesen</button>
+  <button data-cmd="sync">Sync: <span id="syncmode">gemeinsam</span></button>
+  <button data-cmd="reset">Zurücksetzen</button>
+  <input type="file" id="file" accept="application/json" hidden>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ---------- constants ---------- */
+const KEY='umzug-v2';
+const PHASES=[
+  {id:1,name:'Finden & Zusagen',gate:'Gate: Mietvertrag unterschrieben, Übergabetermin steht'},
+  {id:2,name:'Bestehende Verträge lösen',gate:'Gate: beide Kündigungen zugestellt und bestätigt'},
+  {id:3,name:'Umzug vorbereiten',gate:'Gate: Transport gebucht, gepackt, Halteverbot steht'},
+  {id:4,name:'Umzugstag & Einrichten',gate:'Gate: drei Übergabeprotokolle liegen vor'},
+  {id:5,name:'Nachlauf',gate:'Gate: Ummeldungen durch, Kautionen zurück'}
+];
+const OWN={S:'Sebastian',A:'Anna',B:'gemeinsam',C:'Claude'};
+const TYPE={self:'nur ihr',assist:'Claude unterstützt',claude:'an Claude delegiert'};
+const STEPS=[['briefing','Briefing offen'],['go','Go erteilt'],['recherche','Recherche'],['rueckfragen','Rückfragen offen'],['arbeit','In Arbeit'],['ergebnis','Ergebnis liegt vor']];
+const STEP_OWNER={briefing:'ihr',go:'Claude',recherche:'Claude',rueckfragen:'ihr',arbeit:'Claude',ergebnis:'ihr'};
+const ADV=[['why','Ziel & warum jetzt'],['how','Ablauf'],['need','Was ihr braucht'],['law','Rechtslage'],['traps','Stolperfallen']];
+
+/* id, phase, title, owner, offset days to Einzug, critical, type, blockedBy, sub, adv */
+const D=[
+ // 1
+ ['unterlagen',1,'Bewerbungsunterlagen aktuell halten (Schufa, Gehaltsnachweise, Mietschuldenfreiheit)','B',-120],
+ ['kosten',1,'Kostenmodell klären: Miete, Nebenkosten, Anschaffungen, gemeinsames Konto','B',-100],
+ ['vertrag-pruefen',1,'Neuen Mietvertrag prüfen: Staffel/Index, Kaution, Renovierungsklauseln, beide als Mieter','B',-95,true,'assist'],
+ ['vertrag',1,'Neuen Mietvertrag unterschreiben','B',-90,true,'self',['vertrag-pruefen']],
+ ['kaution',1,'Kaution finanzieren oder Kautionsbürgschaft klären','B',-90,false,'assist',['vertrag-pruefen']],
+ ['doppelmiete',1,'Doppelmiete-Zeitraum festlegen: mindestens 2 Wochen Überlappung','B',-90,true,'self',['vertrag']],
+ ['uebergabe-neu-termin',1,'Übergabetermin neue Wohnung schriftlich vereinbaren','S',-85,true,'self',['vertrag']],
+ ['wgb',1,'Wohnungsgeberbestätigung vom neuen Vermieter anfordern','A',-14,false,'assist',['vertrag']],
+ // 2
+ ['frist-s',2,'Kündigungsfrist im Mietvertrag Sebastian prüfen','S',-100,true,'assist'],
+ ['frist-a',2,'Kündigungsfrist im Mietvertrag Anna prüfen','A',-100,true,'assist'],
+ ['kuend-s',2,'Wohnung Sebastian kündigen','S',-92,true,'assist',['frist-s','vertrag'],
+   ['Kündigungsschreiben erstellen (Vorlage von Claude)','Per Einschreiben mit Rückschein senden','Zugang beim Vermieter bestätigen lassen','Kündigungsbestätigung ablegen'],
+   {why:'Die Kündigung muss spätestens am 3. Werktag eines Monats zugehen, damit dieser Monat in die 3-Monats-Frist zählt. Ein Tag zu spät kostet einen ganzen Monat Doppelmiete.',
+    how:'1. Frist und Form im Altvertrag prüfen (Sonderregeln?)\n2. Schreiben erstellen: beide Mieter unterschreiben, falls beide im Vertrag\n3. Zustellung nachweisbar (Einschreiben Rückschein oder Bote mit Zeugen)\n4. Schriftliche Bestätigung des Vermieters einfordern\n5. Auszugs-Übergabetermin vorschlagen',
+    need:'Altvertrag, Vermieteradresse, Vorlage Kündigungsschreiben, Einschreiben-Beleg',
+    law:'§573c BGB: 3 Monate, Zugang bis zum 3. Werktag. Schriftform (§568 BGB) – E-Mail reicht nicht. [Beim Build gegen aktuelle Rechtslage prüfen]',
+    traps:'Laufender Konflikt mit der Vermieterin: Timing der Kündigung vor Absenden mit dem Staffelmiete-Thema abgleichen. Nicht per E-Mail oder mündlich ankündigen, was das Schreiben dann nicht deckt.'}],
+ ['kuend-a',2,'Wohnung Anna kündigen','A',-92,true,'assist',['frist-a','vertrag'],
+   ['Kündigungsschreiben erstellen (Vorlage von Claude)','Per Einschreiben mit Rückschein senden','Zugang beim Vermieter bestätigen lassen','Kündigungsbestätigung ablegen']],
+ ['nachmieter',2,'Nachmieter-Option klären, falls Frist zu lang','B',-85,false,'assist',['frist-s','frist-a']],
+ ['schoenheit',2,'Schönheitsreparaturen-Pflicht in beiden Altverträgen prüfen','B',-60,false,'assist'],
+ ['internet',2,'Internet für die neue Adresse: Verfügbarkeit prüfen, Umzug/Neuvertrag beauftragen','S',-45,true,'claude',['vertrag'],
+   ['Verfügbarkeit an der neuen Adresse prüfen','Anbieter/Tarif vergleichen','Bestehende Verträge: Umzug oder Sonderkündigung','Beauftragen, Schalttermin bestätigen']],
+ ['energie',2,'Strom & Gas: Umzug melden oder kündigen, neuen Vertrag abschließen','A',-30,false,'assist',['vertrag']],
+ ['versicherung',2,'Hausrat- und Haftpflichtversicherung: zusammenlegen, neue Adresse melden','B',-14,false,'assist'],
+ ['uebergabe-alt-termin',2,'Übergabetermine Auszug beide Wohnungen vereinbaren','B',-21,false,'self',['kuend-s','kuend-a']],
+ // 3
+ ['moebelplan',3,'Grundriss neue Wohnung + Möbelplan: was kommt mit, was ist doppelt','B',-63,false,'assist',['vertrag']],
+ ['ausmisten1',3,'Ausmisten Runde 1 (Keller, Schränke, Papier)','B',-42],
+ ['entsorgen',3,'Doppeltes verkaufen, spenden, entsorgen (Sperrmüll anmelden)','B',-35,false,'self',['moebelplan','ausmisten1']],
+ ['umzugsfirma',3,'Umzugsunternehmen: Angebote einholen und buchen','B',-56,true,'claude',['moebelplan'],
+   ['Umzugsvolumen und Rahmendaten festhalten','Shortlist 3–5 Firmen (Claude)','Anfragen versenden (Claude-Textvorlage)','Angebote vergleichen (Claude)','Entscheiden und buchen']],
+ ['helfer',3,'Alternativ: Helfer anfragen und Transporter reservieren','S',-42],
+ ['moebel-neu',3,'Neue Möbel/Küche: Lieferzeiten prüfen und bestellen','B',-56,false,'assist',['moebelplan']],
+ ['urlaub',3,'Urlaub für Umzugstage einreichen','B',-35,false,'self',['uebergabe-neu-termin']],
+ ['material',3,'Kartons, Klebeband, Luftpolster, Marker besorgen','A',-35],
+ ['halteverbot',3,'Halteverbotszonen beantragen für alle drei Adressen','S',-21,true,'claude',['uebergabe-neu-termin','uebergabe-alt-termin']],
+ ['nachsende',3,'Nachsendeauftrag Post einrichten – beide','B',-14,false,'assist',['vertrag']],
+ ['renovierung',3,'Renovierung/Malerarbeiten neue Wohnung organisieren','B',-14,false,'assist',['uebergabe-neu-termin']],
+ ['packsystem',3,'Packsystem: Raum + Nummer, Inhaltsliste, Erstversorgungskiste','A',-10],
+ ['werkzeug',3,'Werkzeug, Bohrmaschine, Lampen, Verlängerungskabel griffbereit','S',-7],
+ ['nachbarn',3,'Nachbarn/Hausverwaltung über Umzugstag informieren','A',-7],
+ // 4
+ ['uebergabe-neu',4,'Übergabe neue Wohnung: Protokoll, Fotos, Zählerstände, Schlüsselanzahl','B',0,true,'assist',['uebergabe-neu-termin']],
+ ['zaehler-alt',4,'Zählerstände in beiden Altwohnungen fotografieren','B',0],
+ ['klingel',4,'Klingel- und Briefkastenschild anbringen','S',0],
+ ['technik',4,'Router, Lampen, Waschmaschine anschließen','S',1,false,'self',['internet']],
+ ['erstausstattung',4,'Erstausstattung Bad & Küche auspacken','A',1],
+ ['reinigung',4,'Altwohnungen besenrein bzw. Endreinigung','B',2],
+ ['uebergabe-s',4,'Übergabe Wohnung Sebastian: Protokoll, Fotos, alle Schlüssel','S',3,true,'assist',['reinigung']],
+ ['uebergabe-a',4,'Übergabe Wohnung Anna: Protokoll, Fotos, alle Schlüssel','A',3,true,'assist',['reinigung']],
+ // 5
+ ['ummeldung',5,'Ummeldung Bürgeramt – beide, innerhalb von 14 Tagen','B',10,true,'assist',['wgb','uebergabe-neu']],
+ ['adressen',5,'Adressänderung: Arbeitgeber, Banken, Krankenkasse, Versicherungen, Abos, Ausweise','B',14,false,'claude'],
+ ['rundfunk',5,'Rundfunkbeitrag: Zusammenlegung beantragen','A',14,false,'assist',['ummeldung']],
+ ['kfz',5,'Kfz-Ummeldung, falls Auto','S',30,false,'assist',['ummeldung']],
+ ['budget',5,'Neue Nebenkosten-Vorauszahlung und Haushaltsbudget festlegen','B',21],
+ ['kaution-zurueck',5,'Kaution zurückfordern – beide Altwohnungen','B',30,false,'assist',['uebergabe-s','uebergabe-a']],
+ ['nk-alt',5,'Letzte Nebenkostenabrechnungen der Altwohnungen im Blick behalten','B',180],
+ ['retro',5,'Kurze Retro: was hat gefehlt, was war zu spät','B',30]
+];
+function seed(){return D.map(r=>({id:r[0],p:r[1],t:r[2],o:r[3],d:r[4],c:!!r[5],type:r[6]||'self',
+  blockedBy:r[7]||[],sub:(r[8]||[]).map((s,i)=>({id:r[0]+'-'+(i+1),t:s,done:false})),adv:r[9]||{},
+  com:[],done:false,wait:'',status:r[6]==='claude'?'briefing':'',brief:{goal:'',ctx:'',result:''}}));}
+
+/* ---------- state ---------- */
+let state={einzug:'',open:{},tasks:[]};
+let ui={view:'week',filter:'all',expanded:null,shared:true,who:'S',confirm:null};
+let saveTimer=null;
+
+async function loadUI(){
+  try{const r=await window.storage.get('umzug-ui',false);if(r&&r.value){const u=JSON.parse(r.value);ui.shared=u.shared!==false;ui.who=u.who||'S';}}catch(e){}
+}
+async function load(){
+  await loadUI();
+  try{const r=await window.storage.get(KEY,ui.shared);
+    if(r&&r.value){const s=JSON.parse(r.value);if(Array.isArray(s.tasks)&&s.tasks.length){state=s;setStatus('Gespeichert · '+(ui.shared?'gemeinsamer':'persönlicher')+' Speicher');render();return;}}
+  }catch(e){}
+  state.tasks=seed();
+  setStatus('Noch kein gespeicherter Stand – Häkchen werden erst nach dem Veröffentlichen des Artifacts dauerhaft gespeichert. Backup über die Leiste unten.',true);
+  render();
+}
+function save(){clearTimeout(saveTimer);saveTimer=setTimeout(async()=>{
+  try{const r=await window.storage.set(KEY,JSON.stringify(state),ui.shared);
+    if(!r)throw 0;setStatus('Gespeichert · '+(ui.shared?'gemeinsamer':'persönlicher')+' Speicher · '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}));}
+  catch(e){setStatus('Speichern nicht möglich (Artifact noch nicht veröffentlicht?) – Backup über die Leiste unten.',true);}
+},300);}
+function saveUI(){window.storage.set('umzug-ui',JSON.stringify({shared:ui.shared,who:ui.who}),false).catch(()=>{});}
+function setStatus(m,err){const s=document.getElementById('status');s.textContent=m;s.classList.toggle('err',!!err);}
+
+/* ---------- helpers ---------- */
+const byId=id=>state.tasks.find(t=>t.id===id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=d=>d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+function blockers(t){return (t.blockedBy||[]).map(byId).filter(b=>b&&!b.done);}
+function isDone(t){return t.done;}
+function subProgress(t){const n=(t.sub||[]).length;return n?[(t.sub.filter(s=>s.done).length),n]:null;}
+function dueInfo(t){
+  if(state.einzug){const dt=new Date(state.einzug+'T00:00:00');dt.setDate(dt.getDate()+t.d);
+    const today=new Date();today.setHours(0,0,0,0);const diff=Math.round((dt-today)/86400000);
+    return {label:'bis '+fmt(dt),cls:!t.done&&diff<0?'late':(!t.done&&diff<=7?'soon':''),sort:dt.getTime(),diff};}
+  const w=Math.round(Math.abs(t.d)/7);
+  const label=t.d===0?'am Umzugstag':Math.abs(t.d)<7?Math.abs(t.d)+(t.d<0?' Tage vorher':' Tage danach'):'≈ '+w+(t.d<0?' Wochen vorher':' Wochen danach');
+  return {label,cls:'',sort:t.d,diff:null};
+}
+function forPerson(t,p){return t.o===p||t.o==='B';}
+
+/* ---------- rendering ---------- */
+function taskHTML(t,opts={}){
+  const du=dueInfo(t),bl=blockers(t),sp=subProgress(t);
+  const cls=['task',t.done?'done':'',bl.length&&!t.done?'blocked':''].join(' ');
+  const wait=t.wait?`<span class="tag wait">wartet auf ${OWN[t.wait]}</span>`:'';
+  const cl=t.type==='claude'?`<span class="tag claude">Claude · ${(STEPS.find(s=>s[0]===t.status)||['','?'])[1]}</span>`:(t.type==='assist'?`<span class="tag">Claude unterstützt</span>`:'');
+  const blk=bl.length&&!t.done?`<span class="tag block">blockiert: ${esc(bl[0].t.slice(0,40))}${bl.length>1?' +'+(bl.length-1):''}</span>`:'';
+  const subs=sp?`<span>${sp[0]}/${sp[1]} Teilschritte</span>`:'';
+  const coms=(t.com||[]).length?`<span>💬 ${t.com.length}</span>`:'';
+  return `<div class="${cls}" data-id="${t.id}">
+    <input type="checkbox" ${t.done?'checked':''} aria-label="Erledigt">
+    <div><button class="t" data-act="open">${esc(t.t)}</button>
+      <div class="meta"><span class="own ${t.o}">${OWN[t.o]}</span><span class="due ${du.cls}">${du.label}</span>${subs}${coms}${cl}${wait}${blk}</div></div>
+    <div class="actions"><button class="ico${t.c?' on':''}" data-act="crit" title="Fristkritisch" aria-pressed="${t.c}">${t.c?'★':'☆'}</button></div>
+    ${ui.expanded===t.id?detailHTML(t):''}
+  </div>`;
+}
+function detailHTML(t){
+  const opts=(sel,arr)=>arr.map(([v,l])=>`<option value="${v}" ${sel===v?'selected':''}>${l}</option>`).join('');
+  const others=state.tasks.filter(x=>x.id!==t.id&&!(t.blockedBy||[]).includes(x.id));
+  const stepIdx=STEPS.findIndex(s=>s[0]===t.status);
+  const del=ui.confirm==='del:'+t.id?`<span class="confirm">Wirklich löschen? <button class="btn small danger" data-act="del-yes">Ja</button><button class="btn small" data-act="confirm-no">Nein</button></span>`:`<button class="btn small danger" data-act="del">Aufgabe löschen</button>`;
+  return `<div class="detail">
+    <h3>Aufgabe</h3>
+    <div class="row"><input type="text" data-field="t" value="${esc(t.t)}" aria-label="Titel"></div>
+    <div class="row" style="margin-top:8px">
+      <select data-field="o" aria-label="Owner">${opts(t.o,Object.entries(OWN).filter(([k])=>k!=='C'))}</select>
+      <select data-field="type" aria-label="Typ">${opts(t.type,Object.entries(TYPE))}</select>
+      <select data-field="wait" aria-label="Wartet auf"><option value="">wartet auf niemanden</option>${opts(t.wait,[['S','wartet auf Sebastian'],['A','wartet auf Anna'],['C','wartet auf Claude']])}</select>
+      <span class="row"><input type="number" data-field="d" value="${t.d}" style="width:80px" aria-label="Tage relativ zum Einzug"><span style="font-size:13px;color:var(--ink-2)">Tage (− vor / + nach Einzug)</span></span>
+    </div>
+
+    <h3>Hängt ab von</h3>
+    <div class="chips">${(t.blockedBy||[]).map(id=>{const b=byId(id);return b?`<span class="chip">${b.done?'✓ ':''}${esc(b.t.slice(0,36))} <button class="ico" data-act="unblock" data-ref="${id}" aria-label="entfernen">×</button></span>`:''}).join('')||'<span class="empty">keine</span>'}</div>
+    <div class="row"><select data-act="block-select"><option value="">+ Abhängigkeit wählen …</option>${others.map(x=>`<option value="${x.id}">${x.p} · ${esc(x.t.slice(0,60))}</option>`).join('')}</select></div>
+
+    <h3>Teilschritte</h3>
+    ${(t.sub||[]).map(s=>`<div class="sub ${s.done?'done':''}" data-sub="${s.id}"><input type="checkbox" ${s.done?'checked':''} aria-label="Teilschritt erledigt"><span>${esc(s.t)}</span><button class="ico" data-act="sub-del" aria-label="löschen">×</button></div>`).join('')}
+    <div class="row"><input type="text" data-input="sub" placeholder="Neuer Teilschritt"><button class="btn small" data-act="sub-add">Hinzufügen</button></div>
+
+    ${t.type==='claude'?`<h3>Delegation an Claude</h3>
+    <div class="brief">
+      <div class="steps">${STEPS.map((s,i)=>`<span class="${i===stepIdx?'cur':(i<stepIdx?'past':'')}">${s[1]}</span>`).join('')}</div>
+      <div style="font-size:13px;color:var(--claude)">Jetzt dran: <b>${STEP_OWNER[t.status]||'ihr'}</b></div>
+      <label>Ziel – was soll am Ende vorliegen?</label><textarea data-brief="goal" placeholder="z. B. Shortlist mit 3 Umzugsfirmen inkl. Preisrahmen und Verfügbarkeit im Zeitfenster">${esc(t.brief?.goal)}</textarea>
+      <label>Kontext & Rahmendaten – alles, was Claude wissen muss</label><textarea data-brief="ctx" placeholder="z. B. 3-Zimmer + 2-Zimmer, beide 3. OG ohne Aufzug, ~35 m³, Budget bis …, Wunschzeitraum …">${esc(t.brief?.ctx)}</textarea>
+      <label>Ergebnis von Claude</label><textarea data-brief="result" placeholder="Hier landet das Ergebnis nach dem Einlesen – oder ihr tragt es selbst ein">${esc(t.brief?.result)}</textarea>
+      <div class="row" style="margin-top:8px">
+        ${t.status==='briefing'?`<button class="btn claude" data-act="go">Go erteilen</button>`:''}
+        ${t.status==='rueckfragen'?`<button class="btn claude" data-act="answered">Rückfragen beantwortet</button>`:''}
+        ${t.status==='ergebnis'?`<button class="btn primary" data-act="accept">Ergebnis übernommen</button>`:''}
+        ${t.status!=='briefing'?`<button class="btn small" data-act="back">Zurück auf Briefing</button>`:''}
+      </div>
+    </div>`:''}
+
+    <h3>Beratung <small style="font-weight:400;color:var(--ink-3)">– klappbar, editierbar</small></h3>
+    ${ADV.map(([k,l])=>`<details class="adv" ${t.adv?.[k]?'':''}><summary>${l}</summary>
+      <div class="body ${t.adv?.[k]?'':'none'}" data-advshow="${k}">${t.adv?.[k]?esc(t.adv[k]):'noch nicht ausgearbeitet – kommt mit den Inhalten für Phase 1+2'}</div>
+      <textarea class="hidden" data-adv="${k}">${esc(t.adv?.[k])}</textarea>
+      <div class="row" style="padding-bottom:8px"><button class="btn small" data-act="adv-edit" data-ref="${k}">Bearbeiten</button></div></details>`).join('')}
+
+    <h3>Kommentare</h3>
+    ${(t.com||[]).map(c=>`<div class="com ${c.who}"><div class="h"><b>${OWN[c.who]||c.who}</b> · ${c.ts}</div>${esc(c.text)}</div>`).join('')||'<div class="empty">Noch keine Kommentare. Kurz notieren, woran es hängt oder was der andere wissen muss.</div>'}
+    <textarea data-input="com" placeholder="Kommentar als ${OWN[ui.who]}"></textarea>
+    <div class="row" style="margin-top:6px"><button class="btn primary" data-act="com-add">Kommentar speichern</button><span style="flex:1"></span>${del}</div>
+  </div>`;
+}
+function addBoxHTML(p){
+  return `<div class="addbox" data-p="${p}">
+    <div class="row"><input type="text" data-input="new-t" placeholder="Neue Aufgabe in Phase ${p}"></div>
+    <div class="row">
+      <select data-input="new-o"><option value="B">gemeinsam</option><option value="S">Sebastian</option><option value="A">Anna</option></select>
+      <select data-input="new-type"><option value="self">nur ihr</option><option value="assist">Claude unterstützt</option><option value="claude">an Claude delegiert</option></select>
+      <input type="number" data-input="new-w" value="2" min="0" style="width:64px" aria-label="Wochen"><select data-input="new-dir"><option value="-1">Wochen vorher</option><option value="1">Wochen danach</option></select>
+      <label style="font-size:14px"><input type="checkbox" data-input="new-c"> kritisch</label>
+      <button class="btn primary" data-act="add">Hinzufügen</button>
+    </div></div>`;
+}
+function render(){
+  document.getElementById('einzug').value=state.einzug||'';
+  document.getElementById('who').value=ui.who;
+  document.getElementById('syncmode').textContent=ui.shared?'gemeinsam':'persönlich';
+  const total=state.tasks.length,done=state.tasks.filter(t=>t.done).length;
+  document.getElementById('pct').textContent=(total?Math.round(done/total*100):0)+' %';
+  document.getElementById('cnt').textContent=done+' von '+total+' erledigt';
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===ui.view));
+  const v=document.getElementById('view');
+  const open=state.tasks.filter(t=>!t.done);
+  const bySort=(a,b)=>dueInfo(a).sort-dueInfo(b).sort;
+
+  if(ui.view==='week'){
+    const sec=(p)=>{
+      const mine=open.filter(t=>forPerson(t,p)&&t.type!=='claude');
+      const ready=mine.filter(t=>!blockers(t).length).sort(bySort).slice(0,6);
+      const blocked=mine.filter(t=>blockers(t).length).sort(bySort).slice(0,4);
+      const waiting=open.filter(t=>t.wait===p);
+      return `<h2 class="sec">${OWN[p]}<small>${ready.length} jetzt möglich · ${blocked.length} blockiert</small></h2>
+        ${ready.map(taskHTML).join('')||'<div class="empty">Nichts fällig.</div>'}
+        ${waiting.length?`<h2 class="sec" style="font-size:15px">Wartet auf ${OWN[p]}</h2>${waiting.map(taskHTML).join('')}`:''}
+        ${blocked.length?`<h2 class="sec" style="font-size:15px;color:var(--ink-3)">Noch blockiert</h2>${blocked.map(taskHTML).join('')}`:''}`;
+    };
+    v.innerHTML=sec('S')+sec('A');
+  }
+  if(ui.view==='focus'){
+    const crit=open.filter(t=>t.c).sort(bySort);
+    const late=open.filter(t=>!t.c&&dueInfo(t).cls==='late').sort(bySort);
+    const wait=open.filter(t=>t.wait);
+    v.innerHTML=`<section class="focus"><h2>Fristkritisch und offen</h2>${crit.map(taskHTML).join('')||'<div class="empty">Nichts Kritisches offen.</div>'}</section>
+      ${late.length?`<h2 class="sec">Überfällig</h2>${late.map(taskHTML).join('')}`:''}
+      ${wait.length?`<h2 class="sec">Wartet auf jemanden</h2>${wait.map(taskHTML).join('')}`:''}`;
+  }
+  if(ui.view==='claude'){
+    const cl=state.tasks.filter(t=>t.type==='claude'&&!t.done);
+    v.innerHTML=`<p style="color:var(--ink-2);font-size:15px;margin:4px 0 10px">Jede Aufgabe kann in ihrer Detailansicht auf "an Claude delegiert" gestellt werden. Claude startet erst nach eurem Go. "Übergabe an Claude" unten exportiert alle Aufgaben mit Go – die Datei oder ihren Inhalt in den Chat geben.</p>
+      ${STEPS.map(([k,l])=>{const ts=cl.filter(t=>t.status===k);return ts.length?`<h2 class="sec">${l}<small>${STEP_OWNER[k]} am Zug</small></h2>${ts.map(taskHTML).join('')}`:''}).join('')||'<div class="empty">Noch nichts delegiert.</div>'}
+      <div class="addbox"><div class="row"><input type="text" data-input="new-claude" placeholder="Neue Claude-Aufgabe (Phase 3, Frist 4 Wochen vorher – später anpassbar)"><button class="btn claude" data-act="add-claude">Anlegen</button></div></div>`;
+  }
+  if(ui.view==='phases'){
+    v.innerHTML=`<div class="chips" role="group" aria-label="Filter">${[['all','Alle'],['S','Sebastian'],['A','Anna'],['B','Gemeinsam'],['open','Nur offene']].map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${ui.filter===k}">${l}</button>`).join('')}</div>`+
+    PHASES.map(ph=>{const all=state.tasks.filter(t=>t.p===ph.id);
+      const shown=all.filter(t=>ui.filter==='all'||(ui.filter==='open'?!t.done:t.o===ui.filter)).sort((a,b)=>a.d-b.d);
+      const dn=all.filter(t=>t.done).length,isOpen=state.open[ph.id]!==false;
+      return `<section class="phase" data-p="${ph.id}" data-open="${isOpen}">
+        <button class="phase-head" aria-expanded="${isOpen}"><span class="n">${ph.id}</span><h2>${ph.name}</h2><span class="cnt">${dn}/${all.length}</span><span>${isOpen?'▾':'▸'}</span><span class="gate">${ph.gate}</span></button>
+        <div class="list">${shown.map(taskHTML).join('')||'<div class="empty">Nichts in diesem Filter.</div>'}${addBoxHTML(ph.id)}</div></section>`;}).join('');
+  }
+  if(ui.confirm==='reset'){v.insertAdjacentHTML('afterbegin',`<div class="confirm" style="margin:6px 0 12px">Alles auf die Standardliste zurücksetzen? Häkchen, Kommentare und eigene Aufgaben gehen verloren. <button class="btn small danger" data-act="reset-yes">Ja, zurücksetzen</button><button class="btn small" data-act="confirm-no">Nein</button></div>`);}
+}
+
+/* ---------- events ---------- */
+const $=(sel,root=document)=>root.querySelector(sel);
+document.getElementById('einzug').addEventListener('change',e=>{state.einzug=e.target.value;save();render();});
+document.getElementById('who').addEventListener('change',e=>{ui.who=e.target.value;saveUI();render();});
+$('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b){ui.view=b.dataset.v;ui.expanded=null;render();}});
+
+document.getElementById('view').addEventListener('change',e=>{
+  const el=e.target,row=el.closest('.task');
+  if(el.matches('.chip'))return;
+  if(el.closest('.sub')&&el.type==='checkbox'){const t=byId(row.dataset.id),s=t.sub.find(x=>x.id===el.closest('.sub').dataset.sub);s.done=el.checked;
+    if(t.sub.every(x=>x.done)&&!t.done){t.done=true;toast('Alle Teilschritte erledigt – Aufgabe abgehakt');}save();render();return;}
+  if(row&&el.type==='checkbox'&&!el.closest('.detail')){byId(row.dataset.id).done=el.checked;save();render();return;}
+  if(el.dataset.field){const t=byId(row.dataset.id);let v=el.value;if(el.dataset.field==='d')v=parseInt(v||'0',10);
+    t[el.dataset.field]=v;if(el.dataset.field==='type'&&v==='claude'&&!t.status)t.status='briefing';save();render();return;}
+  if(el.dataset.brief){byId(row.dataset.id).brief[el.dataset.brief]=el.value;save();return;}
+  if(el.dataset.adv){byId(row.dataset.id).adv[el.dataset.adv]=el.value;save();return;}
+  if(el.dataset.act==='block-select'&&el.value){const t=byId(row.dataset.id);t.blockedBy=[...(t.blockedBy||[]),el.value];save();render();return;}
+});
+document.getElementById('view').addEventListener('click',e=>{
+  const chip=e.target.closest('.chip[data-f]');if(chip){ui.filter=chip.dataset.f;render();return;}
+  const head=e.target.closest('.phase-head');if(head){const p=head.closest('.phase').dataset.p;state.open[p]=!(state.open[p]!==false);save();render();return;}
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const act=b.dataset.act,row=b.closest('.task'),t=row?byId(row.dataset.id):null;
+  const now=()=>new Date().toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  switch(act){
+    case 'open':ui.expanded=ui.expanded===t.id?null:t.id;ui.confirm=null;render();return;
+    case 'crit':t.c=!t.c;break;
+    case 'unblock':t.blockedBy=t.blockedBy.filter(id=>id!==b.dataset.ref);break;
+    case 'sub-add':{const inp=$('[data-input=sub]',row);const v=inp.value.trim();if(!v)return;t.sub.push({id:t.id+'-'+Date.now(),t:v,done:false});break;}
+    case 'sub-del':{const sid=b.closest('.sub').dataset.sub;t.sub=t.sub.filter(s=>s.id!==sid);break;}
+    case 'com-add':{const ta=$('[data-input=com]',row);const v=ta.value.trim();if(!v)return;t.com.push({who:ui.who,ts:now(),text:v});break;}
+    case 'adv-edit':{const k=b.dataset.ref;const ta=$(`[data-adv=${k}]`,row),sh=$(`[data-advshow=${k}]`,row);
+      if(ta.classList.contains('hidden')){ta.classList.remove('hidden');sh.classList.add('hidden');b.textContent='Fertig';ta.focus();}
+      else{t.adv[k]=ta.value;save();render();}return;}
+    case 'go':t.status='go';t.com.push({who:ui.who,ts:now(),text:'Go erteilt – Claude darf starten.'});break;
+    case 'answered':t.status='arbeit';break;
+    case 'accept':t.status='ergebnis';t.done=true;break;
+    case 'back':t.status='briefing';break;
+    case 'del':ui.confirm='del:'+t.id;render();return;
+    case 'del-yes':state.tasks=state.tasks.filter(x=>x.id!==t.id);state.tasks.forEach(x=>x.blockedBy=(x.blockedBy||[]).filter(id=>id!==t.id));ui.expanded=null;ui.confirm=null;toast('Aufgabe gelöscht');break;
+    case 'confirm-no':ui.confirm=null;render();return;
+    case 'reset-yes':state={einzug:'',open:{},tasks:seed()};ui.confirm=null;ui.expanded=null;toast('Zurückgesetzt');break;
+    case 'add':{const box=b.closest('.addbox');const title=$('[data-input=new-t]',box).value.trim();if(!title){toast('Bitte einen Titel eingeben');return;}
+      const w=parseInt($('[data-input=new-w]',box).value||'0',10),dir=parseInt($('[data-input=new-dir]',box).value,10),type=$('[data-input=new-type]',box).value;
+      state.tasks.push(newTask({p:+box.dataset.p,t:title,o:$('[data-input=new-o]',box).value,d:w*7*dir,c:$('[data-input=new-c]',box).checked,type}));toast('Aufgabe hinzugefügt');break;}
+    case 'add-claude':{const inp=$('[data-input=new-claude]');const title=inp.value.trim();if(!title){toast('Bitte einen Titel eingeben');return;}
+      const nt=newTask({p:3,t:title,o:'B',d:-28,c:false,type:'claude'});state.tasks.push(nt);ui.expanded=nt.id;break;}
+  }
+  save();render();
+});
+function newTask(o){return {id:'c'+Date.now(),blockedBy:[],sub:[],adv:{},com:[],done:false,wait:'',status:o.type==='claude'?'briefing':'',brief:{goal:'',ctx:'',result:''},...o};}
+
+/* ---------- bar: export / import / handover / merge / sync / reset ---------- */
+function download(name,obj){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);}
+const stamp=()=>new Date().toISOString().slice(0,10);
+let fileMode='import';
+$('.bar').addEventListener('click',async e=>{
+  const b=e.target.closest('[data-cmd]');if(!b)return;
+  switch(b.dataset.cmd){
+    case 'export':download('umzug-backup-'+stamp()+'.json',{...state,exported:new Date().toISOString()});return;
+    case 'import':fileMode='import';document.getElementById('file').click();return;
+    case 'merge':fileMode='merge';document.getElementById('file').click();return;
+    case 'handover':{
+      const ts=state.tasks.filter(t=>t.type==='claude'&&!t.done&&t.status!=='briefing');
+      if(!ts.length){toast('Keine Aufgabe mit Go – erst in der Detailansicht "Go erteilen"');return;}
+      const pack={format:'umzug-handover',version:2,einzug:state.einzug||null,heute:stamp(),
+        anweisung:'Claude: Für jede Aufgabe den Zustand beachten. Bei "go": Rechercheschritt starten – was wird gebraucht, maximal 5 Rückfragen, Annahmen benennen. Bei "arbeit": Ergebnis liefern. Antwort als JSON im Format umzug-result mit tasks[{id,status,result,comment,sub_add[]}].',
+        tasks:ts.map(t=>({id:t.id,titel:t.t,phase:t.p,frist:dueInfo(t).label,status:t.status,ziel:t.brief.goal,kontext:t.brief.ctx,teilschritte:t.sub.map(s=>(s.done?'[x] ':'[ ] ')+s.t),kommentare:t.com.map(c=>OWN[c.who]+' ('+c.ts+'): '+c.text),
+          abhaengig_von:(t.blockedBy||[]).map(id=>{const x=byId(id);return x?(x.done?'✓ ':'offen: ')+x.t:id;})}))};
+      const txt=JSON.stringify(pack,null,2);
+      try{await navigator.clipboard.writeText(txt);toast(ts.length+' Aufgabe(n) kopiert – in den Chat einfügen. Zusätzlich als Datei gespeichert.');}catch{toast('Als Datei gespeichert');}
+      download('umzug-handover-'+stamp()+'.json',pack);
+      ts.forEach(t=>{if(t.status==='go')t.status='recherche';});save();render();return;}
+    case 'sync':ui.shared=!ui.shared;saveUI();toast(ui.shared?'Gemeinsamer Speicher – beide sehen denselben Stand':'Persönlicher Speicher – nur du siehst diesen Stand');load();return;
+    case 'reset':ui.confirm='reset';render();window.scrollTo({top:0});return;
+  }
+});
+document.getElementById('file').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const s=JSON.parse(r.result);
+    if(fileMode==='import'){if(!Array.isArray(s.tasks))throw 0;state={einzug:s.einzug||'',open:s.open||{},tasks:s.tasks};toast('Backup eingelesen');}
+    else{if(s.format!=='umzug-result'||!Array.isArray(s.tasks))throw 0;let n=0;
+      s.tasks.forEach(u=>{const t=byId(u.id);if(!t)return;n++;
+        if(u.status)t.status=u.status;if(u.result)t.brief.result=u.result;
+        if(u.comment)t.com.push({who:'C',ts:new Date().toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),text:u.comment});
+        (u.sub_add||[]).forEach(st=>t.sub.push({id:t.id+'-'+Date.now()+Math.random().toString(36).slice(2,5),t:st,done:false}));
+        if(u.adv)Object.assign(t.adv,u.adv);});
+      toast(n+' Aufgabe(n) mit Claude-Ergebnis aktualisiert');}
+    save();render();}catch{toast(fileMode==='import'?'Datei nicht lesbar – bitte ein Backup dieser Liste wählen':'Kein gültiges Claude-Ergebnis (Format umzug-result)');}
+    e.target.value='';};
+  r.readAsText(f);
+});
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600);}
+load();
+</script>
+</body>
+</html>
