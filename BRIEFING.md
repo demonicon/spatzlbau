@@ -14,7 +14,7 @@ Vier Kernanforderungen der Nutzer:
 
 Dazu die drei nicht verhandelbaren Rahmenbedingungen:
 - **Fremde ausgeschlossen:** Login-Pflicht, Allowlist mit genau zwei E-Mail-Adressen
-- **Anna öffnet nur eine URL:** kein App-Store, kein Konto außer Magic-Link-Login
+- **Anna öffnet nur eine URL:** kein App-Store; ein von Sebastian angelegtes Konto (E-Mail + Passwort), sonst nichts
 - **Claude hat jederzeit Lesezugriff:** über eine nur-lesende Export-Funktion mit Token, damit die Delegations-Schleife (Abschnitt 4) ohne Copy-Paste läuft
 
 ## 2. Technische Entscheidungen (getroffen, nicht neu diskutieren)
@@ -24,7 +24,7 @@ Dazu die drei nicht verhandelbaren Rahmenbedingungen:
 | Frontend | Vanilla JS mit ES-Modulen, kein Framework, kein Build-Step | Deploy = git push; kleine App; leicht iterierbar |
 | Hosting | GitHub Pages aus öffentlichem Repo (Fallback Cloudflare Pages bei privatem Repo) | kostenlos, kein Server |
 | Daten | Supabase (Postgres) mit Realtime | Login, Allowlist, feldgenaue Updates, REST für Claude |
-| Auth | Supabase Auth, Magic Link per E-Mail; dieselbe Mail enthält zusätzlich einen 6-stelligen Code, der in der App eingetippt werden kann | kein Passwort, ein Klick für Anna; der Code deckt den Fall ab, dass die Home-Bildschirm-App (iOS) den Link im Safari-Tab statt in der App öffnet |
+| Auth | Supabase Auth, E-Mail + Passwort (`signInWithPassword`); Konten legt Sebastian im Dashboard an, keine Selbstregistrierung, kein Passwort-Reset per Mail (Änderungsauftrag 001) | Magic Link scheiterte am Mail-Limit des Supabase-Standardversands; Passwort-Login braucht beim Anmelden keine Mail |
 | Zugriffsschutz | Row Level Security: nur E-Mails aus `allowlist` lesen/schreiben | echter Ausschluss, nicht nur Obscurity |
 | Claude-Lesezugriff | Postgres-Funktion `export_state(token text)` als RPC, `security definer`, gibt den Gesamtstand als JSON; Token in Tabelle `settings`, per SQL rotierbar | im Chat kann Claude nur GET-URLs abrufen, keine Header setzen → Token als Query-Parameter, `apikey` ebenfalls als Query-Parameter |
 | Claude-Schreibzugriff | Nur über Claude Code mit Service-Role-Key aus lokaler `.env` – niemals im Repo | |
@@ -107,7 +107,7 @@ umzug/
 
 **Sebastian, im Browser (~15 Minuten):**
 1. supabase.com → Konto → neues Projekt (Region EU, Frankfurt). Projekt-URL, Anon-Key und Service-Role-Key notieren.
-2. Authentication → Providers → Email: Magic Link aktiv lassen. Unter URL Configuration die spätere GitHub-Pages-URL als Site URL und Redirect eintragen (du sagst ihm die URL, sobald das Repo steht).
+2. Authentication → Providers → Email: „Allow new users to sign up“ aus. Unter Users die zwei Konten mit Passwort anlegen (Auto Confirm).
 3. SQL Editor → Inhalt von `supabase/schema.sql` einfügen und ausführen (enthält Platzhalter für die zwei E-Mails und erzeugt das Export-Token).
 4. github.com → neues öffentliches Repo `umzug` (oder du erledigst das per `gh`, wenn eingeloggt).
 
@@ -121,10 +121,10 @@ Bevor du baust, frag Sebastian nach: Projekt-URL + Anon-Key, den zwei E-Mail-Adr
 
 ## 8. Smoke-Test (mit Anna, ~10 Minuten)
 
-1. Sebastian öffnet die URL, loggt sich per Magic Link ein, trägt einen Einzugstermin ein, hakt eine Aufgabe ab, schreibt einen Kommentar.
+1. Sebastian öffnet die URL, loggt sich mit E-Mail und Passwort ein, trägt einen Einzugstermin ein, hakt eine Aufgabe ab, schreibt einen Kommentar.
 2. Anna öffnet dieselbe URL auf dem Handy, loggt sich ein, sieht Sebastians Stand, hakt eine andere Aufgabe ab, kommentiert, fügt "Zum Home-Bildschirm" hinzu.
 3. Bei Sebastian erscheinen Annas Änderungen ohne Neuladen (Realtime).
-4. Eine dritte E-Mail (Testadresse) versucht den Login: Magic Link kommt an, App zeigt leere Liste / Hinweis "nicht freigeschaltet", keine Daten sichtbar.
+4. Ein drittes Konto (Testadresse, im Dashboard angelegt, nicht in der Allowlist) loggt sich ein: App zeigt „nicht freigeschaltet“, keine Daten sichtbar. Eine Adresse ohne Konto kann sich gar nicht anmelden.
 5. Sebastian gibt Claude im Chat die Export-URL; Claude liest den Stand und nennt die beiden Kommentare korrekt. Danach Token rotieren, um den Rotationsweg einmal geprobt zu haben.
 
 Erfolgskriterium: alle fünf Punkte grün. Erst dann beginnt die Weiterentwicklung.

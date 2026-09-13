@@ -41,42 +41,27 @@ select value #>> '{}' as export_token from settings where key = 'export_token';
 
 ---
 
-## 3. Auth einstellen
+## 3. Auth einstellen (Passwort-Login, Änderungsauftrag 001)
 
-### 3a. Provider
-**Authentication → Sign In / Providers → Email**: eingeschaltet lassen. Nichts weiter nötig – Magic Link ist der Standardweg ohne Passwort.
-„Allow new users to sign up“ **eingeschaltet lassen**: Der Login selbst ist offen, der Datenzugriff ist per Allowlist gesperrt (Fremde sehen nach dem Login nur den Hinweis „nicht freigeschaltet“).
+Login läuft mit E-Mail und Passwort. Es gibt keine Selbstregistrierung und keine „Passwort vergessen“-Mail – beide Konten legst du selbst an, Zurücksetzen passiert ebenfalls im Dashboard.
 
-### 3b. URL-Konfiguration
-**Authentication → URL Configuration**:
-- **Site URL**: die GitHub-Pages-URL `https://demonicon.github.io/spatzlbau/`.
-- **Redirect URLs** (jeweils „Add URL“):
-  ```
-  https://demonicon.github.io/spatzlbau/**
-  http://localhost:5500/**
-  http://127.0.0.1:5500/**
-  ```
-  Die beiden `localhost`-Einträge sind für den lokalen Test mit Live Server.
+### 3a. Selbstregistrierung ausschalten
+**Authentication → Sign In / Providers → Email**: Provider eingeschaltet lassen, **„Allow new users to sign up“ ausschalten**. Speichern.
 
-### 3c. E-Mail-Vorlage mit Login-Code (empfohlen)
-Grund: Wird die App auf dem iPhone „Zum Home-Bildschirm“ hinzugefügt, öffnet ein Magic Link im Safari-Tab, nicht in der App. Mit einem 6-stelligen Code, den man in der App eintippt, klappt der Login auch dort.
+### 3b. Die zwei Konten anlegen
+**Authentication → Users → Add user → Create new user**, je einmal für Sebastian und Anna:
+- E-Mail: exakt die Adresse aus der `allowlist` (Vergleich ist unabhängig von Groß-/Kleinschreibung, aber sonst zeichengenau).
+- Passwort: lange Passphrase, im Passwortmanager ablegen. Anna bekommt ihre persönlich, nicht per E-Mail.
+- **„Auto Confirm User“ aktivieren**, sonst wartet das Konto auf eine Bestätigungsmail.
 
-**Authentication → Emails → Templates → Magic Link**:
-- Subject:
-  ```
-  Dein Login für den Umzugsplaner
-  ```
-- Body (Message):
-  ```html
-  <h2>Umzugsplaner</h2>
-  <p><a href="{{ .ConfirmationURL }}">Jetzt einloggen</a></p>
-  <p>Oder diesen Code in der App eingeben: <strong style="font-size:20px">{{ .Token }}</strong></p>
-  <p>Link und Code sind eine Stunde gültig.</p>
-  ```
-- Speichern.
+### 3c. Passwort zurücksetzen
+**Authentication → Users → Konto öffnen → Reset password / Update password**. Der Login-Screen weist darauf hin, dass Sebastian das erledigt.
 
-### 3d. Hinweis E-Mail-Limit
-Der eingebaute Supabase-Mailversand ist für Tests gedacht und stark begrenzt (derzeit nur wenige Login-Mails pro Stunde, projektweit). Für den Smoke-Test heißt das: Logins zeitlich verteilen, nicht dreimal hintereinander anfordern. Wenn das nervt: **Project Settings → Authentication → SMTP Settings** → eigenen SMTP eintragen (z. B. Brevo, kostenloser Tarif reicht). Optional, kann später kommen.
+### 3d. URL-Konfiguration (optional)
+Für den Passwort-Login nicht mehr nötig. Site URL `https://demonicon.github.io/spatzlbau/` kann eingetragen bleiben.
+
+### 3e. Test-Konto für den Smoke-Test
+Für Punkt 4 des Smoke-Tests ein drittes Konto anlegen (beliebige Adresse, Auto Confirm), das **nicht** in der `allowlist` steht. Nach dem Login zeigt die App „Dieses Konto ist nicht freigeschaltet“ und keine Daten. Danach das Konto wieder löschen.
 
 ---
 
@@ -85,7 +70,7 @@ Der eingebaute Supabase-Mailversand ist für Tests gedacht und stark begrenzt (d
 1. https://github.com/new → Name `spatzlbau`, **Public**, ohne README/.gitignore/Lizenz (das Repo kommt aus dem lokalen Ordner) → **Create repository**.
 2. Die Repo-URL (`https://github.com/demonicon/spatzlbau.git`) an Claude Code geben – der Push kommt von dort.
 3. Nach dem ersten Push: **Settings → Pages → Build and deployment → Source: „GitHub Actions“**. Der Workflow `.github/workflows/pages.yml` liegt im Repo und veröffentlicht bei jedem Push auf `main`.
-4. Die Pages-URL steht danach unter Settings → Pages (`https://demonicon.github.io/spatzlbau/`) → in Supabase als Site URL / Redirect eintragen (Schritt 3b).
+4. Die Pages-URL steht danach unter Settings → Pages (`https://demonicon.github.io/spatzlbau/`).
 
 ---
 
@@ -164,7 +149,7 @@ Das Ergebnis ist das neue Token → `.env` aktualisieren, neue URL an Claude im 
 
 ## 9. Lokal testen
 
-VS Code mit Erweiterung „Live Server“ → Rechtsklick auf `index.html` → „Open with Live Server“ (Port 5500, passt zu den Redirect-URLs oben). Im Browser auf ~380 px Breite prüfen (DevTools → Gerätesymbol). Zwei Personen = zwei Browserprofile oder ein normales + ein privates Fenster.
+VS Code mit Erweiterung „Live Server“ → Rechtsklick auf `index.html` → „Open with Live Server“ (Port 5500). Im Browser auf ~380 px Breite prüfen (DevTools → Gerätesymbol). Zwei Personen = zwei Browserprofile oder ein normales + ein privates Fenster.
 
 ---
 
