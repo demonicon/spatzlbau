@@ -7,6 +7,11 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - **Du (Claude Code):** Umsetzung, Deployment, Datenbank-Skripte, Bugfixes, UX/UI-Iterationen.
 - **Sebastian:** Product Owner, klickt Supabase/GitHub-Setup, testet mit Anna.
 
+## Änderungsaufträge
+- Änderungsaufträge liegen in `docs/changes/NNN-kurzname.md` (fortlaufend nummeriert, Vorlage: Warum / Was sich ändert / Was Sebastian tut / Akzeptanzkriterien / Handy-Check). Sie kommen aus dem Chat und sind die verbindliche Spezifikation.
+- Umsetzung auf einem Branch `feature/<kurzname>`; nach Abnahme Merge in `main`. Beim Abschluss den Status im Auftrag auf „umgesetzt“ setzen und offene Punkte dort notieren.
+- Betrifft ein Auftrag Verhalten oder Setup, werden `SETUP.md` / `BRIEFING.md` im selben Branch nachgezogen.
+
 ## Konventionen
 - Vanilla JS, ES-Module, kein Build-Step, kein Framework. Keine neuen Abhängigkeiten ohne Rückfrage; Supabase-JS per CDN-ESM-Import.
 - UI-Texte Deutsch, Code und Kommentare Englisch. Kein Denglisch in Buttons.
