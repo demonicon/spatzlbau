@@ -70,18 +70,22 @@ Jede Aufgabe kann auf `type = claude` gestellt werden – dynamisch, keine feste
 
 Ablauf technisch: Claude im Chat ruft `export_state` ab, sieht Go-Aufgaben samt Briefing und Kommentaren, antwortet im Chat. Ergebnisse tragen die Nutzer ein oder Claude Code schreibt sie per Skript (`scripts/claude-result.mjs`, Eingabe: JSON `{tasks:[{id,status,result,comment,sub_add[]}]}`) in die Datenbank – Kommentare mit `author = 'C'`. Das Skript bitte im ersten Build mitliefern.
 
-## 5. Sichten und UI (Stand Konzept v2, siehe reference/)
+## 5. Sichten und UI (Stand Änderungsauftrag 002, Design in design/handoff/)
 
-1. **Diese Woche** – pro Person: jetzt möglich (nicht blockiert, nach Fälligkeit), wartet auf mich, blockiert (mit Grund)
-2. **Im Blick** – fristkritisch und offen (visuell hervorgehoben, gelber Block), überfällig, wartet auf jemanden
-3. **Bei Claude** – delegierte Aufgaben nach Zustand gruppiert, "Neue Claude-Aufgabe"
-4. **Phasen** – fünf Phasen mit Gate-Beschreibung, Filter (Alle / Sebastian / Anna / Gemeinsam / Nur offene), Aufgabe hinzufügen pro Phase
+Ein Dashboard-Screen statt vier Sichten (`docs/changes/002-dashboard.md`):
+
+1. **Kopf** – Countdown zum Einzugstermin („110 Tage bis zur Schlüsselübergabe“, ohne Termin „Termin offen“ mit Datumsfeld), Person-Chip, Statuszeile (gespeichert/Live), fünfteilige **Gate-Leiste**: pro Phase Nummer, erledigt/gesamt, Füllbalken (grün, wenn die Phase komplett ist). Tippen wählt die Phase.
+2. **Kennzahlen als Filter** – Offen (alle) + Offen Sebastian / Anna / gemeinsam, dann Diese Woche, Bei Claude, Wartet auf jemanden, Blockiert, Fristkritisch, Überfällig. Jede Kachel ist ein Button (`aria-pressed`), genau ein Filter aktiv, erneutes Tippen hebt ihn auf; Warnfarbe nur bei Fristkritisch (Gelb) und Überfällig (Rot). Zahl auf der Kachel = Treffer über alle Phasen. Aktiver Filter erscheint als schließbarer Chip über der Liste und bleibt beim Phasenwechsel.
+3. **Phasen-Tabs** – fünf Tabs (Nummer, Kurzname, Zähler: offen bzw. Treffer im Filter), darunter der Gate-Text. Der zuletzt aktive Tab wird pro Gerät gemerkt; beim Öffnen ist der Filter „Diese Woche“ aktiv (eigene und gemeinsame Aufgaben, offen, nicht blockiert, nicht gerade bei Claude, plus alles, was auf mich wartet).
+4. **Aufgabenliste** der gewählten Phase nach Fälligkeit, Zeile: Häkchen, Titel, Owner-Chip, Fälligkeit („überfällig seit n Tagen“ rot, fristkritisch gelb, sonst „bis dd.mm.“), Teilschritte, Kommentare, Claude-Zustand, wartet-auf, blockiert-durch. Darunter „Neue Aufgabe in Phase n“ (bei Filter „Bei Claude“ als Claude-Aufgabe vorbelegt). Fußzeile: Version, Neu laden, Seed aktualisieren, Abmelden.
+
+Die früheren Sichten „Diese Woche“, „Im Blick“, „Bei Claude“ sind vollständig in den Filtern aufgegangen. Abweichungen vom Design und selbst entschiedene Zustände: `docs/changes/002-abweichungen.md`.
 
 Aufgaben-Detail ("Akte"): Titel/Owner/Typ/Wartet-auf/Offset editierbar, Abhängigkeiten, Teilschritte, Briefing (nur bei type claude), fünf klappbare Beratungsfelder (editierbar, Platzhaltertext wenn leer), Kommentare mit Autor und Zeit, Löschen mit Inline-Bestätigung.
 
 Bekannte UX-Schuld aus v2, im ersten Build **noch nicht** lösen (kommt in der Konzeptrunde danach): Die Akte ist für kleine Aufgaben zu schwer – Beratung/Briefing sollten nur bei Bedarf sichtbar sein. Erst der Smoke-Test, dann UX/UI-Runde.
 
-`reference/umzug-checkliste-v2.html` ist der funktionierende Prototyp aus dem Chat (Artifact, Speicher über `window.storage`). Er dient als **Referenz für Verhalten und Struktur**, nicht als Codebasis: neu aufbauen mit sauberer Modultrennung, gleiche Funktionen. Design-Tokens dürfen übernommen werden (Farben, Owner-Chips, Highlighter-Gelb für "Im Blick").
+`reference/umzug-checkliste-v2.html` ist der funktionierende Prototyp aus dem Chat (Artifact, Speicher über `window.storage`). Er dient als **Referenz für Verhalten und Struktur**, nicht als Codebasis: neu aufbauen mit sauberer Modultrennung, gleiche Funktionen. Die Design-Tokens stammen seit 002 aus dem Claude-Design-Handoff (`design/handoff/2026-09-13/`).
 
 Anforderungen an die Umsetzung: mobile-first (~380 px), Tap-Ziele ≥ 44 px, sichtbarer Fokus, `prefers-reduced-motion` respektieren, keine Dialoge (`confirm`/`prompt`) sondern Inline-Bestätigungen, Statuszeile mit Speicherzustand und Login-Identität. Autor von Kommentaren = eingeloggte Person (aus E-Mail → S/A gemappt, Mapping in `allowlist` als Spalte `person`).
 

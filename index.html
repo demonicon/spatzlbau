@@ -17,9 +17,8 @@
 <body>
 
 <div class="wrap">
-  <header class="top">
+  <header class="top" id="top">
     <h1 id="title">Spatzlbau</h1>
-    <span class="head-right"><span class="version" id="version" hidden></span><button type="button" class="link" id="logout" hidden>Abmelden</button></span>
   </header>
 
   <section id="loading" class="screen">Lade …</section>
@@ -47,28 +46,7 @@
   </section>
 
   <main id="app" hidden>
-    <div class="status" id="status" role="status">Verbinde …</div>
-
-    <div class="anchor">
-      <div>
-        <label for="einzug">Einzugstermin (Schlüsselübergabe neue Wohnung)</label>
-        <input type="date" id="einzug">
-      </div>
-      <div class="progress"><b id="pct">0 %</b><span id="cnt"></span></div>
-    </div>
-
-    <nav class="tabs" role="tablist" aria-label="Sichten">
-      <button role="tab" data-v="week">Diese Woche</button>
-      <button role="tab" data-v="focus">Im Blick</button>
-      <button role="tab" data-v="claude">Bei Claude</button>
-      <button role="tab" data-v="phases">Phasen</button>
-    </nav>
     <div id="view"></div>
-
-    <footer class="bar">
-      <button type="button" id="reload">Neu laden</button>
-      <button type="button" id="seed-btn">Seed aktualisieren</button>
-    </footer>
   </main>
 </div>
 
