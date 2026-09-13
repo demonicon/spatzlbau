@@ -1,6 +1,6 @@
 # Änderungsauftrag 002 – Dashboard nach Claude-Design-Vorlage
 
-Stand: 13.09.2026 · Status: umgesetzt bis Schritt 6, wartet auf Review (Abweichungsliste + Screenshots liegen vor) · Branch: `feature/dashboard` · Modell: Opus, Effort extra
+Stand: 13.09.2026 · Status: deployt 13.09.2026 (Merge dfded96, Pages-Lauf 9) · Branch: `feature/dashboard` · Modell: Opus, Effort extra
 Betrifft: `app.css` (Tokens), `index.html`, `app/views/*`, `app/main.js`; **nicht** die Datenschicht, **nicht** die Akte
 
 ## Quelle
