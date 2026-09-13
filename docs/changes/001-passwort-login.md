@@ -1,11 +1,6 @@
 # Änderungsauftrag 001 – Login per E-Mail und Passwort statt Magic Link
 
-Stand: 13.09.2026 · Status: umgesetzt auf `feature/passwort-login`, wartet auf Abnahme · Betrifft: Auth, Login-Screen, SETUP.md, BRIEFING.md
-
-Umsetzungsnotizen (Claude Code, 13.09.2026):
-- Lokal geprüft mit einem temporären Konto ohne Allowlist-Eintrag (danach gelöscht): falsches Passwort → „E-Mail oder Passwort stimmt nicht.“; richtiges Passwort → „Dieses Konto ist nicht freigeschaltet.“, alle Tabellen liefern 0 Zeilen; Sitzung überlebt Neuladen; Abmelden → Login-Screen.
-- Bei falschem Passwort loggt Chrome die abgelehnte Anfrage als „Failed to load resource: 400“ in der Konsole. Das ist das Netzwerk-Log des Browsers, kein JavaScript-Fehler, und lässt sich aus der App heraus nicht unterdrücken.
-- Offen (Sebastian): Schritte 3a/3b in SETUP.md; Kriterien 1, 3 und 4 mit den echten Konten im Smoke-Test bestätigen.
+Stand: 13.09.2026 · Status: offen · Betrifft: Auth, Login-Screen, SETUP.md, BRIEFING.md
 
 ## Warum
 
@@ -16,7 +11,7 @@ Supabase versendet ohne eigenen SMTP-Server nur wenige Mails pro Stunde; beim Te
 **Auth-Modell**
 - Anmeldung über `signInWithPassword({ email, password })`. Magic Link wird aus dem Frontend entfernt (kein zweiter Login-Weg, kein toter Code).
 - Keine Selbstregistrierung. Die zwei Konten werden manuell im Supabase-Dashboard angelegt. In den Email-Provider-Einstellungen wird "Allow new users to sign up" ausgeschaltet.
-- Keine "Passwort vergessen"-Funktion (bräuchte Mailversand). Zurücksetzen erledigt Sebastian im Dashboard unter Authentication → Users. Diesen Hinweis auf dem Login-Screen als eine Zeile anzeigen.
+- Keine "Passwort vergessen"-Funktion (bräuchte Mailversand). Zurücksetzen erledigt Sebastian im Dashboard unter Authentication → Users. **Kein Hinweis dazu auf dem Login-Screen** – der Screen verrät weder Namen, Backend noch Rollen. Der Login-Screen zeigt nur: Titel der App, E-Mail, Passwort, "Anmelden". Kein Footer, keine Erklärtexte.
 - Sitzung bleibt bestehen (Supabase-Standard mit Refresh-Token, persistent im Browser). Kein Auto-Logout.
 
 **Login-Screen**
@@ -41,6 +36,7 @@ Supabase versendet ohne eigenen SMTP-Server nur wenige Mails pro Stunde; beim Te
 - [ ] Ein drittes Konto (Testadresse, im Dashboard angelegt, **nicht** in der Allowlist) kann sich anmelden, sieht aber keine Daten und die Meldung "nicht freigeschaltet".
 - [ ] Ohne Konto (Adresse nicht angelegt) schlägt der Login fehl; keine Mail wird versendet.
 - [ ] Abmelden funktioniert und führt zum Login-Screen.
+- [ ] Login-Screen enthält keine Hinweise auf Personen, Supabase, Zurücksetzen oder Freischaltung; die Fehlermeldung ist für falsches Passwort und unbekannte Adresse identisch.
 - [ ] Kein Magic-Link-Code mehr im Frontend; `SETUP.md` Schritt "Auth" ersetzt; `BRIEFING.md` Abschnitt 2 (Auth-Zeile) angepasst.
 
 ## Handy-Check
