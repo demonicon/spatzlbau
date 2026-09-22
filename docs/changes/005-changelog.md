@@ -1,6 +1,6 @@
 # Änderungsauftrag 005 – Changelog in der App
 
-Stand: 22.09.2026 · Status: umgesetzt, PR offen · Branch: `feature/changelog` · Modell: Sonnet (umgesetzt mit Opus)
+Stand: 22.09.2026 · Status: deployt 22.09.2026 (Merge b073ba2, Pages-Lauf 13) · Branch: `feature/changelog` · Modell: Sonnet (umgesetzt mit Opus)
 Betrifft: Footer, neue Datei `changelog.json`, `CLAUDE.md`, Pages-Workflow
 
 ## Ziel
