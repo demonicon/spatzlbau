@@ -1,31 +1,35 @@
-// Dashboard filters (docs/changes/002): predicates over tasks, KPI definitions, "Diese Woche".
+// Dashboard filters and the person grouping (docs/changes/002, reduced in 009).
 // Pure functions on top of state.js – no writes, no DOM.
-import { state, blockers, dueInfo, einzug } from './state.js';
+import { state, blockers, dueInfo, einzug, freshComments, doneByOther, claudeStep } from './state.js';
 
 export const isOpen = (t) => !t.done;
 export const isBlocked = (t) => !t.done && blockers(t).length > 0;
 export const isLate = (t) => !t.done && !!einzug() && dueInfo(t).diff < 0;
 export const isCritical = (t) => !t.done && !!t.critical && !isLate(t); // late wins over critical (one signal per task)
 export const isDelegated = (t) => !t.done && t.type === 'claude';
-export const atClaude = (t) => isDelegated(t) && ['go', 'recherche', 'arbeit'].includes(t.status);
-export const isWaiting = (t) => !t.done && (!!t.wait_on || (t.type === 'claude' && ['rueckfragen', 'ergebnis'].includes(t.status)));
+export const atClaude = (t) => isDelegated(t) && claudeStep(t) === 'claude';
+export const isWaiting = (t) => !t.done && (!!t.wait_on || (t.type === 'claude' && claudeStep(t) === 'ergebnis'));
 
-// "Diese Woche": what the logged-in person can act on now – own or shared tasks that are open and
-// not blocked and not currently with Claude, plus anything explicitly waiting for this person.
-export const isMineNow = (t, me) =>
-  !t.done && ((['B', me].includes(t.owner) && !isBlocked(t) && !atClaude(t)) || t.wait_on === me);
+/* ---------- person grouping (docs/changes/009) ---------- */
+export const other = (me) => (me === 'S' ? 'A' : 'S');
+// waits for me: someone set wait_on to me, or Claude has delivered and we have to decide
+export const waitsOnMe = (t, me) => !t.done && (t.wait_on === me || (t.type === 'claude' && claudeStep(t) === 'ergebnis'));
 
+// docs/changes/009: the ten tiles became four – the three owner counts are the column heads now,
+// "Offen" is the count in every column head, and "Diese Woche" is what the "Ich" column shows.
+// The keys below "wait" are not tiles: they belong to "Seit deinem letzten Besuch".
 export const FILTERS = {
-  week: { label: 'Diese Woche', test: (t) => isMineNow(t, state.person) },
-  open: { label: 'Offen', test: isOpen },
-  S: { label: 'Offen · Sebastian', test: (t) => isOpen(t) && t.owner === 'S' },
-  A: { label: 'Offen · Anna', test: (t) => isOpen(t) && t.owner === 'A' },
-  B: { label: 'Offen · gemeinsam', test: (t) => isOpen(t) && t.owner === 'B' },
   claude: { label: 'Bei Claude', test: isDelegated },
-  wait: { label: 'Wartet auf jemanden', test: isWaiting },
   blocked: { label: 'Blockiert', test: isBlocked },
   critical: { label: 'Fristkritisch', test: isCritical },
   late: { label: 'Überfällig', test: isLate },
+  wait: { label: 'Wartet auf jemanden', test: isWaiting },
+  waitme: { label: 'Wartet auf dich', test: (t) => waitsOnMe(t, state.person) },
+  // done: the filter shows tasks that are already ticked off – the columns have to unfold them
+  donenew: { label: 'Seit deinem Besuch erledigt', test: doneByOther, done: true },
+  newS: { label: 'Neu von Sebastian', test: (t) => freshComments(t).some((c) => c.author === 'S') },
+  newA: { label: 'Neu von Anna', test: (t) => freshComments(t).some((c) => c.author === 'A') },
+  newC: { label: 'Neu von Claude', test: (t) => freshComments(t).some((c) => c.author === 'C') },
 };
 
 export const matches = (t, key) => !key || !FILTERS[key] || FILTERS[key].test(t);

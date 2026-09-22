@@ -9,6 +9,7 @@ import {
   byId,
   phases,
   loadAll,
+  loadSnapshot,
   subscribeRealtime,
   updateTask,
   insertTask,
@@ -18,19 +19,33 @@ import {
   deleteSubtask,
   addComment,
   setSetting,
-  loadLastSeenVersion,
+  loadPersonRow,
   setLastSeenVersion,
+  markVisit,
+  markCommentsSeen,
+  doneBy,
 } from './state.js';
 import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
-import { dashboardView } from './views/dashboard.js';
+import { dashboardView, columns } from './views/dashboard.js';
+import { isMoreOpen } from './ui/detail.js';
 
 const UI_KEY = 'spatzlbau-ui';
+const PERSON_KEY = 'spatzlbau-person';
 
-// dashboard state (docs/changes/002): one active filter, "Diese Woche" on every open; phase is remembered per device
-ui.filter = 'week';
+// dashboard state (docs/changes/009): no filter on open – the columns already answer "what is mine";
+// the phase is a chip (null = all phases) and is remembered per device
+ui.filter = null;
 ui.phase = null;
 ui.dateEdit = false;
+ui.openCols = new Set(); // collapsible column ("Bei Anna") that the person opened
+ui.allCols = new Set(); // columns showing more than the first eight rows
+ui.doneCols = new Set(); // columns showing their done tasks as well
+ui.blockedCols = new Set(); // columns with "N warten auf einen Vorgänger" unfolded
+ui.more = {}; // Akte: task id -> "Mehr" open? (undefined = automatic, see isMoreOpen)
+ui.adviceAdd = new Set(); // Akte: tasks showing the empty advice fields
+ui.printOpen = false; // "Umzugstag drucken" sheet
+ui.offline = false; // no connection: the cached state is shown read-only (009)
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
@@ -59,6 +74,12 @@ function renderStatus(kind, msg) {
     el.className = 'status err';
     return;
   }
+  if (ui.offline) {
+    const at = state.loadedAt ? new Date(state.loadedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '–';
+    el.textContent = 'Offline – Stand von ' + at;
+    el.className = 'status off';
+    return;
+  }
   const parts = [kind === 'saving' ? msg : lastSaved ? 'gespeichert ' + lastSaved : '', live ? 'Live' : 'verbinde …'];
   el.textContent = parts.filter(Boolean).join(' · ');
   el.className = 'status';
@@ -76,11 +97,8 @@ function isTyping() {
 }
 function ensurePhase() {
   const list = phases();
-  if (!list.length) return;
-  if (!list.some((p) => p.id === ui.phase)) {
-    const firstOpen = state.tasks.filter((t) => !t.done).sort((a, b) => a.phase - b.phase)[0];
-    ui.phase = firstOpen ? firstOpen.phase : list[0].id;
-  }
+  // null = chip "alle"; anything else has to exist
+  if (ui.phase !== null && list.length && !list.some((p) => p.id === ui.phase)) ui.phase = null;
 }
 function render() {
   if (!state.loaded) return;
@@ -91,6 +109,7 @@ function render() {
   renderPending = false;
   ensurePhase();
   const focusKey = keyOf(document.activeElement);
+  document.body.classList.toggle('printing', !!ui.printOpen);
   $('#view').innerHTML = dashboardView();
   // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set via CSSOM
   for (const el of $('#view').querySelectorAll('.gate .bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
@@ -106,7 +125,9 @@ function keyOf(el) {
   const scope = el.closest('[data-id]');
   const own = FOCUS_ATTRS.filter((a) => el.hasAttribute(a)).map((a) => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('');
   const sub = el.closest('[data-sub]');
-  const sel = (sub ? `[data-sub="${CSS.escape(sub.dataset.sub)}"] ` : '') + el.tagName.toLowerCase() + own + (el.id ? '#' + CSS.escape(el.id) : '');
+  // the first class disambiguates controls that share an attribute (gate segment vs. phase chip)
+  const cls = el.classList[0] ? '.' + CSS.escape(el.classList[0]) : '';
+  const sel = (sub ? `[data-sub="${CSS.escape(sub.dataset.sub)}"] ` : '') + el.tagName.toLowerCase() + cls + own + (el.id ? '#' + CSS.escape(el.id) : '');
   return { scope: scope ? scope.dataset.id : null, sel };
 }
 function restoreFocus(key) {
@@ -125,7 +146,7 @@ function saveUI() {
 function loadUI() {
   try {
     const u = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
-    if (Number.isInteger(u.phase)) ui.phase = u.phase;
+    if (Number.isInteger(u.phase) || u.phase === null) ui.phase = u.phase;
   } catch {}
 }
 
@@ -163,7 +184,17 @@ function openTaskFromHash() {
   ui.phase = t.phase;
   if (ui.filter && !FILTERS[ui.filter].test(t)) ui.filter = null;
   ui.expanded = t.id;
+  revealTask(t);
   return true;
+}
+// the task has to be visible: open its column, show it even past the eighth row or among the done ones
+function revealTask(t) {
+  for (const c of columns()) {
+    if (![...c.open, ...c.blocked, ...c.done].some((x) => x.id === t.id)) continue;
+    ui.openCols.add(c.key);
+    if (c.done.some((x) => x.id === t.id)) ui.doneCols.add(c.key);
+    if (c.blocked.some((x) => x.id === t.id)) ui.blockedCols.add(c.key);
+  }
 }
 // the open task lives in the URL, so a link to it can be shared (docs/changes/006)
 function syncHash() {
@@ -173,6 +204,7 @@ function syncHash() {
 }
 function setExpanded(id) {
   const prev = ui.expanded;
+  if (id) markCommentsSeen(id).catch(() => {}); // opening takes the "new" dot away (009)
   ui.expanded = id;
   ui.confirm = null;
   ui.editingAdvice = null;
@@ -184,6 +216,12 @@ function setExpanded(id) {
 
 /* ---------- events ---------- */
 const fail = (e) => e && toast('Nicht gespeichert – bitte nochmal versuchen');
+// what still works without a connection: looking, folding, filtering, printing (docs/changes/009)
+const OFFLINE_OK = new Set([
+  'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
+  'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'more', 'advice-add',
+  'print', 'print-close', 'print-now',
+]);
 
 function wireEvents() {
   const view = $('#view');
@@ -191,7 +229,10 @@ function wireEvents() {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (ui.changelogOpen) closeChangelog();
-    else if (ui.expanded && ui.wide) {
+    else if (ui.printOpen) {
+      ui.printOpen = false;
+      render();
+    } else if (ui.expanded && ui.wide) {
       // a field still being typed in saves on blur – let that happen before the panel goes
       if (document.activeElement?.closest?.('#panel')) document.activeElement.blur();
       setExpanded(null); // Escape empties the side panel
@@ -205,16 +246,43 @@ function wireEvents() {
     else if (!id) ui.expanded = null;
     render();
   });
+  // no connection: show the cached state read-only; back online: reload, no page reload needed (009)
+  window.addEventListener('offline', () => {
+    ui.offline = true;
+    render();
+  });
+  window.addEventListener('online', () => {
+    loadAll()
+      .then(() => {
+        ui.offline = false;
+        render();
+      })
+      .catch(() => {});
+  });
+  // leaving the app ends the visit: the next open measures "Seit deinem letzten Besuch" from here (009)
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && markVisit().catch(() => {}));
+  window.addEventListener('pagehide', () => markVisit().catch(() => {}));
   // layout mode: the Akte moves between inline (narrow) and side panel (wide) – same behaviour, other place
   const mq = matchMedia('(min-width: 900px)');
   ui.wide = mq.matches;
   mq.addEventListener('change', () => {
     ui.wide = mq.matches;
+    // the Akte moves between inline and panel, so this render cannot be skipped: a field that is
+    // being typed in gives up focus first (which saves it) instead of freezing the old layout
+    if (isTyping()) document.activeElement.blur();
     render();
   });
 
   view.addEventListener('change', (e) => {
     const el = e.target;
+    if (ui.offline) {
+      render(); // put the control back the way the cached state says
+      return toast('Ohne Netz kannst du nur lesen');
+    }
+    if (el.dataset.input === 'kontakte') {
+      setSetting('umzugstag_kontakte', el.value).catch(fail);
+      return;
+    }
     if (el.id === 'einzug') {
       ui.dateEdit = false;
       setSetting('einzugstermin', el.value || '').catch(fail);
@@ -229,13 +297,15 @@ function wireEvents() {
       return;
     }
     if (el.dataset.act === 'done' && t) {
-      updateTask(t.id, { done: el.checked }).catch(fail);
+      // done_by: who ticked it off – "Seit deinem letzten Besuch" must not count my own work (009)
+      updateTask(t.id, { done: el.checked, ...doneBy(el.checked) }).catch(fail);
       return;
     }
     if (el.dataset.field && t) {
       const f = el.dataset.field;
       let v = el.type === 'checkbox' ? el.checked : el.value;
       if (f === 'offset_days') v = parseInt(v || '0', 10);
+      if (f === 'title') v = String(v).replace(/\s+/g, ' ').trim() || t.title; // the title field wraps, but stays one line of text
       if (f === 'wait_on') v = v || null;
       const patch = { [f]: v };
       if (f === 'type' && v === 'claude' && !t.status) patch.status = 'briefing';
@@ -264,10 +334,11 @@ function wireEvents() {
       else render();
       return;
     }
-    // gate bar and phase tabs select the phase; the filter stays
+    // gate bar and phase chips select the phase; the filter stays
     const ph = e.target.closest('[data-phase]');
     if (ph) {
-      ui.phase = parseInt(ph.dataset.phase, 10);
+      const want = ph.dataset.phase === 'all' ? null : parseInt(ph.dataset.phase, 10);
+      ui.phase = ui.phase === want ? null : want; // tapping the active phase again shows all phases
       saveUI();
       if (!ui.wide) setExpanded(null);
       else render();
@@ -276,6 +347,7 @@ function wireEvents() {
     const b = e.target.closest('[data-act]');
     if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT') return;
     const act = b.dataset.act;
+    if (ui.offline && !OFFLINE_OK.has(act)) return toast('Ohne Netz kannst du nur lesen');
     const row = b.closest('[data-id]'); // task row, or the side panel
     const t = row ? byId(row.dataset.id) : null;
     const input = (sel, root = row) => $(sel, root);
@@ -304,8 +376,48 @@ function wireEvents() {
         case 'reload':
           location.reload();
           return;
+        case 'print':
+          ui.printOpen = !ui.printOpen;
+          render();
+          if (ui.printOpen) $('#printsheet')?.scrollIntoView({ block: 'start' });
+          return;
+        case 'print-close':
+          ui.printOpen = false;
+          render();
+          $('.foot')?.scrollIntoView({ block: 'end' });
+          return;
+        case 'print-now':
+          window.print();
+          return;
         case 'open':
           setExpanded(ui.expanded === t.id ? null : t.id);
+          return;
+        // docs/changes/009: "blockiert: …" is a link to the blocking task
+        case 'goto': {
+          const dep = byId(b.dataset.ref);
+          if (!dep) return;
+          if (ui.phase !== null && dep.phase !== ui.phase) ui.phase = dep.phase;
+          if (ui.filter && !FILTERS[ui.filter].test(dep)) ui.filter = null;
+          revealTask(dep);
+          setExpanded(dep.id);
+          if (!ui.wide) $(`#view .task[data-id="${CSS.escape(dep.id)}"]`)?.scrollIntoView({ block: 'start' });
+          return;
+        }
+        case 'col-toggle':
+          ui.openCols.has(b.dataset.ref) ? ui.openCols.delete(b.dataset.ref) : ui.openCols.add(b.dataset.ref);
+          render();
+          return;
+        case 'col-all':
+          ui.allCols.add(b.dataset.ref);
+          render();
+          return;
+        case 'col-done':
+          ui.doneCols.add(b.dataset.ref);
+          render();
+          return;
+        case 'col-blocked':
+          ui.blockedCols.has(b.dataset.ref) ? ui.blockedCols.delete(b.dataset.ref) : ui.blockedCols.add(b.dataset.ref);
+          render();
           return;
         case 'panel-close':
           setExpanded(null);
@@ -345,15 +457,21 @@ function wireEvents() {
           await updateTask(t.id, { advice: { ...(t.advice || {}), [k]: v } });
           return;
         }
-        case 'go':
-          await updateTask(t.id, { status: 'go' });
-          await addComment(t.id, 'Go erteilt – Claude darf starten.');
+        // docs/changes/009: briefing -> claude -> ergebnis, nothing in between
+        case 'to-claude':
+          await updateTask(t.id, { status: 'claude' });
+          await addComment(t.id, 'An Claude übergeben.');
           return;
-        case 'answered':
-          await updateTask(t.id, { status: 'arbeit' });
+        case 'more':
+          ui.more[t.id] = !isMoreOpen(t);
+          render();
+          return;
+        case 'advice-add':
+          ui.adviceAdd.add(t.id);
+          render();
           return;
         case 'accept':
-          await updateTask(t.id, { status: 'ergebnis', done: true });
+          await updateTask(t.id, { status: 'ergebnis', done: true, ...doneBy(true) });
           return;
         case 'back':
           await updateTask(t.id, { status: 'briefing' });
@@ -380,7 +498,7 @@ function wireEvents() {
           const w = parseInt(input('[data-input=new-w]', box).value || '0', 10);
           const dir = parseInt(input('[data-input=new-dir]', box).value, 10);
           const id = await insertTask({
-            phase: +box.dataset.p,
+            phase: parseInt(input('[data-input=new-p]', box).value, 10),
             title,
             owner: input('[data-input=new-o]', box).value,
             offset_days: w * 7 * dir,
@@ -388,8 +506,10 @@ function wireEvents() {
             type: input('[data-input=new-type]', box).value,
           });
           const nt = byId(id);
-          // keep the new task visible: drop the filter if it would hide it
+          // keep the new task visible: drop the filter and the phase chip if they would hide it
           if (nt && ui.filter && !FILTERS[ui.filter].test(nt)) ui.filter = null;
+          if (nt && ui.phase !== null && nt.phase !== ui.phase) ui.phase = nt.phase;
+          if (nt) revealTask(nt);
           setExpanded(id);
           toast('Aufgabe hinzugefügt');
           return;
@@ -412,9 +532,18 @@ async function enter(session) {
   show('loading');
   try {
     state.person = await auth.whoAmI();
+    try {
+      localStorage.setItem(PERSON_KEY, state.person || '');
+    } catch {}
   } catch (e) {
-    $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
-    return;
+    // offline: fall back to the person code of the last successful login (RLS is unaffected)
+    try {
+      state.person = localStorage.getItem(PERSON_KEY) || null;
+    } catch {}
+    if (!state.person) {
+      $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
+      return;
+    }
   }
   if (!state.person) {
     $('#denied-email').textContent = state.email || '';
@@ -422,13 +551,22 @@ async function enter(session) {
     return;
   }
   try {
-    await Promise.all([loadAll(), loadChangelog(), loadLastSeenVersion()]);
+    await Promise.all([loadAll(), loadChangelog(), loadPersonRow()]);
+    ui.offline = false;
   } catch (e) {
-    $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
-    return;
+    // no connection: the move-in day still works – last loaded state, read only (009)
+    const at = await loadSnapshot();
+    if (!at) {
+      $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
+      return;
+    }
+    ui.offline = true;
+    await loadChangelog();
   }
-  ui.filter = 'week';
+  ui.filter = null;
   ui.changelogOpen = false;
+  // never been here: set the baseline now, otherwise everything would be "new" forever (009)
+  if (state.lastVisitAt === null) markVisit().catch(() => {});
   const viaLink = openedViaTaskLink();
   if (viaLink) openTaskFromHash();
   show('app');

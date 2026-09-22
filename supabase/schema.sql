@@ -23,9 +23,13 @@ create table if not exists public.allowlist (
   email             text primary key,
   person            text not null check (person in ('S', 'A')),
   last_seen_version text,                                -- changelog.json version last read by this person (005b)
+  last_visit_at     timestamptz,                         -- when this person last left the app (009)
+  seen_comments     jsonb not null default '[]'::jsonb,  -- new comments this person already opened (009)
   updated_at        timestamptz not null default now()
 );
 alter table public.allowlist add column if not exists last_seen_version text;
+alter table public.allowlist add column if not exists last_visit_at timestamptz;
+alter table public.allowlist add column if not exists seen_comments jsonb not null default '[]'::jsonb;
 alter table public.allowlist enable row level security;
 
 insert into public.allowlist (email, person) values
@@ -58,8 +62,9 @@ create table if not exists public.tasks (
   critical      boolean not null default false,
   type          text not null default 'self' check (type in ('self', 'assist', 'claude')),
   done          boolean not null default false,
+  done_by       text check (done_by in ('S', 'A')),      -- who ticked it off (009, "Seit deinem letzten Besuch")
   wait_on       text check (wait_on in ('S', 'A', 'C')),
-  status        text check (status in ('briefing', 'go', 'recherche', 'rueckfragen', 'arbeit', 'ergebnis')),
+  status        text check (status in ('briefing', 'claude', 'ergebnis')),   -- delegation, three states (009)
   blocked_by    text[] not null default '{}',           -- task ids
   brief         jsonb not null default '{}'::jsonb,     -- {goal, ctx, result}
   advice        jsonb not null default '{}'::jsonb,     -- {why, how, need, law, traps}
@@ -89,6 +94,13 @@ create table if not exists public.comments (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.tasks add column if not exists done_by text;
+update public.tasks set status = 'claude' where status in ('go', 'recherche', 'rueckfragen', 'arbeit');
+alter table public.tasks drop constraint if exists tasks_status_check;
+alter table public.tasks add constraint tasks_status_check check (status in ('briefing', 'claude', 'ergebnis'));
+alter table public.tasks drop constraint if exists tasks_done_by_check;
+alter table public.tasks add constraint tasks_done_by_check check (done_by in ('S', 'A'));
 
 create index if not exists tasks_phase_idx   on public.tasks (phase, sort);
 create index if not exists subtasks_task_idx on public.subtasks (task_id, sort);
@@ -243,14 +255,15 @@ alter table public.tasks     enable row level security;
 alter table public.subtasks  enable row level security;
 alter table public.comments  enable row level security;
 
--- allowlist: readable for allowed users (so the app can map e-mail -> person). The only write from
--- the app: each person updates last_seen_version of their own row (column grant + row policy).
+-- allowlist: readable for allowed users (so the app can map e-mail -> person). The only writes from
+-- the app: each person updates their own row's last_seen_version (005b) and, since 009,
+-- last_visit_at / seen_comments (column grant + row policy).
 drop policy if exists allowlist_select on public.allowlist;
 create policy allowlist_select on public.allowlist
   for select to authenticated using (public.is_allowed());
 
 revoke update on table public.allowlist from authenticated;
-grant update (last_seen_version) on table public.allowlist to authenticated;
+grant update (last_seen_version, last_visit_at, seen_comments) on table public.allowlist to authenticated;
 
 drop policy if exists allowlist_update_own on public.allowlist;
 create policy allowlist_update_own on public.allowlist

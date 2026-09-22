@@ -38,9 +38,9 @@ Anon-Key und Projekt-URL dürfen im Repo stehen (per Design öffentlich, RLS sch
 
 Tabellen (alle mit `updated_at`, RLS aktiv):
 
-- `allowlist(email pk, person text 'S'/'A', last_seen_version text)` – genau zwei Einträge, von Sebastian im SQL gesetzt; `person` ist das Mapping Login-E-Mail → Kürzel; `last_seen_version` = zuletzt gelesene Changelog-Version der Person (005b), das einzige Feld, das die App hier schreibt
-- `settings(key pk, value jsonb)` – `einzugstermin`, `export_token`, `seed_version`, `phases` (Phasenliste aus `seed.json`, vom Seed-Skript geschrieben; Quelle bleibt `seed.json`)
-- `tasks` – `id text pk` (Slug aus seed oder `c_<ts>`), `phase int`, `title`, `owner` (`S` Sebastian / `A` Anna / `B` gemeinsam), `offset_days int`, `critical bool`, `type` (`self` / `assist` / `claude`), `done bool`, `wait_on` (`S`/`A`/`C`/null), `status` (nur bei type claude: `briefing` → `go` → `recherche` → `rueckfragen` → `arbeit` → `ergebnis`), `blocked_by text[]`, `brief jsonb` (`goal`, `ctx`, `result`), `advice jsonb` (Schlüssel `why`, `how`, `need`, `law`, `traps`), `sort int`, `seed_snapshot jsonb` (Seed-Werte, wie zuletzt eingespielt – nur für den Merge, nicht im Export), `deleted_at` (Soft-Delete; die App löscht nie hart), `created_at`
+- `allowlist(email pk, person text 'S'/'A', last_seen_version text, last_visit_at timestamptz, seen_comments jsonb)` – genau zwei Einträge, von Sebastian im SQL gesetzt; `person` ist das Mapping Login-E-Mail → Kürzel. Die App schreibt hier nur drei Spalten der eigenen Zeile: `last_seen_version` (zuletzt gelesene Changelog-Version, 005b), `last_visit_at` (wann die Person die App zuletzt verlassen hat, 009) und `seen_comments` (IDs der neuen Kommentare, die sie schon geöffnet hat, 009)
+- `settings(key pk, value jsonb)` – `einzugstermin`, `export_token`, `seed_version`, `phases`, `umzugstag_kontakte` (Notfallkontakte für das Druckblatt, 009) (Phasenliste aus `seed.json`, vom Seed-Skript geschrieben; Quelle bleibt `seed.json`)
+- `tasks` – `id text pk` (Slug aus seed oder `c_<ts>`), `phase int`, `title`, `owner` (`S` Sebastian / `A` Anna / `B` gemeinsam), `offset_days int`, `critical bool`, `type` (`self` / `assist` / `claude`), `done bool`, `wait_on` (`S`/`A`/`C`/null), `status` (nur bei type claude: `briefing` → `claude` → `ergebnis`, Auftrag 009), `done_by` (`S`/`A`, wer abgehakt hat – Grundlage für „Seit deinem letzten Besuch"), `blocked_by text[]`, `brief jsonb` (`goal`, `ctx`, `result`), `advice jsonb` (Schlüssel `why`, `how`, `need`, `law`, `traps`), `sort int`, `seed_snapshot jsonb` (Seed-Werte, wie zuletzt eingespielt – nur für den Merge, nicht im Export), `deleted_at` (Soft-Delete; die App löscht nie hart), `created_at`
 - `subtasks(id uuid pk, task_id fk, title, done, sort, seed_key text, created_at)` – `seed_key` ist bei Seed-Teilschritten gesetzt, damit der Merge nur fehlende ergänzt
 - `comments(id uuid pk, task_id fk, author text ('S'/'A'/'C'), body text, created_at)`
 - `costs` (Auftrag 004, Vorstufe Finanzmodul 007) – `id uuid pk`, `task_id fk → tasks` (null nur für den Puffer), `label`, `kind` (`einmalig`/`rueckfluss`), `apartment` (`S` alt Sebastian / `A` alt Anna / `N` neu / null), `status` (`geschaetzt` → `angebot` → `beauftragt` → `faellig` → `bezahlt`), `amount numeric(10,2)` (ein Betrag pro Zeile, der Status sagt, wie sicher er ist), `due_on` (Default beim Anlegen = Frist der Aufgabe, per Trigger), `paid_on` (gesetzt ⇒ `status = bezahlt`, per Trigger), `paid_by` (`S`/`A`), `belongs_to` (`S`/`A`/`B`; `B` = geteilt nach `split_s`), `split_s numeric(5,2)` (Anteil Sebastian in %, null = `settings.split_default_s`), `tax_relevant bool`, `receipt_url`, `note`, `seed_key`, `seed_snapshot`, `sort`, `created_at`
@@ -66,39 +66,39 @@ Abgeleitete Logik (Frontend):
 
 ## 4. Die Delegations-Schleife an Claude
 
-Jede Aufgabe kann auf `type = claude` gestellt werden – dynamisch, keine feste Liste. Dann erscheint ein Briefing (Ziel, Kontext, Ergebnis) und ein Zustandsautomat. **Claude startet nie ohne explizites Go.**
+Jede Aufgabe kann auf `type = claude` gestellt werden – dynamisch, keine feste Liste. Dann erscheint ein Briefing (Ziel, Kontext, Ergebnis) und ein dreiteiliger Zustandsbalken (Auftrag 009). **Claude startet nie ohne explizite Übergabe.**
 
 | Zustand | Am Zug | Bedeutung |
 |---|---|---|
-| briefing | Nutzer | Ziel und Kontext ausfüllen |
-| go | – | Nutzer hat "Go erteilen" geklickt; Claude darf starten |
-| recherche | Claude | Claude klärt Anforderungen, stellt max. 5 Rückfragen, nennt Annahmen |
-| rueckfragen | Nutzer | Rückfragen im Kommentarfeld beantworten, "Beantwortet" klicken |
-| arbeit | Claude | Claude liefert Ergebnis (Shortlist, Vorlage, Ablauf, Anfragetexte) |
-| ergebnis | Nutzer | Entscheiden, "Ergebnis übernommen" → done |
+| briefing | Nutzer | Ziel und Kontext ausfüllen, dann „An Claude geben" |
+| claude | Claude | Claude klärt Anforderungen, fragt nach, liefert – alles als Kommentare |
+| ergebnis | Nutzer | Lesen, entscheiden, „Ergebnis übernommen" → done |
 
-Ablauf technisch: Claude im Chat ruft `export_state` ab, sieht Go-Aufgaben samt Briefing und Kommentaren, antwortet im Chat. Ergebnisse tragen die Nutzer ein oder Claude Code schreibt sie per Skript (`scripts/claude-result.mjs`, Eingabe: JSON `{tasks:[{id,status,result,comment,sub_add[]}]}`) in die Datenbank – Kommentare mit `author = 'C'`. Das Skript bitte im ersten Build mitliefern.
+„An Claude geben" schreibt zusätzlich den Kommentar „An Claude übergeben.". **Rückfragen und Antworten sind normale Kommentare** (Autor `C` für Claude, `S`/`A` für die Nutzer) – dafür gibt es keinen eigenen Zustand mehr. „Zurück auf Briefing" ist jederzeit möglich. Der Filter „Bei Claude" gruppiert die delegierten Aufgaben nach genau diesen drei Zuständen statt nach Personen.
 
-## 5. Sichten und UI (Stand Änderungsauftrag 002, Design in design/handoff/)
+Ablauf technisch: Claude im Chat ruft `export_state` ab, sieht die Aufgaben im Zustand `claude` samt Briefing und Kommentaren, antwortet im Chat. Ergebnisse tragen die Nutzer ein oder Claude Code schreibt sie per Skript (`scripts/claude-result.mjs`, Eingabe: JSON `{tasks:[{id,status,result,comment,sub_add[]}]}`) in die Datenbank – Kommentare mit `author = 'C'`.
 
-Ein Dashboard-Screen statt vier Sichten (`docs/changes/002-dashboard.md`):
+## 5. Sichten und UI (Stand Änderungsauftrag 009, Design in design/handoff/2026-09-22-b)
 
-1. **Kopf** – Countdown zum Einzugstermin („110 Tage bis zur Schlüsselübergabe“, ohne Termin „Termin offen“ mit Datumsfeld), Person-Chip, Statuszeile (gespeichert/Live), fünfteilige **Gate-Leiste**: pro Phase Nummer, erledigt/gesamt, Füllbalken (grün, wenn die Phase komplett ist). Tippen wählt die Phase.
-2. **Kennzahlen als Filter** – Offen (alle) + Offen Sebastian / Anna / gemeinsam, dann Diese Woche, Bei Claude, Wartet auf jemanden, Blockiert, Fristkritisch, Überfällig. Jede Kachel ist ein Button (`aria-pressed`), genau ein Filter aktiv, erneutes Tippen hebt ihn auf; Warnfarbe nur bei Fristkritisch (Gelb) und Überfällig (Rot). Zahl auf der Kachel = Treffer über alle Phasen. Aktiver Filter erscheint als schließbarer Chip über der Liste und bleibt beim Phasenwechsel.
-3. **Phasen-Tabs** – fünf Tabs (Nummer, Kurzname, Zähler: offen bzw. Treffer im Filter), darunter der Gate-Text. Der zuletzt aktive Tab wird pro Gerät gemerkt; beim Öffnen ist der Filter „Diese Woche“ aktiv (eigene und gemeinsame Aufgaben, offen, nicht blockiert, nicht gerade bei Claude, plus alles, was auf mich wartet).
-4. **Aufgabenliste** der gewählten Phase nach Fälligkeit, Zeile: Häkchen, Titel, Owner-Chip, Fälligkeit („überfällig seit n Tagen“ rot, fristkritisch gelb, sonst „bis dd.mm.“), Teilschritte, Kommentare, Claude-Zustand, wartet-auf, blockiert-durch. Darunter „Neue Aufgabe in Phase n“ (bei Filter „Bei Claude“ als Claude-Aufgabe vorbelegt). Fußzeile: Version, Neu laden, Seed aktualisieren, Abmelden.
+Ein Dashboard-Screen, geordnet **nach Personen** statt nach Phasen (`docs/changes/009-personen-layout.md`, Variante B aus dem Design-Review 011):
 
-Breiten (Auftrag 006): bis 599 px Handy (Akte inline unter der Aufgabe), 600–899 px Tablet (eine Spalte bis 760 px, breitere Kacheln, Tabs ohne Scrollen), ab 900 px Desktop (bis 1280 px zentriert; Liste links, Akte rechts als Seitenpanel, das beim Klicken in der Liste offen bleibt; Escape/× schließt). Die offene Aufgabe steht in der URL (`#task=<id>`) und lässt sich als Link teilen – auf allen Breiten.
+1. **Kopf** – Countdown zum Einzugstermin („101 Tage bis zur Schlüsselübergabe", ohne Termin „Termin offen" mit Datumsfeld), Person-Pille, Statuszeile (gespeichert/Live/Offline), fünfteilige **Gate-Leiste**: pro Phase Nummer, erledigt/gesamt, Füllbalken (grün, wenn die Phase komplett ist).
+2. **„Seit deinem letzten Besuch"** – erscheint nur, wenn etwas passiert ist, während die Person weg war: Kommentare je Autor, von jemand anderem erledigte Aufgaben, was auf die Person wartet. Jeder Teil ist ein Filter. Grundlage: `allowlist.last_visit_at`, gesetzt beim Verlassen der App. An der Aufgabenzeile steht ein Punkt in der Autorenfarbe, bis die Aufgabe geöffnet wurde (`allowlist.seen_comments`).
+3. **Vier Kennzahlen als Filter** – Fristkritisch, Überfällig, Blockiert, Bei Claude. Jede Kachel ist ein Button (`aria-pressed`), genau ein Filter aktiv, erneutes Tippen hebt ihn auf; Warnfarbe nur bei Fristkritisch (Gelb) und Überfällig (Rot). Die Owner-Zahlen von früher sind die Spaltenköpfe, „Diese Woche" ist die Spalte „Ich".
+4. **Phasen als Chips** – `alle` plus fünf Phasen über der Liste, nicht mehr als Tabs; die Wahl wird pro Gerät gemerkt, Standard ist `alle`. Darunter der Gate-Text der gewählten Phase.
+5. **Spalten statt einer Liste** – Handy: `Ich` (nur eigene, nicht blockiert), `Wartet auf mich`, `Gemeinsam`, `Bei <anderer>` (eingeklappt). Ab 1180 px drei Spalten nebeneinander: ich / gemeinsam / der andere, daneben das Akte-Panel. Jede Spalte zeigt acht Zeilen, dann „weitere n zeigen", darunter eingeklappt „n warten auf einen Vorgänger" (blockierte Aufgaben mit dem Grund als Link zur blockierenden Aufgabe) und „n erledigt zeigen". Der Filter „Bei Claude" gruppiert stattdessen nach den drei Delegationszuständen.
+6. **Aufgabenzeile** – Häkchen, Titel, Owner-Chip (am Handy), Fälligkeit („überfällig seit n Tagen" rot, fristkritisch gelb, sonst „bis dd.mm."), Teilschritte, Kommentare, Punkt bei neuen Kommentaren, Claude-Zustand, „wartet auf dich" (rot), „blockiert: …" als Link.
+7. **Fußzeile** – Version (öffnet „Was ist neu?"), Neu laden, Umzugstag drucken, Abmelden.
 
-Die früheren Sichten „Diese Woche“, „Im Blick“, „Bei Claude“ sind vollständig in den Filtern aufgegangen. Abweichungen vom Design und selbst entschiedene Zustände: `docs/changes/002-abweichungen.md`.
+Breiten: bis 599 px Handy (Akte inline unter der Aufgabe), 600–899 px Tablet (eine Spalte bis 760 px), ab 900 px Akte als Seitenpanel, ab 1180 px zusätzlich die drei Personen-Spalten nebeneinander. Die offene Aufgabe steht in der URL (`#task=<id>`) und lässt sich als Link teilen – auf allen Breiten.
 
-Aufgaben-Detail ("Akte"): Titel/Owner/Typ/Wartet-auf/Offset editierbar, Abhängigkeiten, Teilschritte, Briefing (nur bei type claude), fünf klappbare Beratungsfelder (editierbar, Platzhaltertext wenn leer), Kommentare mit Autor und Zeit, Löschen mit Inline-Bestätigung.
+**Akte in zwei Gewichtsklassen** (009): standardmäßig leicht – Titel (editierbar), Owner, Frist, Teilschritte, Kommentare. „Alle Felder anzeigen" holt Abhängigkeiten, Beratung, Delegation und die Felder Zuständig/Typ/Wartet/Offset dazu; der Zustand wird pro Aufgabe gemerkt. Automatisch voll bei: an Claude delegiert, mindestens ein Beratungsfeld gefüllt, oder Abhängigkeiten vorhanden. Von den fünf Beratungsfeldern werden nur die gefüllten gezeigt, die leeren liegen hinter „Beratung ergänzen". Löschen mit Inline-Bestätigung.
 
-Bekannte UX-Schuld aus v2, im ersten Build **noch nicht** lösen (kommt in der Konzeptrunde danach): Die Akte ist für kleine Aufgaben zu schwer – Beratung/Briefing sollten nur bei Bedarf sichtbar sein. Erst der Smoke-Test, dann UX/UI-Runde.
-
-`reference/umzug-checkliste-v2.html` ist der funktionierende Prototyp aus dem Chat (Artifact, Speicher über `window.storage`). Er dient als **Referenz für Verhalten und Struktur**, nicht als Codebasis: neu aufbauen mit sauberer Modultrennung, gleiche Funktionen. Die Design-Tokens stammen seit 002 aus dem Claude-Design-Handoff (`design/handoff/2026-09-13/`).
+**Umzugstag** (009): Nach jedem erfolgreichen Laden legt die App den Datenstand lokal ab (`localStorage`). Ohne Verbindung zeigt sie diesen Stand **nur lesend** – Statuszeile „Offline – Stand von 09:41", Häkchen deaktiviert, Schreibversuche melden „Ohne Netz kannst du nur lesen". Kein Offline-Schreiben, kein Sync. Zurück im Netz lädt sie neu, ohne Seiten-Reload. „Umzugstag drucken" (Fußzeile) öffnet ein Blatt für Phase 4: Aufgaben nach Person mit Kästchen, Felder für Zählerstände (Strom/Gas/Wasser je Wohnung), Schlüsselliste und die Notfallkontakte aus `settings.umzugstag_kontakte` – reines `@media print`.
 
 Anforderungen an die Umsetzung: mobile-first (~380 px), Tap-Ziele ≥ 44 px, sichtbarer Fokus, `prefers-reduced-motion` respektieren, keine Dialoge (`confirm`/`prompt`) sondern Inline-Bestätigungen, Statuszeile mit Speicherzustand und Login-Identität. Autor von Kommentaren = eingeloggte Person (aus E-Mail → S/A gemappt, Mapping in `allowlist` als Spalte `person`).
+
+Abweichungen vom Design und selbst entschiedene Zustände: `docs/changes/002-abweichungen.md`, `006-abweichungen.md`, `009-abweichungen.md`. Die Design-Tokens stammen aus dem Claude-Design-Handoff (`design/handoff/2026-09-13/`, Layout seit 009 aus `2026-09-22-b`).
 
 ## 6. Repo-Struktur
 
