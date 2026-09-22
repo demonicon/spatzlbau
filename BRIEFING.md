@@ -43,12 +43,20 @@ Tabellen (alle mit `updated_at`, RLS aktiv):
 - `tasks` – `id text pk` (Slug aus seed oder `c_<ts>`), `phase int`, `title`, `owner` (`S` Sebastian / `A` Anna / `B` gemeinsam), `offset_days int`, `critical bool`, `type` (`self` / `assist` / `claude`), `done bool`, `wait_on` (`S`/`A`/`C`/null), `status` (nur bei type claude: `briefing` → `go` → `recherche` → `rueckfragen` → `arbeit` → `ergebnis`), `blocked_by text[]`, `brief jsonb` (`goal`, `ctx`, `result`), `advice jsonb` (Schlüssel `why`, `how`, `need`, `law`, `traps`), `sort int`, `seed_snapshot jsonb` (Seed-Werte, wie zuletzt eingespielt – nur für den Merge, nicht im Export), `deleted_at` (Soft-Delete; die App löscht nie hart), `created_at`
 - `subtasks(id uuid pk, task_id fk, title, done, sort, seed_key text, created_at)` – `seed_key` ist bei Seed-Teilschritten gesetzt, damit der Merge nur fehlende ergänzt
 - `comments(id uuid pk, task_id fk, author text ('S'/'A'/'C'), body text, created_at)`
+- `costs` (Auftrag 004, Vorstufe Finanzmodul 007) – `id uuid pk`, `task_id fk → tasks` (null nur für den Puffer), `label`, `kind` (`einmalig`/`rueckfluss`), `apartment` (`S` alt Sebastian / `A` alt Anna / `N` neu / null), `status` (`geschaetzt` → `angebot` → `beauftragt` → `faellig` → `bezahlt`), `amount numeric(10,2)` (ein Betrag pro Zeile, der Status sagt, wie sicher er ist), `due_on` (Default beim Anlegen = Frist der Aufgabe, per Trigger), `paid_on` (gesetzt ⇒ `status = bezahlt`, per Trigger), `paid_by` (`S`/`A`), `belongs_to` (`S`/`A`/`B`; `B` = geteilt nach `split_s`), `split_s numeric(5,2)` (Anteil Sebastian in %, null = `settings.split_default_s`), `tax_relevant bool`, `receipt_url`, `note`, `seed_key`, `seed_snapshot`, `sort`, `created_at`
+- `recurring` (Auftrag 004) – laufende Kosten alt vs. neu, alles monatlich: `id uuid pk`, `label`, `amount_s`, `amount_a`, `amount_n numeric(10,2) null`, `note`, `seed_key`, `seed_snapshot`, `sort`. Delta `amount_n − amount_s − amount_a` ist die Zahl für „Kostenmodell klären“ in Phase 1; Jahresbeträge teilt 007 beim Erfassen durch 12.
+- `settings`, zusätzliche Schlüssel (004): `move_out_s`, `move_out_a` (Auszugstermine, Grundlage der **berechneten** Doppelmiete in 007 – keine Kostenzeilen dafür), `split_default_s` (Standardanteil Sebastian in %, Start 50), `buffer_pct` (Puffersatz, Start 20; das Inhaltspaket legt eine `costs`-Zeile „Puffer“ mit `task_id = null` an, deren Betrag 007 aus dem Satz vorschlägt)
+- View `costs_summary` (004) – **die eine Summenregel** für 007 und für Claude (im Export enthalten): Zeilen mit `beauftragt`/`faellig`/`bezahlt` zählen; `geschaetzt` zählt nur, solange keine Zeile derselben Aufgabe `beauftragt` oder weiter ist (Puffer zählt immer); `angebot` zählt nie (Historie). Spalten: `planned_total` (gezählte `einmalig`), `paid` (davon `bezahlt`), `refunds_expected` (gezählte `rueckfluss`), `buffer` (gezählte `einmalig` ohne Aufgabe), `net` = `planned_total − refunds_expected`. Ohne Zeilen alles `null`. RLS gilt (`security_invoker`).
 
-Alle Tabellen haben `updated_at` (Trigger). Vollständiger Stand: `supabase/schema.sql`.
+Alle Tabellen haben `updated_at` (Trigger). Vollständiger Stand: `supabase/schema.sql`. `costs`/`recurring`: RLS wie `subtasks`, Realtime an, im täglichen Backup enthalten.
 
 Seed: `seed.json` in diesem Ordner enthält Phasen und 48 Aufgaben inkl. Abhängigkeiten, Teilschritten und zwei ausgefüllten Beispielen. Über `scripts/seed.mjs` (nur Claude Code, Service-Role-Key; seit 006 kein Knopf in der App mehr) werden Seed-Einträge **gemergt**: neue Tasks anlegen, bei bestehenden nur Felder überschreiben, die im Seed gesetzt sind und die Nutzer nicht geändert haben (`advice`, `subtasks` nur ergänzen). Häkchen, Kommentare, Briefings, eigene Tasks bleiben immer erhalten. Das ist der Migrationsmechanismus für spätere Inhaltslieferungen.
 
 Merge-Mechanik: Ein Feld gilt als "vom Nutzer geändert", wenn sein aktueller Wert vom `seed_snapshot` abweicht. Nur Felder, die noch dem Snapshot entsprechen, werden auf den neuen Seed-Wert gesetzt; danach wird der Snapshot aktualisiert. Teilschritte werden über `seed_key` (= Seed-Titel) abgeglichen und nur ergänzt, nie gelöscht oder umbenannt.
+
+Inhaltspakete (004): `seed.json` (oder ein Paket im selben Format per `node scripts/seed.mjs --file <paket.json>`, alle Blöcke optional) darf `costs` und `recurring` mitliefern, jede Zeile mit `seed_key`. Ergänzt wird per `seed_key`; bestehende Zeilen werden feldweise wie Aufgaben aktualisiert, eine `costs`-Zeile aber nie mehr angefasst, sobald sie über `geschaetzt` hinaus ist, ein `paid_on` hat oder ihr Betrag von Hand geändert wurde. Formatbeispiel: `content/beispiel-004.json`, Kurzanleitung: `content/README.md`.
+
+Vormerkung für 007 (Finanz-Dashboard): Kennzahl „Zahlungen in 7 Tagen“ (aus `due_on`), Sortierfunktion über `sort`, Beleg-Pflicht: bei `tax_relevant` wird `receipt_url` beim Setzen von `paid_on` eingefordert, Jahresbeträge in `recurring` beim Erfassen durch 12 teilen, Puffer-Betrag aus `buffer_pct` vorschlagen, Doppelmiete aus `move_out_s`/`move_out_a` berechnen.
 
 Abgeleitete Logik (Frontend):
 - `blocked` = mindestens ein Task in `blocked_by` ist nicht `done`
@@ -102,6 +110,7 @@ spatzlbau/
 ├── manifest.json, sw.js, icons/
 ├── supabase/schema.sql      Tabellen, RLS, allowlist, export_state, Realtime
 ├── seed.json
+├── content/               Inhaltspakete für den Seed-Merge (004)
 ├── scripts/claude-result.mjs, scripts/seed.mjs   (Node, nutzen .env mit SERVICE_ROLE_KEY)
 ├── reference/               v2-Prototyp
 ├── BRIEFING.md              diese Datei

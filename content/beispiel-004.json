@@ -1,0 +1,44 @@
+{
+  "_hinweis": "Beispiel-Inhaltspaket (Auftrag 004). Gleiches Format wie seed.json, alle Blöcke optional; einspielen mit: node scripts/seed.mjs --file content/beispiel-004.json [--dry]. Zum Testen der Merge-Regeln – nicht für die echte Datenbank gedacht.",
+  "costs": [
+    {
+      "seed_key": "umzugsfirma-schaetzung",
+      "task_id": "umzugsfirma",
+      "label": "Umzugsunternehmen (Schätzung)",
+      "kind": "einmalig",
+      "apartment": "N",
+      "status": "geschaetzt",
+      "amount": 1500,
+      "belongs_to": "B",
+      "tax_relevant": true,
+      "note": "Richtwert 35 m³, 3. OG ohne Aufzug → 2. OG mit Aufzug"
+    },
+    {
+      "seed_key": "umzugsfirma-angebot-a",
+      "task_id": "umzugsfirma",
+      "label": "Angebot Firma A",
+      "kind": "einmalig",
+      "apartment": "N",
+      "status": "angebot",
+      "amount": 1420,
+      "due_on": "2026-12-15",
+      "belongs_to": "B",
+      "tax_relevant": true
+    },
+    {
+      "seed_key": "puffer",
+      "task_id": null,
+      "label": "Puffer",
+      "kind": "einmalig",
+      "status": "geschaetzt",
+      "amount": 0,
+      "belongs_to": "B",
+      "note": "Betrag schlägt 007 aus settings.buffer_pct vor"
+    }
+  ],
+  "recurring": [
+    { "seed_key": "kaltmiete", "label": "Kaltmiete", "amount_s": null, "amount_a": null, "amount_n": null, "sort": 0 },
+    { "seed_key": "nebenkosten", "label": "Nebenkosten", "amount_s": null, "amount_a": null, "amount_n": null, "sort": 1 },
+    { "seed_key": "internet", "label": "Internet", "amount_s": null, "amount_a": null, "amount_n": null, "sort": 2 }
+  ]
+}

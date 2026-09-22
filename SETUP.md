@@ -166,7 +166,7 @@ Supabase Free macht keine automatischen Datenbank-Backups. Deshalb sichert der W
    ```bash
    node scripts/restore.mjs backup-2026-09-22.json.enc --dry
    ```
-   Erwartet: alle fünf Tabellen mit Zeilenzahlen und „keine Abweichungen“.
+   Erwartet: alle sieben Tabellen mit Zeilenzahlen und „keine Abweichungen“.
 5. Ab dann läuft es täglich. Kontrolle einmal pro Woche: Actions-Tab, letzter Backup-Lauf grün.
 
 **Wiederherstellen (Notfall):** Datei aus dem Artefakt herunterladen, dann

@@ -10,13 +10,15 @@ import { resolve } from 'node:path';
 import { loadEnv, restClient } from './lib.mjs';
 import { encrypt } from './backup-crypto.mjs';
 
-// tables in dependency order; `costs`, `recurring` join the list with docs/changes/004
+// tables in dependency order (docs/changes/004 added costs and recurring)
 export const TABLES = {
   allowlist: { key: 'person', select: 'person,last_seen_version' },
   settings: { key: 'key', select: 'key,value,updated_at', filter: 'key=neq.export_token' },
   tasks: { key: 'id', select: '*' },
   subtasks: { key: 'id', select: '*' },
   comments: { key: 'id', select: '*' },
+  costs: { key: 'id', select: '*' },
+  recurring: { key: 'id', select: '*' },
 };
 
 export async function dump(db) {
