@@ -1,6 +1,22 @@
 {
   "entries": [
     {
+      "version": "2026.09.22.6",
+      "title": "Suchen: tippen, finden, dort sein",
+      "new": [
+        "Oben gibt es jetzt ein Suchfeld – tippe ein Wort, finde die Aufgabe, tippe drauf und du bist dort.",
+        "Gesucht wird auch in den Teilschritten: „einschreiben“ findet die Kündigung, der passende Teilschritt steht unter dem Titel.",
+        "Umlaute musst du nicht treffen: „kuendigen“ findet dasselbe wie „kündigen“."
+      ],
+      "improved": [
+        "Beim Suchen klappt alles Zusammengeklappte von selbst auf, und erledigte Treffer stehen ausgegraut am Ende.",
+        "Tippst du etwas ins Suchfeld, verschwindet ein aktiver Filter solange – löschst du die Eingabe, ist er wieder da."
+      ],
+      "fixed": [
+        "Beim Tippen bleibt der Cursor dort stehen, wo er war, auch wenn sich die Liste in dem Moment ändert."
+      ]
+    },
+    {
       "version": "2026.09.22.5",
       "title": "Kosten: was der Umzug kostet, an einer Stelle",
       "new": [
