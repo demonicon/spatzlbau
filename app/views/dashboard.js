@@ -6,6 +6,7 @@ import { OWN } from '../ui/labels.js';
 import { state, ui, phases, einzug } from '../state.js';
 import { FILTERS, matches, count, atClaude, isWaiting } from '../filters.js';
 import { listHTML } from '../ui/task.js';
+import { detailHTML } from '../ui/detail.js';
 import { compareVersions, hasUnread } from '../changelog.js';
 
 const DAY = 86400000;
@@ -44,9 +45,11 @@ function headHTML() {
       <span class="spacer"></span>
       <span class="status" id="status" role="status"></span>
     </div>
+    <div class="hero-row">
     <div class="hero">${hero}</div>
     ${showDate ? `<div class="date-edit"><label class="hint" for="einzug">Schlüsselübergabe neue Wohnung</label><input type="date" id="einzug" value="${esc(base)}"></div>` : ''}
     ${gatesHTML()}
+    </div>
   </header>`;
 }
 
@@ -105,8 +108,8 @@ function tabsHTML() {
     })
     .join('');
   const ph = list.find((p) => p.id === ui.phase);
-  return `<nav class="tabs" role="tablist" aria-label="Phasen">${tabs}</nav>
-    <p class="gate-text">${esc(ph?.gate || '')}</p>`;
+  return `<div class="tabs-row"><nav class="tabs" role="tablist" aria-label="Phasen">${tabs}</nav>
+    <p class="gate-text">${esc(ph?.gate || '')}</p></div>`;
 }
 
 function addBoxHTML(phase) {
@@ -132,15 +135,29 @@ export function dashboardView() {
         <span class="filter-count">${list.length} in dieser Phase</span>
       </div>`
     : '';
+  // docs/changes/006: on wide screens the Akte of the open task is a side panel next to the list
+  const panelTask = ui.wide && ui.expanded ? state.tasks.find((t) => t.id === ui.expanded) : null;
   return (
+    `<div class="board${panelTask ? ' has-panel' : ''}"><div class="col-list">` +
     headHTML() +
     kpisHTML() +
     tabsHTML() +
     filterRow +
     `<div class="list">${listHTML(list, 'Nichts in diesem Filter.')}${addBoxHTML(ui.phase)}</div>` +
+    `</div>` +
+    (panelTask ? panelHTML(panelTask) : '') +
+    `</div>` +
     (ui.changelogOpen ? changelogHTML() : '') +
     footerHTML()
   );
+}
+
+function panelHTML(t) {
+  const ph = phases().find((p) => p.id === t.phase);
+  return `<aside class="panel" id="panel" data-id="${t.id}" aria-label="Akte: ${esc(t.title)}">
+    <div class="panel-head"><span class="hint">Phase ${t.phase}${ph ? ' · ' + esc(ph.name) : ''}</span><span class="spacer"></span><button class="ico" data-act="panel-close" aria-label="Akte schließen">×</button></div>
+    ${detailHTML(t)}
+  </aside>`;
 }
 
 /* ---------- changelog (docs/changes/005): version in the footer, "Was ist neu?" panel ---------- */

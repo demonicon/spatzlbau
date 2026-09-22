@@ -25,7 +25,8 @@ export function taskHTML(t) {
   const bl = blockers(t);
   const sp = subProgress(t);
   const coms = comsOf(t.id).length;
-  const cls = ['task', t.done ? 'done' : '', blocked ? 'blocked' : '', ui.expanded === t.id ? 'open' : ''].join(' ');
+  const open = ui.expanded === t.id;
+  const cls = ['task', t.done ? 'done' : '', blocked ? 'blocked' : '', open ? 'open' : '', open && ui.wide ? 'selected' : ''].join(' ');
   const dueCls = isLate(t) ? 'late' : isCritical(t) ? 'crit' : '';
   const claude = t.type === 'claude' ? `<span class="tag claude">Claude · ${STEP_LABEL[t.status] || 'Briefing offen'}</span>` : t.type === 'assist' ? `<span class="tag">Claude unterstützt</span>` : '';
   const wait = t.wait_on ? `<span class="tag">wartet auf ${OWN[t.wait_on]}</span>` : '';
@@ -38,7 +39,7 @@ export function taskHTML(t) {
       <button class="t" data-act="open" aria-expanded="${ui.expanded === t.id}">${esc(t.title)}</button>
       <div class="meta"><span class="own ${t.owner}">${OWN[t.owner]}</span><span class="due ${dueCls}">${esc(dueLabel(t))}</span>${subs}${com}${claude}${wait}${block}</div>
     </div>
-    ${ui.expanded === t.id ? detailHTML(t) : ''}
+    ${open && !ui.wide ? detailHTML(t) : ''}
   </div>`;
 }
 

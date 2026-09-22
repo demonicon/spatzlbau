@@ -32,6 +32,7 @@ const UI_KEY = 'spatzlbau-ui';
 ui.filter = 'week';
 ui.phase = null;
 ui.dateEdit = false;
+ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
 ui.changelogUnreadOnly = false; // auto-opened panel shows only the versions newer than last_seen_version
@@ -140,13 +141,27 @@ function closeChangelog() {
 }
 // opened via a task link (#task=<id>)? then the person has a goal – no automatic panel
 const openedViaTaskLink = () => /^#task=/.test(location.hash);
+const hashTaskId = () => (openedViaTaskLink() ? decodeURIComponent(location.hash.slice('#task='.length)) : null);
 function openTaskFromHash() {
-  const id = decodeURIComponent(location.hash.slice('#task='.length));
-  const t = byId(id);
-  if (!t) return;
+  const t = byId(hashTaskId());
+  if (!t) return false;
   ui.phase = t.phase;
-  ui.filter = null;
+  if (ui.filter && !FILTERS[ui.filter].test(t)) ui.filter = null;
+  ui.expanded = t.id;
+  return true;
+}
+// the open task lives in the URL, so a link to it can be shared (docs/changes/006)
+function syncHash() {
+  const want = ui.expanded ? '#task=' + encodeURIComponent(ui.expanded) : '';
+  if (location.hash === want) return;
+  history.replaceState(null, '', location.pathname + location.search + want);
+}
+function setExpanded(id) {
   ui.expanded = id;
+  ui.confirm = null;
+  ui.editingAdvice = null;
+  syncHash();
+  render();
 }
 
 /* ---------- seed ---------- */
@@ -181,7 +196,24 @@ function wireEvents() {
   const view = $('#view');
   view.addEventListener('focusout', () => setTimeout(() => renderPending && !isTyping() && render(), 0));
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && ui.changelogOpen) closeChangelog();
+    if (e.key !== 'Escape') return;
+    if (ui.changelogOpen) closeChangelog();
+    else if (ui.expanded && ui.wide) setExpanded(null); // Escape empties the side panel
+  });
+  // browser back/forward or a pasted link: follow the hash
+  window.addEventListener('hashchange', () => {
+    if (!state.loaded) return;
+    const id = hashTaskId();
+    if (id && byId(id)) openTaskFromHash();
+    else if (!id) ui.expanded = null;
+    render();
+  });
+  // layout mode: the Akte moves between inline (narrow) and side panel (wide) – same behaviour, other place
+  const mq = matchMedia('(min-width: 900px)');
+  ui.wide = mq.matches;
+  mq.addEventListener('change', () => {
+    ui.wide = mq.matches;
+    render();
   });
 
   view.addEventListener('change', (e) => {
@@ -191,7 +223,7 @@ function wireEvents() {
       setSetting('einzugstermin', el.value || '').catch(fail);
       return;
     }
-    const row = el.closest('.task');
+    const row = el.closest('[data-id]'); // task row, or the side panel
     const t = row ? byId(row.dataset.id) : null;
     if (el.dataset.act === 'sub-done') {
       setSubtaskDone(el.closest('.sub').dataset.sub, el.checked)
@@ -231,23 +263,23 @@ function wireEvents() {
     if (tile) {
       const key = tile.dataset.filter;
       ui.filter = ui.filter === key ? null : FILTERS[key] ? key : null;
-      ui.expanded = null;
-      render();
+      if (!ui.wide) setExpanded(null); // inline Akte closes with the list change; the side panel stays open
+      else render();
       return;
     }
     // gate bar and phase tabs select the phase; the filter stays
     const ph = e.target.closest('[data-phase]');
     if (ph) {
       ui.phase = parseInt(ph.dataset.phase, 10);
-      ui.expanded = null;
       saveUI();
-      render();
+      if (!ui.wide) setExpanded(null);
+      else render();
       return;
     }
     const b = e.target.closest('[data-act]');
     if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT') return;
     const act = b.dataset.act;
-    const row = b.closest('.task');
+    const row = b.closest('[data-id]'); // task row, or the side panel
     const t = row ? byId(row.dataset.id) : null;
     const input = (sel, root = row) => $(sel, root);
     try {
@@ -286,10 +318,10 @@ function wireEvents() {
           await applySeed('Seed eingespielt');
           return;
         case 'open':
-          ui.expanded = ui.expanded === t.id ? null : t.id;
-          ui.confirm = null;
-          ui.editingAdvice = null;
-          render();
+          setExpanded(ui.expanded === t.id ? null : t.id);
+          return;
+        case 'panel-close':
+          setExpanded(null);
           return;
         case 'unblock':
           await updateTask(t.id, { blocked_by: (t.blocked_by || []).filter((id) => id !== b.dataset.ref) });
@@ -346,6 +378,7 @@ function wireEvents() {
         case 'del-yes':
           ui.expanded = null;
           ui.confirm = null;
+          syncHash();
           await deleteTask(t.id);
           toast('Aufgabe gelöscht');
           return;
@@ -370,8 +403,7 @@ function wireEvents() {
           const nt = byId(id);
           // keep the new task visible: drop the filter if it would hide it
           if (nt && ui.filter && !FILTERS[ui.filter].test(nt)) ui.filter = null;
-          ui.expanded = id;
-          render();
+          setExpanded(id);
           toast('Aufgabe hinzugefügt');
           return;
         }

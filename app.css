@@ -224,3 +224,58 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; font-size: var(--fs-meta); opacity: 0; transition: opacity 0.2s; pointer-events: none; max-width: 90vw; text-align: center; z-index: 10; }
 .toast.show { opacity: 1; }
+
+/* =====================================================================
+   docs/changes/006 – wider screens. Everything above this line is the
+   380-px layout and stays untouched; these queries only add on top.
+   ≤ 599 px mobile · 600–899 px tablet · ≥ 900 px desktop (two columns)
+   ===================================================================== */
+@media (min-width: 600px) {
+  .wrap { max-width: 760px; }
+  /* countdown and gate bar side by side; the date editor drops below */
+  .hero-row { display: flex; align-items: flex-end; gap: 10px 24px; flex-wrap: wrap; }
+  .hero-row .hero { flex: 0 0 auto; }
+  .hero-row .hero .t { max-width: 170px; }
+  .hero-row .gates { flex: 1 1 300px; min-width: 0; margin-top: 0; }
+  .hero-row .date-edit { flex: 1 0 100%; order: 3; }
+  /* wider tiles: three per row */
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* five equal tabs, no scrolling: number + name in one line (name may wrap), count underneath */
+  .tabs [role=tab] { flex: 1 1 0; min-width: 0; white-space: normal; padding-left: 4px; padding-right: 4px; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; align-items: baseline; align-content: end; }
+  .tabs [role=tab] .cnt { grid-column: 2; }
+}
+
+@media (min-width: 900px) {
+  .wrap { max-width: 1280px; }
+  .board { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .board.has-panel { grid-template-columns: minmax(0, 1.4fr) minmax(340px, 440px); }
+  .col-list { min-width: 0; }
+  /* the Akte as a sticky side panel that scrolls on its own */
+  .panel { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; min-width: 0; border-left: 1px solid var(--line); background: var(--paper); padding: 0 var(--gutter) 24px; }
+  .panel-head { display: flex; align-items: center; gap: 6px; padding: 8px 0 0; min-height: 52px; }
+  .panel .detail { margin: 0; }
+  .task.selected { border-left: 3px solid var(--ink); margin-left: -3px; background: var(--card); }
+  /* tabs and gate text in one row */
+  .tabs-row { display: flex; align-items: flex-end; gap: 8px 20px; margin-top: 22px; padding: 0 var(--gutter); flex-wrap: wrap; }
+  .tabs-row .tabs { flex: 1 1 520px; min-width: 0; margin: 0; padding: 0; gap: 10px; }
+  .tabs-row .gate-text { flex: 0 1 280px; min-width: 0; margin: 0 0 6px; text-wrap: pretty; }
+  /* with the side panel open the list column is narrower: gate text moves under the tabs */
+  .has-panel .tabs-row .gate-text { flex: 1 0 100%; margin: 8px 0 0; }
+  /* KPI tiles as one uniform row: Offen, the three owners, then the six filters */
+  .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .kpi-top, .owners { display: contents; }
+  .kpi-open { background: var(--card); min-height: 72px; padding: 10px 10px 8px; }
+  .kpi-open .n { font-size: var(--fs-tile); }
+  .kpi-open .l { margin-top: 5px; }
+  .owner { min-height: 72px; padding: 10px 10px 8px; border-radius: 0; flex-direction: column-reverse; align-items: flex-start; justify-content: center; gap: 5px; font-weight: 400; font-size: var(--fs-micro); border-bottom: 2px solid transparent; }
+  .owner b { font-size: var(--fs-tile); font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+  .owner[aria-pressed=true] { box-shadow: none; border-bottom-color: currentColor; }
+  .tile { min-height: 72px; padding: 10px 10px 8px; }
+  .tile .l { line-height: 1.25; overflow-wrap: anywhere; }
+  .tile .l span { display: none; } /* sub-counts only in the two-column layout */
+}
+
+/* ten tiles in one row once the list column is wide enough for it */
+@media (min-width: 1100px) {
+  .board:not(.has-panel) .kpis { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+}

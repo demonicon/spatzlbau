@@ -79,6 +79,8 @@ Ein Dashboard-Screen statt vier Sichten (`docs/changes/002-dashboard.md`):
 3. **Phasen-Tabs** – fünf Tabs (Nummer, Kurzname, Zähler: offen bzw. Treffer im Filter), darunter der Gate-Text. Der zuletzt aktive Tab wird pro Gerät gemerkt; beim Öffnen ist der Filter „Diese Woche“ aktiv (eigene und gemeinsame Aufgaben, offen, nicht blockiert, nicht gerade bei Claude, plus alles, was auf mich wartet).
 4. **Aufgabenliste** der gewählten Phase nach Fälligkeit, Zeile: Häkchen, Titel, Owner-Chip, Fälligkeit („überfällig seit n Tagen“ rot, fristkritisch gelb, sonst „bis dd.mm.“), Teilschritte, Kommentare, Claude-Zustand, wartet-auf, blockiert-durch. Darunter „Neue Aufgabe in Phase n“ (bei Filter „Bei Claude“ als Claude-Aufgabe vorbelegt). Fußzeile: Version, Neu laden, Seed aktualisieren, Abmelden.
 
+Breiten (Auftrag 006): bis 599 px Handy (Akte inline unter der Aufgabe), 600–899 px Tablet (eine Spalte bis 760 px, breitere Kacheln, Tabs ohne Scrollen), ab 900 px Desktop (bis 1280 px zentriert; Liste links, Akte rechts als Seitenpanel, das beim Klicken in der Liste offen bleibt; Escape/× schließt). Die offene Aufgabe steht in der URL (`#task=<id>`) und lässt sich als Link teilen – auf allen Breiten.
+
 Die früheren Sichten „Diese Woche“, „Im Blick“, „Bei Claude“ sind vollständig in den Filtern aufgegangen. Abweichungen vom Design und selbst entschiedene Zustände: `docs/changes/002-abweichungen.md`.
 
 Aufgaben-Detail ("Akte"): Titel/Owner/Typ/Wartet-auf/Offset editierbar, Abhängigkeiten, Teilschritte, Briefing (nur bei type claude), fünf klappbare Beratungsfelder (editierbar, Platzhaltertext wenn leer), Kommentare mit Autor und Zeit, Löschen mit Inline-Bestätigung.
