@@ -130,6 +130,8 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .col .chev { font-size: 18px; color: var(--ink-3); width: 24px; text-align: center; margin-left: 4px; }
 .col-body { padding: 0 var(--gutter); }
 .col-more { min-height: 48px; padding: 10px 0; font-size: var(--fs-meta); color: var(--ink-2); text-decoration: underline; display: block; }
+.col-sub { width: 100%; min-height: 48px; padding: 10px 0; font-size: var(--fs-meta); color: var(--ink-3); display: flex; align-items: center; gap: var(--gap); border-bottom: 1px solid var(--line); }
+.col-sub .chev { margin-left: auto; font-size: 18px; width: 24px; text-align: center; }
 .empty { color: var(--ink-3); font-size: var(--fs-ui); padding: 14px 0; margin: 0; }
 .task { display: grid; grid-template-columns: var(--tap) 1fr; align-items: start; border-bottom: 1px solid var(--line); padding: 4px 0; }
 .task .check { width: var(--tap); height: var(--tap); margin: 0; appearance: none; -webkit-appearance: none; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }

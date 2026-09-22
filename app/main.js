@@ -38,6 +38,7 @@ ui.dateEdit = false;
 ui.openCols = new Set(); // collapsible column ("Bei Anna") that the person opened
 ui.allCols = new Set(); // columns showing more than the first eight rows
 ui.doneCols = new Set(); // columns showing their done tasks as well
+ui.blockedCols = new Set(); // columns with "N warten auf einen Vorgänger" unfolded
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
@@ -175,9 +176,10 @@ function openTaskFromHash() {
 // the task has to be visible: open its column, show it even past the eighth row or among the done ones
 function revealTask(t) {
   for (const c of columns()) {
-    if (![...c.open, ...c.done].some((x) => x.id === t.id)) continue;
+    if (![...c.open, ...c.blocked, ...c.done].some((x) => x.id === t.id)) continue;
     ui.openCols.add(c.key);
     if (c.done.some((x) => x.id === t.id)) ui.doneCols.add(c.key);
+    if (c.blocked.some((x) => x.id === t.id)) ui.blockedCols.add(c.key);
   }
 }
 // the open task lives in the URL, so a link to it can be shared (docs/changes/006)
@@ -349,6 +351,10 @@ function wireEvents() {
           return;
         case 'col-done':
           ui.doneCols.add(b.dataset.ref);
+          render();
+          return;
+        case 'col-blocked':
+          ui.blockedCols.has(b.dataset.ref) ? ui.blockedCols.delete(b.dataset.ref) : ui.blockedCols.add(b.dataset.ref);
           render();
           return;
         case 'panel-close':

@@ -136,11 +136,21 @@ function phaseChipsHTML() {
 
 /* ---------- the columns: who has to act (docs/changes/009) ---------- */
 
-// blocked last, then by deadline – a blocked task is visible but never at the top
-const order = (a, b) => isBlocked(a) - isBlocked(b) || a.offset_days - b.offset_days || a.sort - b.sort;
+const order = (a, b) => a.offset_days - b.offset_days || a.sort - b.sort;
 
+// A column holds three lists: what can be done now, what waits for another task
+// (collapsed, review decision after commit 2) and what is already ticked off.
 function column(key, name, cls, tasks, collapsible = false) {
-  return { key, name, cls, collapsible, open: tasks.filter((t) => !t.done).sort(order), done: tasks.filter((t) => t.done) };
+  const open = tasks.filter((t) => !t.done);
+  return {
+    key,
+    name,
+    cls,
+    collapsible,
+    open: open.filter((t) => !isBlocked(t)).sort(order),
+    blocked: open.filter(isBlocked).sort(order),
+    done: tasks.filter((t) => t.done),
+  };
 }
 
 export function columns() {
@@ -155,44 +165,53 @@ export function columns() {
       column('you', OWN[you], you, pool.filter((t) => t.owner === you)),
     ];
   }
-  // phone: my own things first, then what waits for me, the other person collapsed
+  // phone: my own things first, then what waits for me, then shared, the other person collapsed
   const waiting = pool.filter((t) => waitsOnMe(t, me));
   const isWait = new Set(waiting.map((t) => t.id));
+  const rest = (owner) => pool.filter((t) => t.owner === owner && !isWait.has(t.id));
   return [
-    column('me', 'Ich', me, pool.filter((t) => ['B', me].includes(t.owner) && !isWait.has(t.id))),
+    column('me', 'Ich', me, rest(me)),
     column('wait', 'Wartet auf mich', 'wait', waiting),
-    column('you', 'Bei ' + OWN[you], you, pool.filter((t) => t.owner === you && !isWait.has(t.id)), true),
+    column('B', 'Gemeinsam', 'B', rest('B')),
+    column('you', 'Bei ' + OWN[you], you, rest(you), true),
   ];
 }
 
 function columnNote(c) {
-  const late = c.open.filter(isLate).length;
+  const all = [...c.open, ...c.blocked];
+  const late = all.filter(isLate).length;
   if (late) return late + ' überfällig';
-  const crit = c.open.filter(isCritical).length;
-  if (crit) return crit + ' fristkritisch';
-  const bl = c.open.filter(isBlocked).length;
-  return bl ? bl + ' blockiert' : '';
+  const crit = all.filter(isCritical).length;
+  return crit ? crit + ' fristkritisch' : '';
 }
 
 function columnHTML(c) {
-  const holdsOpenTask = !!ui.expanded && [...c.open, ...c.done].some((t) => t.id === ui.expanded);
-  // collapsed only in the normal view: with a filter on, the hits must be visible everywhere
-  const collapsed = c.collapsible && !ui.openCols.has(c.key) && !holdsOpenTask && !ui.filter;
+  const has = (list) => !!ui.expanded && list.some((t) => t.id === ui.expanded);
+  const total = c.open.length + c.blocked.length;
+  const collapsed = c.collapsible && !ui.openCols.has(c.key) && !has([...c.open, ...c.blocked, ...c.done]) && !ui.filter;
   const all = ui.allCols.has(c.key) || c.open.findIndex((t) => t.id === ui.expanded) >= CAP;
   const rows = all ? c.open : c.open.slice(0, CAP);
-  const showDone = ui.doneCols.has(c.key) || c.done.some((t) => t.id === ui.expanded) || !!FILTERS[ui.filter]?.done;
+  const showDone = ui.doneCols.has(c.key) || has(c.done) || !!FILTERS[ui.filter]?.done;
+  // "N warten auf einen Vorgänger": collapsed, opens with a filter or when a link leads there
+  const showBlocked = ui.blockedCols.has(c.key) || has(c.blocked) || !!ui.filter;
   const note = columnNote(c);
-  const inner = `<span class="own ${c.cls}">${esc(c.name)}</span><span class="cnt">${c.open.length} offen</span>${note ? `<span class="note">${esc(note)}</span>` : ''}`;
+  const inner = `<span class="own ${c.cls}">${esc(c.name)}</span><span class="cnt">${total} offen</span>${note ? `<span class="note">${esc(note)}</span>` : ''}`;
   const head = c.collapsible
     ? `<button class="col-head" data-act="col-toggle" data-ref="${c.key}" aria-expanded="${!collapsed}" aria-controls="col-${c.key}">${inner}<span class="chev" aria-hidden="true">${collapsed ? '+' : '−'}</span></button>`
     : `<div class="col-head">${inner}</div>`;
   // an empty column keeps its head (the count is the information) but costs no further space
-  const body = collapsed || !(c.open.length + c.done.length)
-    ? ''
-    : `<div class="col-body" id="col-${c.key}">
+  const body =
+    collapsed || !(total + c.done.length)
+      ? ''
+      : `<div class="col-body" id="col-${c.key}">
         ${rows.map(taskHTML).join('')}
+        ${!all && c.open.length > CAP ? `<button class="col-more" data-act="col-all" data-ref="${c.key}">weitere ${c.open.length - CAP} zeigen →</button>` : ''}
+        ${
+          c.blocked.length
+            ? `<button class="col-sub" data-act="col-blocked" data-ref="${c.key}" aria-expanded="${showBlocked}" aria-controls="blocked-${c.key}">${c.blocked.length} ${c.blocked.length === 1 ? 'wartet' : 'warten'} auf einen Vorgänger<span class="chev" aria-hidden="true">${showBlocked ? '−' : '+'}</span></button>${showBlocked ? `<div id="blocked-${c.key}">${c.blocked.map(taskHTML).join('')}</div>` : ''}`
+            : ''
+        }
         ${showDone ? c.done.map(taskHTML).join('') : ''}
-        ${!all && c.open.length > CAP ? `<button class="col-more" data-act="col-all" data-ref="${c.key}">alle ${c.open.length} zeigen →</button>` : ''}
         ${c.done.length && !showDone ? `<button class="col-more" data-act="col-done" data-ref="${c.key}">${c.done.length} erledigt zeigen</button>` : ''}
       </div>`;
   return `<section class="col ${c.key} own-${c.cls}" data-col="${c.key}">${head}${body}</section>`;
@@ -217,7 +236,7 @@ function addBoxHTML() {
 export function dashboardView() {
   const filter = ui.filter && FILTERS[ui.filter] ? ui.filter : null;
   const cols = columns();
-  const hits = cols.reduce((n, c) => n + c.open.length + c.done.length, 0);
+  const hits = cols.reduce((n, c) => n + c.open.length + c.blocked.length + c.done.length, 0);
   const filterRow = filter
     ? `<div class="filter-row">
         <button class="filter-chip" data-act="filter-clear" aria-label="Filter entfernen">Filter: ${FILTERS[filter].label}<span class="x" aria-hidden="true">×</span></button>
