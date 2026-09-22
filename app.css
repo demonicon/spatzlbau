@@ -201,7 +201,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .col.own-S .col-head { border-bottom-color: var(--seb); }
 .col.own-A .col-head { border-bottom-color: var(--anna); }
 .col.own-B .col-head { border-bottom-color: var(--both); }
-.col.own-wait .col-head { border-bottom-color: var(--danger); }
+.col.own-wait .col-head { border-bottom-color: var(--ink); }
 .col.own-C .col-head { border-bottom-color: var(--claude); }
 .col .cnt { font-size: var(--fs-small); color: var(--ink-2); }
 .col .note { font-size: var(--fs-micro); color: var(--ink-3); margin-left: auto; text-align: right; }
@@ -230,13 +230,15 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .own.A { background: var(--anna-bg); color: var(--anna); }
 .own.B { background: var(--both-bg); color: var(--both); }
 .own.C { background: var(--claude-bg); color: var(--claude); }
-.own.wait { background: var(--danger-bg); color: var(--danger); }
+/* "wartet auf dich" is urgent, but neither a deadline nor irreversible: weight and an outline
+   in text colour carry it, red stays with "überfällig" and with what cannot be undone (015) */
+.own.wait { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .due { padding: 0 3px; margin: 0 -3px; }
 .due.crit { background: var(--mark); color: var(--ink); font-weight: 600; }
 .due.late { color: var(--danger); font-weight: 600; }
 .tag { font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid var(--line); }
 .tag.claude { background: var(--claude-bg); color: var(--claude); border-color: transparent; }
-.tag.wait-me { background: var(--danger-bg); color: var(--danger); border-color: transparent; font-weight: 600; }
+.tag.wait-me { background: var(--card); color: var(--ink); border-color: var(--ink); font-weight: 600; }
 .tag.block { border: 0; padding: 0; color: var(--ink-3); text-decoration: underline dotted; text-underline-offset: 2px; font-size: var(--fs-micro); }
 .tag.block:hover { color: var(--ink); }
 .muted { color: var(--ink-3); }
@@ -269,7 +271,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .akte-title:hover { box-shadow: inset 0 0 0 1px var(--line); }
 .akte-title:focus { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 .akte-meta { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; font-size: var(--fs-small); color: var(--ink-2); margin: 8px 0 0; padding-left: 34px; }
-.wait-banner { margin: 14px 0 0; padding: 10px 12px; background: var(--danger-bg); color: var(--danger); font-size: var(--fs-meta); font-weight: 600; }
+.wait-banner { margin: 14px 0 0; padding: 10px 12px; background: var(--paper); color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); font-size: var(--fs-meta); font-weight: 600; }
 .akte-more { border-top: 1px solid var(--line); margin-top: 16px; text-decoration: none; }
 .akte-foot { margin-top: 16px; }
 .link-plain { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
