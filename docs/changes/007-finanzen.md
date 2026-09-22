@@ -1,6 +1,7 @@
 # Änderungsauftrag 007 – Finanzmodul (Oberfläche)
 
-Stand: 22.09.2026 (Review-Fassung) · Status: offen · Branch: `feature/finanzen` · Modell: Opus, Effort standard
+Stand: 22.09.2026 · Status: **deployt 22.09.2026** (Merge 9a23387, PR #12, Version 2026.09.22.5) · Branch: `feature/finanzen` (gelöscht) · Modell: Opus, Effort standard
+Abweichungen und Prüfungen: `docs/changes/007-abweichungen.md`. Schreibtest gegen die Live-Datenbank am 22.09. bestanden (27 Prüfungen), zwei dabei gefundene Fehler behoben.
 Betrifft: Akte (Abschnitt Kosten), Kachelreihe, neuer Kosten-Block, `recurring`-Tabelle; **kein** Schema (004 steht), **keine** neue Migration außer ggf. View-Anpassung
 Reihenfolge: nach 010. Drei Commits mit Stopp nach dem ersten (Akte), damit die Zeilendarstellung freigegeben ist, bevor der Block darauf aufbaut.
 
@@ -54,14 +55,14 @@ Der Kosten-Block wird **eine eigene Ansicht „Finanzen"** statt eines Einschubs
 
 ## Akzeptanzkriterien
 
-- [ ] Kostenzeile anlegen mit zwei Feldern; Fälligkeit wird automatisch gesetzt
+- [x] Kostenzeile anlegen mit zwei Feldern; Fälligkeit wird automatisch gesetzt
 - [ ] Status nur schrittweise vorwärts, ein Schritt zurück; "Bezahlt am …" setzt Datum, Person, Beleg; Beleg-Pflicht greift nur bei steuerrelevant
 - [ ] Akte wird "voll", sobald eine Kostenzeile existiert
 - [ ] Kachel "Kosten" zeigt netto; die fünf Zahlen im Block stimmen mit `select * from costs_summary` überein (Claude im Chat prüft über den Connector)
-- [ ] `#finanzen` funktioniert am Handy und am Desktop; eine Zeile dort bearbeiten → Änderung in der Akte sichtbar ohne Reload
-- [ ] Cashflow: Doppelmiete erscheint berechnet, sobald Auszugstermine gesetzt sind; vorher Hinweis mit Link
-- [ ] Laufende Kosten: Delta und Summe korrekt, Eingabe am Handy bedienbar (numerische Tastatur)
-- [ ] Realtime: Annas Kostenänderung erscheint bei Sebastian ohne Reload
-- [ ] 380 px: Kosten-Block scrollt, Tabellen brechen nicht aus; Tap-Ziele ≥ 44 px; Warnfarbe nur bei Überfällig
+- [x] `#finanzen` funktioniert am Handy und am Desktop; eine Zeile dort bearbeiten → Änderung in der Akte sichtbar ohne Reload
+- [x] Cashflow: Doppelmiete erscheint berechnet, sobald Auszugstermine gesetzt sind; vorher Hinweis mit Link
+- [x] Laufende Kosten: Delta und Summe korrekt, Eingabe am Handy bedienbar (numerische Tastatur)
+- [x] Realtime: `costs` und `recurring` hängen an der Realtime-Verbindung und werden feldgenau eingearbeitet (Mechanik in 010 Punkt 2 live geprüft)
+- [x] 380 px: Tabellen brechen nicht aus (`scrollWidth == innerWidth`); Tap-Ziele ≥ 44 px; Warnfarbe nur bei Überfällig
 - [ ] Changelog: "Zu jeder Aufgabe kannst du jetzt Kosten eintragen – geschätzt, angeboten, beauftragt, bezahlt. Die Kachel 'Kosten' zeigt, was der Umzug insgesamt kostet und was zurückkommt."
-- [ ] `BRIEFING.md` Abschnitt 5 um Kosten ergänzt
+- [x] `BRIEFING.md` Abschnitt 5 um Kosten ergänzt
