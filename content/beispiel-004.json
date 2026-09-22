@@ -1,5 +1,5 @@
 {
-  "_hinweis": "Beispiel-Inhaltspaket (Auftrag 004). Gleiches Format wie seed.json, alle Blöcke optional; einspielen mit: node scripts/seed.mjs --file docs/changes/004-beispiel-inhaltspaket.json [--dry]. Zum Testen der Merge-Regeln – nicht für die echte Datenbank gedacht.",
+  "_hinweis": "Beispiel-Inhaltspaket (Auftrag 004). Gleiches Format wie seed.json, alle Blöcke optional; einspielen mit: node scripts/seed.mjs --file content/beispiel-004.json [--dry]. Zum Testen der Merge-Regeln – nicht für die echte Datenbank gedacht.",
   "costs": [
     {
       "seed_key": "umzugsfirma-schaetzung",

@@ -75,7 +75,7 @@ Ohne Intervall: alles auf Monatsbasis; Jahresbeträge teilt die App durch 12 bei
   - `split_default_s` startet mit **50** (der Auftrag nennt 55 nur als Beispiel) – über `settings` jederzeit änderbar.
   - `costs_summary` als `security_invoker`-View: die RLS von `costs` gilt; Fremde bekommen eine Zeile mit lauter `null`, keine Zahlen.
   - Export (`export_state`) liefert jetzt zusätzlich `costs`, `recurring`, `costs_summary` und die vier neuen `settings` – damit sieht Claude im Chat dieselbe Rechnung.
-- **Inhaltspakete:** `node scripts/seed.mjs --file <paket.json> [--dry]` mergt `costs`/`recurring` über `seed_key`; Beispiel: `docs/changes/004-beispiel-inhaltspaket.json`. Fehlende Blöcke sind erlaubt, `phases`/`seed_version` werden bei Paketen nicht angefasst.
+- **Inhaltspakete:** `node scripts/seed.mjs --file <paket.json> [--dry]` mergt `costs`/`recurring` über `seed_key`; Beispiel: `content/beispiel-004.json`. Fehlende Blöcke sind erlaubt, `phases`/`seed_version` werden bei Paketen nicht angefasst.
 - **Zwei Fehler beim Testen gefunden und behoben:**
   1. Der Planer schrieb fehlende Felder als `null`; `kind`, `amount`, `belongs_to`, `tax_relevant` sind aber `not null` → Spalten-Defaults im Planer ergänzt.
   2. `same()` verglich Snapshots per `JSON.stringify`; Postgres gibt `jsonb` mit eigener Schlüsselreihenfolge zurück → jeder Lauf meldete Scheinänderungen. Vergleich jetzt kanonisch (sortierte Schlüssel). Das betraf auch die bestehende Aufgaben-Logik, die bei jedem Seed-Lauf still 48 Snapshots neu schrieb.

@@ -54,7 +54,7 @@ Seed: `seed.json` in diesem Ordner enthält Phasen und 48 Aufgaben inkl. Abhäng
 
 Merge-Mechanik: Ein Feld gilt als "vom Nutzer geändert", wenn sein aktueller Wert vom `seed_snapshot` abweicht. Nur Felder, die noch dem Snapshot entsprechen, werden auf den neuen Seed-Wert gesetzt; danach wird der Snapshot aktualisiert. Teilschritte werden über `seed_key` (= Seed-Titel) abgeglichen und nur ergänzt, nie gelöscht oder umbenannt.
 
-Inhaltspakete (004): `seed.json` (oder ein Paket im selben Format per `node scripts/seed.mjs --file <paket.json>`, alle Blöcke optional) darf `costs` und `recurring` mitliefern, jede Zeile mit `seed_key`. Ergänzt wird per `seed_key`; bestehende Zeilen werden feldweise wie Aufgaben aktualisiert, eine `costs`-Zeile aber nie mehr angefasst, sobald sie über `geschaetzt` hinaus ist, ein `paid_on` hat oder ihr Betrag von Hand geändert wurde. Formatbeispiel: `docs/changes/004-beispiel-inhaltspaket.json`.
+Inhaltspakete (004): `seed.json` (oder ein Paket im selben Format per `node scripts/seed.mjs --file <paket.json>`, alle Blöcke optional) darf `costs` und `recurring` mitliefern, jede Zeile mit `seed_key`. Ergänzt wird per `seed_key`; bestehende Zeilen werden feldweise wie Aufgaben aktualisiert, eine `costs`-Zeile aber nie mehr angefasst, sobald sie über `geschaetzt` hinaus ist, ein `paid_on` hat oder ihr Betrag von Hand geändert wurde. Formatbeispiel: `content/beispiel-004.json`, Kurzanleitung: `content/README.md`.
 
 Vormerkung für 007 (Finanz-Dashboard): Kennzahl „Zahlungen in 7 Tagen“ (aus `due_on`), Sortierfunktion über `sort`, Beleg-Pflicht: bei `tax_relevant` wird `receipt_url` beim Setzen von `paid_on` eingefordert, Jahresbeträge in `recurring` beim Erfassen durch 12 teilen, Puffer-Betrag aus `buffer_pct` vorschlagen, Doppelmiete aus `move_out_s`/`move_out_a` berechnen.
 
@@ -110,6 +110,7 @@ spatzlbau/
 ├── manifest.json, sw.js, icons/
 ├── supabase/schema.sql      Tabellen, RLS, allowlist, export_state, Realtime
 ├── seed.json
+├── content/               Inhaltspakete für den Seed-Merge (004)
 ├── scripts/claude-result.mjs, scripts/seed.mjs   (Node, nutzen .env mit SERVICE_ROLE_KEY)
 ├── reference/               v2-Prototyp
 ├── BRIEFING.md              diese Datei
