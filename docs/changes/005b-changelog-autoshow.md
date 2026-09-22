@@ -1,6 +1,6 @@
 # Änderungsauftrag 005b – Changelog beim Aufruf anzeigen
 
-Stand: 22.09.2026 · Status: umgesetzt, PR offen · Branch: `feature/changelog` (auf Zuruf, statt `feature/changelog-autoshow`) · Modell: Sonnet (umgesetzt mit Opus)
+Stand: 22.09.2026 · Status: deployt 22.09.2026 (Merge 0c4203b, Pages-Lauf 15) · Branch: `feature/changelog` (auf Zuruf, statt `feature/changelog-autoshow`) · Modell: Sonnet (umgesetzt mit Opus)
 Erweitert 005. Betrifft: Changelog-Panel, `allowlist`, App-Start
 
 ## Ziel
