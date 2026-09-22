@@ -29,6 +29,10 @@ const UI_KEY = 'spatzlbau-ui';
 ui.filter = 'week';
 ui.phase = null;
 ui.dateEdit = false;
+ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
+ui.changelogOpen = false;
+ui.changelogSeen = null; // version last opened on this device
+const SEEN_KEY = 'spatzlbau-changelog-seen';
 
 /* ---------- screens ---------- */
 function show(screen) {
@@ -104,6 +108,29 @@ function loadUI() {
   try {
     const u = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
     if (Number.isInteger(u.phase)) ui.phase = u.phase;
+  } catch {}
+}
+
+/* ---------- changelog ---------- */
+async function loadChangelog() {
+  try {
+    const r = await fetch('./changelog.json', { cache: 'no-cache' });
+    if (!r.ok) throw new Error(r.status);
+    ui.changelog = await r.json();
+  } catch (e) {
+    console.warn('changelog.json nicht ladbar', e);
+    ui.changelog = { entries: [] };
+  }
+  try {
+    ui.changelogSeen = localStorage.getItem(SEEN_KEY);
+  } catch {}
+}
+function markChangelogSeen() {
+  const v = ui.changelog?.entries?.[0]?.version;
+  if (!v) return;
+  ui.changelogSeen = v;
+  try {
+    localStorage.setItem(SEEN_KEY, v);
   } catch {}
 }
 
@@ -208,6 +235,17 @@ function wireEvents() {
         case 'filter-clear':
           ui.filter = null;
           render();
+          return;
+        case 'changelog':
+          ui.changelogOpen = !ui.changelogOpen;
+          if (ui.changelogOpen) markChangelogSeen();
+          render();
+          if (ui.changelogOpen) $('#changelog')?.scrollIntoView({ block: 'start' });
+          return;
+        case 'changelog-close':
+          ui.changelogOpen = false;
+          render();
+          $('.foot')?.scrollIntoView({ block: 'end' });
           return;
         case 'date-toggle':
           ui.dateEdit = !ui.dateEdit;
@@ -348,7 +386,7 @@ async function enter(session) {
     return;
   }
   try {
-    await loadAll();
+    await Promise.all([loadAll(), loadChangelog()]);
   } catch (e) {
     $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
     return;

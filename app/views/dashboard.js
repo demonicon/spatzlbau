@@ -1,6 +1,6 @@
 // Dashboard (docs/changes/002): countdown, gate bar, KPI tiles as filters, phase tabs, task list.
 // Everything on this screen is derived from state.js; filters live in filters.js.
-import { APP_VERSION, BUILD } from '../config.js';
+import { BUILD } from '../config.js';
 import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
 import { state, ui, phases, einzug } from '../state.js';
@@ -136,7 +136,38 @@ export function dashboardView() {
     kpisHTML() +
     tabsHTML() +
     filterRow +
-    `<div class="list">${listHTML(list, 'Nichts in diesem Filter.')}${addBoxHTML(ui.phase)}</div>
-    <footer class="foot"><span>v${APP_VERSION}${BUILD.startsWith('__') ? '' : ' · Build ' + BUILD}</span><button class="link" data-act="reload">Neu laden</button><button class="link" data-act="seed">Seed aktualisieren</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`
+    `<div class="list">${listHTML(list, 'Nichts in diesem Filter.')}${addBoxHTML(ui.phase)}</div>` +
+    (ui.changelogOpen ? changelogHTML() : '') +
+    footerHTML()
   );
+}
+
+/* ---------- changelog (docs/changes/005): version in the footer, "Was ist neu?" panel ---------- */
+const current = () => ui.changelog?.entries?.[0] || null;
+const build = () => (BUILD.startsWith('__') ? '' : BUILD);
+
+function footerHTML() {
+  const cur = current();
+  const unseen = cur && ui.changelogSeen !== cur.version;
+  const version = cur
+    ? `<button class="link version" data-act="changelog" aria-expanded="${!!ui.changelogOpen}" title="${build() ? 'Build ' + build() : ''}">${esc(cur.version)}${unseen ? '<span class="dot" aria-label="neu">Neu</span>' : ''}</button>`
+    : `<span title="${build() ? 'Build ' + build() : ''}">Version unbekannt</span>`;
+  return `<footer class="foot">${version}<button class="link" data-act="reload">Neu laden</button><button class="link" data-act="seed">Seed aktualisieren</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`;
+}
+
+const SECTIONS = [['new', 'Neu'], ['improved', 'Verbessert'], ['fixed', 'Behoben']];
+function changelogHTML() {
+  const entries = ui.changelog?.entries || [];
+  const body = entries
+    .map(
+      (e) => `<article class="release">
+      <h3><span class="v">${esc(e.version)}</span>${esc(e.title || '')}</h3>
+      ${SECTIONS.map(([k, label]) => (Array.isArray(e[k]) && e[k].length ? `<h4>${label}</h4><ul>${e[k].map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '')).join('')}
+    </article>`,
+    )
+    .join('');
+  return `<section class="changelog" id="changelog" aria-labelledby="changelog-title">
+    <div class="changelog-head"><h2 id="changelog-title">Was ist neu?</h2>${build() ? `<span class="hint">Build ${esc(build())}</span>` : ''}<span class="spacer"></span><button class="btn small" data-act="changelog-close">Schließen</button></div>
+    ${body || '<p class="empty">Noch keine Einträge.</p>'}
+  </section>`;
 }

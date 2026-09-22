@@ -23,6 +23,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate changelog.json (first entry = version shown in the app)
+        run: python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
       - name: Stamp build with commit SHA (service worker cache version, footer)
         run: sed -i "s/__BUILD__/${GITHUB_SHA:0:7}/g" sw.js app/config.js
       - uses: actions/configure-pages@v5
