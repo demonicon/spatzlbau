@@ -20,10 +20,12 @@
 -- Only these two addresses can read or write anything (see RLS below).
 -- Case does not matter; comparison is case-insensitive.
 create table if not exists public.allowlist (
-  email      text primary key,
-  person     text not null check (person in ('S', 'A')),
-  updated_at timestamptz not null default now()
+  email             text primary key,
+  person            text not null check (person in ('S', 'A')),
+  last_seen_version text,                                -- changelog.json version last read by this person (005b)
+  updated_at        timestamptz not null default now()
 );
+alter table public.allowlist add column if not exists last_seen_version text;
 alter table public.allowlist enable row level security;
 
 insert into public.allowlist (email, person) values
@@ -166,10 +168,20 @@ alter table public.tasks     enable row level security;
 alter table public.subtasks  enable row level security;
 alter table public.comments  enable row level security;
 
--- allowlist: read-only for allowed users (so the app can map e-mail -> person). No writes from the app.
+-- allowlist: readable for allowed users (so the app can map e-mail -> person). The only write from
+-- the app: each person updates last_seen_version of their own row (column grant + row policy).
 drop policy if exists allowlist_select on public.allowlist;
 create policy allowlist_select on public.allowlist
   for select to authenticated using (public.is_allowed());
+
+revoke update on table public.allowlist from authenticated;
+grant update (last_seen_version) on table public.allowlist to authenticated;
+
+drop policy if exists allowlist_update_own on public.allowlist;
+create policy allowlist_update_own on public.allowlist
+  for update to authenticated
+  using (lower(email) = lower(coalesce(auth.jwt() ->> 'email', '')))
+  with check (lower(email) = lower(coalesce(auth.jwt() ->> 'email', '')));
 
 -- settings: allowed users read/write everything EXCEPT the export token.
 -- The token is only reachable via SQL (service role / SQL editor) and rotate_export_token().

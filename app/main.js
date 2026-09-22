@@ -19,8 +19,11 @@ import {
   addComment,
   setSetting,
   runSeedMerge,
+  loadLastSeenVersion,
+  setLastSeenVersion,
 } from './state.js';
 import { FILTERS } from './filters.js';
+import { compareVersions, newestVersion, hasUnread } from './changelog.js';
 import { dashboardView } from './views/dashboard.js';
 
 const UI_KEY = 'spatzlbau-ui';
@@ -31,8 +34,7 @@ ui.phase = null;
 ui.dateEdit = false;
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
-ui.changelogSeen = null; // version last opened on this device
-const SEEN_KEY = 'spatzlbau-changelog-seen';
+ui.changelogUnreadOnly = false; // auto-opened panel shows only the versions newer than last_seen_version
 
 /* ---------- screens ---------- */
 function show(screen) {
@@ -121,17 +123,30 @@ async function loadChangelog() {
     console.warn('changelog.json nicht ladbar', e);
     ui.changelog = { entries: [] };
   }
-  try {
-    ui.changelogSeen = localStorage.getItem(SEEN_KEY);
-  } catch {}
 }
-function markChangelogSeen() {
-  const v = ui.changelog?.entries?.[0]?.version;
-  if (!v) return;
-  ui.changelogSeen = v;
-  try {
-    localStorage.setItem(SEEN_KEY, v);
-  } catch {}
+function openChangelog(unreadOnly) {
+  ui.changelogOpen = true;
+  ui.changelogUnreadOnly = !!unreadOnly;
+  render();
+  $('#changelog')?.scrollIntoView({ block: 'start' });
+}
+// closing (button, Escape, tap outside) marks everything as read – per person, in the database
+function closeChangelog() {
+  if (!ui.changelogOpen) return;
+  ui.changelogOpen = false;
+  const v = newestVersion();
+  if (v && state.lastSeenVersion !== undefined && compareVersions(v, state.lastSeenVersion) > 0) setLastSeenVersion(v).catch(fail);
+  render();
+}
+// opened via a task link (#task=<id>)? then the person has a goal – no automatic panel
+const openedViaTaskLink = () => /^#task=/.test(location.hash);
+function openTaskFromHash() {
+  const id = decodeURIComponent(location.hash.slice('#task='.length));
+  const t = byId(id);
+  if (!t) return;
+  ui.phase = t.phase;
+  ui.filter = null;
+  ui.expanded = id;
 }
 
 /* ---------- seed ---------- */
@@ -165,6 +180,9 @@ const fail = (e) => e && toast('Nicht gespeichert – bitte nochmal versuchen');
 function wireEvents() {
   const view = $('#view');
   view.addEventListener('focusout', () => setTimeout(() => renderPending && !isTyping() && render(), 0));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && ui.changelogOpen) closeChangelog();
+  });
 
   view.addEventListener('change', (e) => {
     const el = e.target;
@@ -206,6 +224,8 @@ function wireEvents() {
   });
 
   view.addEventListener('click', async (e) => {
+    // tap outside the open panel closes it (and marks it read); the tap itself still does what it does
+    if (ui.changelogOpen && !e.target.closest('#changelog') && !e.target.closest('[data-act="changelog"]')) closeChangelog();
     // KPI tiles: exactly one active filter, tapping again clears it
     const tile = e.target.closest('[data-filter]');
     if (tile) {
@@ -237,14 +257,11 @@ function wireEvents() {
           render();
           return;
         case 'changelog':
-          ui.changelogOpen = !ui.changelogOpen;
-          if (ui.changelogOpen) markChangelogSeen();
-          render();
-          if (ui.changelogOpen) $('#changelog')?.scrollIntoView({ block: 'start' });
+          if (ui.changelogOpen) closeChangelog();
+          else openChangelog(false);
           return;
         case 'changelog-close':
-          ui.changelogOpen = false;
-          render();
+          closeChangelog();
           $('.foot')?.scrollIntoView({ block: 'end' });
           return;
         case 'date-toggle':
@@ -386,14 +403,19 @@ async function enter(session) {
     return;
   }
   try {
-    await Promise.all([loadAll(), loadChangelog()]);
+    await Promise.all([loadAll(), loadChangelog(), loadLastSeenVersion()]);
   } catch (e) {
     $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
     return;
   }
   ui.filter = 'week';
+  ui.changelogOpen = false;
+  const viaLink = openedViaTaskLink();
+  if (viaLink) openTaskFromHash();
   show('app');
   render();
+  if (viaLink) $('.task.open')?.scrollIntoView({ block: 'start' });
+  else if (hasUnread()) openChangelog(true); // once per person: after login and data, never when following a task link
   subscribeRealtime();
   maybeAutoSeed();
 }

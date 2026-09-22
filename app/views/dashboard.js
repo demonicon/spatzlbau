@@ -6,6 +6,7 @@ import { OWN } from '../ui/labels.js';
 import { state, ui, phases, einzug } from '../state.js';
 import { FILTERS, matches, count, atClaude, isWaiting } from '../filters.js';
 import { listHTML } from '../ui/task.js';
+import { compareVersions, hasUnread } from '../changelog.js';
 
 const DAY = 86400000;
 
@@ -148,7 +149,7 @@ const build = () => (BUILD.startsWith('__') ? '' : BUILD);
 
 function footerHTML() {
   const cur = current();
-  const unseen = cur && ui.changelogSeen !== cur.version;
+  const unseen = hasUnread();
   const version = cur
     ? `<button class="link version" data-act="changelog" aria-expanded="${!!ui.changelogOpen}" title="${build() ? 'Build ' + build() : ''}">${esc(cur.version)}${unseen ? '<span class="dot" aria-label="neu">Neu</span>' : ''}</button>`
     : `<span title="${build() ? 'Build ' + build() : ''}">Version unbekannt</span>`;
@@ -157,7 +158,9 @@ function footerHTML() {
 
 const SECTIONS = [['new', 'Neu'], ['improved', 'Verbessert'], ['fixed', 'Behoben']];
 function changelogHTML() {
-  const entries = ui.changelog?.entries || [];
+  const all = ui.changelog?.entries || [];
+  // auto-opened: every version this person has not closed yet; opened from the footer: everything
+  const entries = ui.changelogUnreadOnly ? all.filter((e) => compareVersions(e.version, state.lastSeenVersion) > 0) : all;
   const body = entries
     .map(
       (e) => `<article class="release">

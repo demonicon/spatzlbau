@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "version": "2026.09.22.2",
+      "title": "Neuigkeiten kommen von selbst",
+      "new": [
+        "Neuigkeiten zeigen sich jetzt von selbst, wenn du die App öffnest – einmal, danach findest du sie unten über die Versionsnummer."
+      ],
+      "improved": [
+        "Ob du die Neuigkeiten schon gelesen hast, gilt für dich auf allen Geräten – nicht mehr pro Handy oder PC."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2026.09.22",
       "title": "Spatzlbau hat ein neues Gesicht – und sagt jetzt Bescheid, wenn es Neues gibt",
       "new": [

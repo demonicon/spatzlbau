@@ -37,7 +37,7 @@ Anon-Key und Projekt-URL dürfen im Repo stehen (per Design öffentlich, RLS sch
 
 Tabellen (alle mit `updated_at`, RLS aktiv):
 
-- `allowlist(email pk, person text 'S'/'A')` – genau zwei Einträge, von Sebastian im SQL gesetzt; `person` ist das Mapping Login-E-Mail → Kürzel
+- `allowlist(email pk, person text 'S'/'A', last_seen_version text)` – genau zwei Einträge, von Sebastian im SQL gesetzt; `person` ist das Mapping Login-E-Mail → Kürzel; `last_seen_version` = zuletzt gelesene Changelog-Version der Person (005b), das einzige Feld, das die App hier schreibt
 - `settings(key pk, value jsonb)` – `einzugstermin`, `export_token`, `seed_version`, `phases` (Phasenliste aus `seed.json`, vom Seed-Skript geschrieben; Quelle bleibt `seed.json`)
 - `tasks` – `id text pk` (Slug aus seed oder `c_<ts>`), `phase int`, `title`, `owner` (`S` Sebastian / `A` Anna / `B` gemeinsam), `offset_days int`, `critical bool`, `type` (`self` / `assist` / `claude`), `done bool`, `wait_on` (`S`/`A`/`C`/null), `status` (nur bei type claude: `briefing` → `go` → `recherche` → `rueckfragen` → `arbeit` → `ergebnis`), `blocked_by text[]`, `brief jsonb` (`goal`, `ctx`, `result`), `advice jsonb` (Schlüssel `why`, `how`, `need`, `law`, `traps`), `sort int`, `seed_snapshot jsonb` (Seed-Werte, wie zuletzt eingespielt – nur für den Merge, nicht im Export), `deleted_at` (Soft-Delete; die App löscht nie hart), `created_at`
 - `subtasks(id uuid pk, task_id fk, title, done, sort, seed_key text, created_at)` – `seed_key` ist bei Seed-Teilschritten gesetzt, damit der Merge nur fehlende ergänzt

@@ -159,7 +159,7 @@ Gilt für alle Zugriffe über die App (Anon-Key + Login). Der Service-Role-Key (
 
 | Tabelle | Wer nicht eingeloggt ist | Eingeloggt, **nicht** auf der Allowlist | Eingeloggt und auf der Allowlist |
 |---|---|---|---|
-| `allowlist` | nichts | nichts | lesen (um die eigene Person S/A zu ermitteln); kein Schreiben |
+| `allowlist` | nichts | nichts | lesen (um die eigene Person S/A zu ermitteln); schreiben nur `last_seen_version` der **eigenen** Zeile (Spaltenrecht + Zeilenregel) |
 | `settings` | nichts | nichts | lesen, anlegen, ändern – **außer** `export_token` (unsichtbar, nur per SQL) |
 | `tasks` | nichts | nichts | lesen, anlegen, ändern; **kein** Löschen (nur `deleted_at` setzen) |
 | `subtasks` | nichts | nichts | lesen, anlegen, ändern, löschen |

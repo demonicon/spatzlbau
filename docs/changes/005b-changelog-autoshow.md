@@ -1,6 +1,6 @@
 # Änderungsauftrag 005b – Changelog beim Aufruf anzeigen
 
-Stand: 22.09.2026 · Status: offen · Branch: `feature/changelog-autoshow` · Modell: Sonnet
+Stand: 22.09.2026 · Status: umgesetzt, PR offen · Branch: `feature/changelog` (auf Zuruf, statt `feature/changelog-autoshow`) · Modell: Sonnet (umgesetzt mit Opus)
 Erweitert 005. Betrifft: Changelog-Panel, `allowlist`, App-Start
 
 ## Ziel
@@ -26,3 +26,12 @@ Beim Öffnen der App erscheint das Panel "Was ist neu?" von selbst, wenn es seit
 - [ ] Öffnen über `#task=<id>` zeigt kein Panel, nur den "Neu"-Punkt
 - [ ] Anna kann Sebastians `last_seen_version` nicht ändern (RLS-Test)
 - [ ] Changelog-Eintrag: "Neuigkeiten zeigen sich jetzt von selbst, wenn du die App öffnest – einmal, danach findest du sie unten über die Versionsnummer."
+
+## Umsetzungsnotizen (Claude Code, 22.09.2026)
+
+- Migration `003_allowlist_last_seen_version.sql` (live eingespielt): Spalte `last_seen_version`, `update`-Recht für `authenticated` auf genau diese Spalte, Zeilenregel `lower(email) = lower(auth.jwt()->>'email')`. `schema.sql` nachgezogen.
+- Gerätespeicher aus 005 entfernt; „Neu“-Punkt und Auto-Öffnen hängen nur noch an `last_seen_version`. Lesefehler → kein Auto-Öffnen, kein Punkt, manuelles Öffnen geht weiter.
+- Auto-Öffnen zeigt nur ungelesene Versionen, Öffnen über den Footer alle. Schließen per Button, Escape oder Tippen außerhalb setzt `last_seen_version` auf die neueste Version.
+- `#task=<id>` öffnet die Akte der Aufgabe (Phase wird gewählt, Filter aufgehoben) und unterdrückt das Auto-Öffnen – Aufgaben-Links gab es vorher nicht, das ist der minimale Einstiegspunkt dafür.
+- Neuer Eintrag `2026.09.22.2` in `changelog.json` (zweiter Deploy des Tages).
+- Headless geprüft (380 px): nie gelesen → Panel mit 2 Versionen; Schließen → DB `2026.09.22.2`, Punkt weg, nach Neuladen kein Panel; eine Version zurückgesetzt → Panel mit 1 Version, Escape schließt; `#task=umzugsfirma` → Akte offen, kein Panel, Punkt da; Tippen außerhalb schließt. RLS als Sebastian: Annas Zeile 0 Treffer, eigene Spalte `person` → „permission denied“. Testwerte danach auf `null` zurückgesetzt, damit das Panel nach dem Deploy bei beiden einmal erscheint.

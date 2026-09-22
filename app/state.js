@@ -7,6 +7,7 @@ import { planSeedMerge } from './seed-merge.js';
 export const state = {
   person: null, // 'S' | 'A'
   email: null,
+  lastSeenVersion: undefined, // allowlist.last_seen_version of this person; undefined = could not be read (005b)
   settings: {}, // key -> value (jsonb)
   tasks: [], // non-deleted tasks
   subtasks: [],
@@ -87,6 +88,21 @@ export async function loadAll() {
   state.comments = comments.data;
   state.loaded = true;
   notify();
+}
+
+/* ---------- changelog read state, per person (allowlist.last_seen_version, docs/changes/005b) ---------- */
+export async function loadLastSeenVersion() {
+  const { data, error } = await supabase.from('allowlist').select('last_seen_version').eq('person', state.person).maybeSingle();
+  state.lastSeenVersion = error || !data ? undefined : data.last_seen_version; // null = never read anything
+  return state.lastSeenVersion;
+}
+
+export async function setLastSeenVersion(version) {
+  if (state.lastSeenVersion === version) return;
+  state.lastSeenVersion = version;
+  notify();
+  // RLS + column grant: only the own row, only this column
+  return write('allowlist', () => supabase.from('allowlist').update({ last_seen_version: version }).eq('person', state.person));
 }
 
 /* ---------- realtime: any change -> debounced reload ---------- */
