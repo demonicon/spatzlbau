@@ -1,24 +1,9 @@
 // One task row (list item) as in the design handoff; the detail panel is appended when expanded.
 import { esc } from './dom.js';
-import { OWN, STEP_LABEL } from './labels.js';
-import { state, ui, blockers, dueInfo, subProgress, comsOf, einzug, unseenComments } from '../state.js';
+import { OWN, STEP_TAG } from './labels.js';
+import { state, ui, blockers, subProgress, comsOf, unseenComments, dueLabel, claudeStep } from '../state.js';
 import { isBlocked, isLate, isCritical } from '../filters.js';
 import { detailHTML } from './detail.js';
-
-const fmtShort = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-
-// due label per design: "überfällig seit n Tagen" / "heute" / "morgen" / "bis 23.09." – relative text without a date
-export function dueLabel(t) {
-  const du = dueInfo(t);
-  if (!einzug()) return du.label;
-  const date = new Date(du.sort);
-  if (t.done) return fmtShort(date);
-  const d = du.diff;
-  if (d < 0) return `überfällig seit ${-d} ${-d === 1 ? 'Tag' : 'Tagen'}`;
-  if (d === 0) return 'heute';
-  if (d === 1) return 'morgen';
-  return 'bis ' + fmtShort(date);
-}
 
 export function taskHTML(t) {
   const blocked = isBlocked(t);
@@ -28,7 +13,7 @@ export function taskHTML(t) {
   const open = ui.expanded === t.id;
   const cls = ['task', t.done ? 'done' : '', blocked ? 'blocked' : '', open ? 'open' : '', open && ui.wide ? 'selected' : ''].join(' ');
   const dueCls = isLate(t) ? 'late' : isCritical(t) ? 'crit' : '';
-  const claude = t.type === 'claude' ? `<span class="tag claude">Claude · ${STEP_LABEL[t.status] || 'Briefing offen'}</span>` : t.type === 'assist' ? `<span class="tag">Claude unterstützt</span>` : '';
+  const claude = t.type === 'claude' ? `<span class="tag claude">${STEP_TAG[claudeStep(t)]}</span>` : t.type === 'assist' ? `<span class="tag">Claude unterstützt</span>` : '';
   // docs/changes/009: what waits for the logged-in person is the loudest thing in the row
   const wait = t.wait_on
     ? t.wait_on === state.person

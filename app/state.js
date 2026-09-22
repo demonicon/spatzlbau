@@ -65,6 +65,34 @@ export const doneByOther = (t) =>
   !!state.lastVisitAt && t.done && !!t.done_by && t.done_by !== state.person && t.updated_at > state.lastVisitAt;
 
 const fmtDate = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const fmtShort = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+
+// deadline relative to the move-in date, without a calendar date
+export function offsetLabel(t) {
+  const d = t.offset_days;
+  const w = Math.round(Math.abs(d) / 7);
+  if (d === 0) return 'am Umzugstag';
+  if (Math.abs(d) < 7) return Math.abs(d) + (d < 0 ? ' Tage vorher' : ' Tage danach');
+  return '≈ ' + w + (d < 0 ? ' Wochen vorher' : ' Wochen danach');
+}
+
+// due label per design: "überfällig seit n Tagen" / "heute" / "morgen" / "bis 23.09."
+export function dueLabel(t) {
+  const du = dueInfo(t);
+  if (!einzug()) return du.label;
+  const date = new Date(du.sort);
+  if (t.done) return fmtShort(date);
+  const d = du.diff;
+  if (d < 0) return `überfällig seit ${-d} ${-d === 1 ? 'Tag' : 'Tagen'}`;
+  if (d === 0) return 'heute';
+  if (d === 1) return 'morgen';
+  return 'bis ' + fmtShort(date);
+}
+
+// docs/changes/009: three delegation states. Tasks written before migration 007 can still
+// carry go/recherche/rueckfragen/arbeit – they all read as "bei Claude".
+export const claudeStep = (t) => (t.status === 'ergebnis' ? 'ergebnis' : t.status && t.status !== 'briefing' ? 'claude' : 'briefing');
+
 export function dueInfo(t) {
   const base = einzug();
   if (base) {
@@ -78,9 +106,7 @@ export function dueInfo(t) {
   }
   const d = t.offset_days;
   const w = Math.round(Math.abs(d) / 7);
-  const label =
-    d === 0 ? 'am Umzugstag' : Math.abs(d) < 7 ? Math.abs(d) + (d < 0 ? ' Tage vorher' : ' Tage danach') : '≈ ' + w + (d < 0 ? ' Wochen vorher' : ' Wochen danach');
-  return { label, cls: '', sort: d, diff: null };
+  return { label: offsetLabel(t), cls: '', sort: d, diff: null };
 }
 
 /* ---------- loading ---------- */

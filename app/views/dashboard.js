@@ -3,8 +3,8 @@
 // Everything on this screen is derived from state.js; filters live in filters.js.
 import { BUILD } from '../config.js';
 import { esc } from '../ui/dom.js';
-import { OWN } from '../ui/labels.js';
-import { state, ui, byId, phases, einzug, freshComments, doneByOther } from '../state.js';
+import { OWN, STEPS } from '../ui/labels.js';
+import { state, ui, byId, phases, einzug, freshComments, doneByOther, claudeStep } from '../state.js';
 import { FILTERS, matches, count, atClaude, isBlocked, isLate, isCritical, waitsOnMe, other } from '../filters.js';
 import { taskHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
@@ -157,6 +157,8 @@ export function columns() {
   const me = state.person;
   const you = other(me);
   const pool = state.tasks.filter((t) => (ui.phase === null || t.phase === ui.phase) && matches(t, ui.filter));
+  // "Bei Claude" is the one view that groups by state instead of by person (docs/changes/009)
+  if (ui.filter === 'claude') return STEPS.map(([key, label]) => column('st-' + key, label, 'C', pool.filter((t) => claudeStep(t) === key)));
   if (ui.wide) {
     // desktop: three columns side by side, "wartet auf dich" is a mark on the row
     return [

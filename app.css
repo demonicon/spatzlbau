@@ -125,6 +125,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .col.own-A .col-head { border-bottom-color: var(--anna); }
 .col.own-B .col-head { border-bottom-color: var(--both); }
 .col.own-wait .col-head { border-bottom-color: var(--danger); }
+.col.own-C .col-head { border-bottom-color: var(--claude); }
 .col .cnt { font-size: var(--fs-small); color: var(--ink-2); }
 .col .note { font-size: var(--fs-micro); color: var(--ink-3); margin-left: auto; text-align: right; }
 .col .chev { font-size: 18px; color: var(--ink-3); width: 24px; text-align: center; margin-left: 4px; }
@@ -134,11 +135,11 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .col-sub .chev { margin-left: auto; font-size: 18px; width: 24px; text-align: center; }
 .empty { color: var(--ink-3); font-size: var(--fs-ui); padding: 14px 0; margin: 0; }
 .task { display: grid; grid-template-columns: var(--tap) 1fr; align-items: start; border-bottom: 1px solid var(--line); padding: 4px 0; }
-.task .check { width: var(--tap); height: var(--tap); margin: 0; appearance: none; -webkit-appearance: none; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
-.task .check::before { content: ''; width: 22px; height: 22px; border: 1.5px solid var(--ink-2); background: var(--card); display: block; }
+.check { width: var(--tap); height: var(--tap); margin: 0; appearance: none; -webkit-appearance: none; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+.check::before { content: ''; width: 22px; height: 22px; border: 1.5px solid var(--ink-2); background: var(--card); display: block; }
 .task.blocked .check::before { border-color: var(--line); }
-.task .check:checked::before { background: var(--ok); border-color: var(--ok); }
-.task .check:checked::after { content: '✓'; position: absolute; color: #fff; font-size: 15px; line-height: 1; }
+.check:checked::before { background: var(--ok); border-color: var(--ok); }
+.check:checked::after { content: '✓'; position: absolute; color: #fff; font-size: 15px; line-height: 1; }
 .task .body { min-width: 0; }
 .task .t { width: 100%; min-height: var(--tap); padding: 9px 0 4px; font-size: var(--fs-body); line-height: 1.35; color: var(--ink); overflow-wrap: anywhere; }
 .task .t:hover { text-decoration: underline; }
@@ -166,11 +167,25 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .ndot.A { background: var(--anna); }
 .ndot.C { background: var(--claude); }
 
-/* ---------- detail panel ("Akte", unchanged in function) ---------- */
+/* ---------- detail panel ("Akte"), two weight classes since 009 ---------- */
 .detail { grid-column: 1 / -1; background: var(--card); border: 1px solid var(--line); padding: 12px 14px; margin: 6px 0 8px; }
 .detail h3 { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; margin: 18px 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); color: var(--ink-2); }
 .detail h3:first-child { margin-top: 0; }
 .detail h3 small { font-weight: 400; color: var(--ink-3); text-transform: none; letter-spacing: 0; }
+/* head of the Akte: checkbox, title as a heading that is still editable, meta line */
+.akte-top { display: grid; grid-template-columns: var(--tap) 1fr; align-items: start; margin-left: -10px; }
+/* the title is a heading that stays editable: a textarea so long titles wrap.
+   field-sizing grows it in Chrome; elsewhere the row count from the title length carries it. */
+.akte-title { font-size: var(--fs-title); font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; width: 100%; min-height: var(--tap); padding: 8px 6px; border: 0; background: transparent; resize: none; overflow: hidden; field-sizing: content; }
+.akte-title:hover { box-shadow: inset 0 0 0 1px var(--line); }
+.akte-title:focus { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.akte-meta { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; font-size: var(--fs-small); color: var(--ink-2); margin: 8px 0 0; padding-left: 34px; }
+.wait-banner { margin: 14px 0 0; padding: 10px 12px; background: var(--danger-bg); color: var(--danger); font-size: var(--fs-meta); font-weight: 600; }
+.akte-more { border-top: 1px solid var(--line); margin-top: 16px; text-decoration: none; }
+.akte-foot { margin-top: 16px; }
+.link-plain { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
+.link-plain:hover { color: var(--ink); text-decoration: underline; }
+
 .row { display: flex; gap: var(--gap); flex-wrap: wrap; align-items: center; margin-top: 8px; }
 .row.nowrap { flex-wrap: nowrap; margin-top: 0; }
 .row.pad { padding-bottom: 8px; }
@@ -211,10 +226,10 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 .brief { background: var(--claude-bg); padding: 14px 14px 12px; margin-top: 6px; }
 .brief label { display: block; font-size: var(--fs-small); color: var(--claude); margin-top: 10px; }
 .brief .turn { font-size: var(--fs-small); color: var(--claude); }
-.steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin: 12px 0 0; padding: 0; list-style: none; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
 .steps li { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.steps li i { height: 4px; background: rgba(0, 0, 0, 0.12); display: block; }
-.steps li span { font-size: var(--fs-nano); line-height: 1.2; color: var(--ink-3); }
+.steps li i { height: 5px; background: rgba(0, 0, 0, 0.12); display: block; }
+.steps li span { font-size: var(--fs-micro); line-height: 1.2; color: var(--ink-3); }
 .steps li.past i { background: var(--claude-past); }
 .steps li.past span { color: var(--ink-2); }
 .steps li.cur i { background: var(--claude); }

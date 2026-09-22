@@ -121,7 +121,7 @@ zeigt, was ein Seed-Merge ändern würde; ohne `--dry` wird geschrieben (nie des
 ```bash
 node scripts/claude-result.mjs ergebnis.json
 ```
-trägt Claude-Ergebnisse ein: `{"tasks":[{"id":"umzugsfirma","status":"rueckfragen","result":"…","comment":"…","sub_add":["…"]}]}` – Kommentare erscheinen als „Claude“.
+trägt Claude-Ergebnisse ein: `{"tasks":[{"id":"umzugsfirma","status":"ergebnis","result":"…","comment":"…","sub_add":["…"]}]}` – Kommentare erscheinen als „Claude“.
 
 ---
 

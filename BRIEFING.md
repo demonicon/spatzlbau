@@ -38,9 +38,9 @@ Anon-Key und Projekt-URL dürfen im Repo stehen (per Design öffentlich, RLS sch
 
 Tabellen (alle mit `updated_at`, RLS aktiv):
 
-- `allowlist(email pk, person text 'S'/'A', last_seen_version text)` – genau zwei Einträge, von Sebastian im SQL gesetzt; `person` ist das Mapping Login-E-Mail → Kürzel; `last_seen_version` = zuletzt gelesene Changelog-Version der Person (005b), das einzige Feld, das die App hier schreibt
+- `allowlist(email pk, person text 'S'/'A', last_seen_version text, last_visit_at timestamptz, seen_comments jsonb)` – genau zwei Einträge, von Sebastian im SQL gesetzt; `person` ist das Mapping Login-E-Mail → Kürzel. Die App schreibt hier nur drei Spalten der eigenen Zeile: `last_seen_version` (zuletzt gelesene Changelog-Version, 005b), `last_visit_at` (wann die Person die App zuletzt verlassen hat, 009) und `seen_comments` (IDs der neuen Kommentare, die sie schon geöffnet hat, 009)
 - `settings(key pk, value jsonb)` – `einzugstermin`, `export_token`, `seed_version`, `phases` (Phasenliste aus `seed.json`, vom Seed-Skript geschrieben; Quelle bleibt `seed.json`)
-- `tasks` – `id text pk` (Slug aus seed oder `c_<ts>`), `phase int`, `title`, `owner` (`S` Sebastian / `A` Anna / `B` gemeinsam), `offset_days int`, `critical bool`, `type` (`self` / `assist` / `claude`), `done bool`, `wait_on` (`S`/`A`/`C`/null), `status` (nur bei type claude: `briefing` → `go` → `recherche` → `rueckfragen` → `arbeit` → `ergebnis`), `blocked_by text[]`, `brief jsonb` (`goal`, `ctx`, `result`), `advice jsonb` (Schlüssel `why`, `how`, `need`, `law`, `traps`), `sort int`, `seed_snapshot jsonb` (Seed-Werte, wie zuletzt eingespielt – nur für den Merge, nicht im Export), `deleted_at` (Soft-Delete; die App löscht nie hart), `created_at`
+- `tasks` – `id text pk` (Slug aus seed oder `c_<ts>`), `phase int`, `title`, `owner` (`S` Sebastian / `A` Anna / `B` gemeinsam), `offset_days int`, `critical bool`, `type` (`self` / `assist` / `claude`), `done bool`, `wait_on` (`S`/`A`/`C`/null), `status` (nur bei type claude: `briefing` → `claude` → `ergebnis`, Auftrag 009), `done_by` (`S`/`A`, wer abgehakt hat – Grundlage für „Seit deinem letzten Besuch"), `blocked_by text[]`, `brief jsonb` (`goal`, `ctx`, `result`), `advice jsonb` (Schlüssel `why`, `how`, `need`, `law`, `traps`), `sort int`, `seed_snapshot jsonb` (Seed-Werte, wie zuletzt eingespielt – nur für den Merge, nicht im Export), `deleted_at` (Soft-Delete; die App löscht nie hart), `created_at`
 - `subtasks(id uuid pk, task_id fk, title, done, sort, seed_key text, created_at)` – `seed_key` ist bei Seed-Teilschritten gesetzt, damit der Merge nur fehlende ergänzt
 - `comments(id uuid pk, task_id fk, author text ('S'/'A'/'C'), body text, created_at)`
 - `costs` (Auftrag 004, Vorstufe Finanzmodul 007) – `id uuid pk`, `task_id fk → tasks` (null nur für den Puffer), `label`, `kind` (`einmalig`/`rueckfluss`), `apartment` (`S` alt Sebastian / `A` alt Anna / `N` neu / null), `status` (`geschaetzt` → `angebot` → `beauftragt` → `faellig` → `bezahlt`), `amount numeric(10,2)` (ein Betrag pro Zeile, der Status sagt, wie sicher er ist), `due_on` (Default beim Anlegen = Frist der Aufgabe, per Trigger), `paid_on` (gesetzt ⇒ `status = bezahlt`, per Trigger), `paid_by` (`S`/`A`), `belongs_to` (`S`/`A`/`B`; `B` = geteilt nach `split_s`), `split_s numeric(5,2)` (Anteil Sebastian in %, null = `settings.split_default_s`), `tax_relevant bool`, `receipt_url`, `note`, `seed_key`, `seed_snapshot`, `sort`, `created_at`
@@ -66,18 +66,17 @@ Abgeleitete Logik (Frontend):
 
 ## 4. Die Delegations-Schleife an Claude
 
-Jede Aufgabe kann auf `type = claude` gestellt werden – dynamisch, keine feste Liste. Dann erscheint ein Briefing (Ziel, Kontext, Ergebnis) und ein Zustandsautomat. **Claude startet nie ohne explizites Go.**
+Jede Aufgabe kann auf `type = claude` gestellt werden – dynamisch, keine feste Liste. Dann erscheint ein Briefing (Ziel, Kontext, Ergebnis) und ein dreiteiliger Zustandsbalken (Auftrag 009). **Claude startet nie ohne explizite Übergabe.**
 
 | Zustand | Am Zug | Bedeutung |
 |---|---|---|
-| briefing | Nutzer | Ziel und Kontext ausfüllen |
-| go | – | Nutzer hat "Go erteilen" geklickt; Claude darf starten |
-| recherche | Claude | Claude klärt Anforderungen, stellt max. 5 Rückfragen, nennt Annahmen |
-| rueckfragen | Nutzer | Rückfragen im Kommentarfeld beantworten, "Beantwortet" klicken |
-| arbeit | Claude | Claude liefert Ergebnis (Shortlist, Vorlage, Ablauf, Anfragetexte) |
-| ergebnis | Nutzer | Entscheiden, "Ergebnis übernommen" → done |
+| briefing | Nutzer | Ziel und Kontext ausfüllen, dann „An Claude geben" |
+| claude | Claude | Claude klärt Anforderungen, fragt nach, liefert – alles als Kommentare |
+| ergebnis | Nutzer | Lesen, entscheiden, „Ergebnis übernommen" → done |
 
-Ablauf technisch: Claude im Chat ruft `export_state` ab, sieht Go-Aufgaben samt Briefing und Kommentaren, antwortet im Chat. Ergebnisse tragen die Nutzer ein oder Claude Code schreibt sie per Skript (`scripts/claude-result.mjs`, Eingabe: JSON `{tasks:[{id,status,result,comment,sub_add[]}]}`) in die Datenbank – Kommentare mit `author = 'C'`. Das Skript bitte im ersten Build mitliefern.
+„An Claude geben" schreibt zusätzlich den Kommentar „An Claude übergeben.". **Rückfragen und Antworten sind normale Kommentare** (Autor `C` für Claude, `S`/`A` für die Nutzer) – dafür gibt es keinen eigenen Zustand mehr. „Zurück auf Briefing" ist jederzeit möglich. Der Filter „Bei Claude" gruppiert die delegierten Aufgaben nach genau diesen drei Zuständen statt nach Personen.
+
+Ablauf technisch: Claude im Chat ruft `export_state` ab, sieht die Aufgaben im Zustand `claude` samt Briefing und Kommentaren, antwortet im Chat. Ergebnisse tragen die Nutzer ein oder Claude Code schreibt sie per Skript (`scripts/claude-result.mjs`, Eingabe: JSON `{tasks:[{id,status,result,comment,sub_add[]}]}`) in die Datenbank – Kommentare mit `author = 'C'`.
 
 ## 5. Sichten und UI (Stand Änderungsauftrag 002, Design in design/handoff/)
 

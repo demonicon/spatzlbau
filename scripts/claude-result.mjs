@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Write Claude's results into the database. Usage:
 //   node scripts/claude-result.mjs result.json      (or pipe JSON on stdin)
-// Input: {"tasks":[{"id":"umzugsfirma","status":"rueckfragen","result":"…","comment":"…","sub_add":["…"]}]}
-// - status   optional, one of briefing|go|recherche|rueckfragen|arbeit|ergebnis
+// Input: {"tasks":[{"id":"umzugsfirma","status":"ergebnis","result":"…","comment":"…","sub_add":["…"]}]}
+// - status   optional, one of briefing|claude|ergebnis (docs/changes/009)
 // - result   optional, stored in brief.result (other brief fields untouched)
 // - comment  optional, inserted with author 'C'
 // - sub_add  optional, new subtasks appended
@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs';
 import { loadEnv, restClient } from './lib.mjs';
 
-const STATUS = ['briefing', 'go', 'recherche', 'rueckfragen', 'arbeit', 'ergebnis'];
+const STATUS = ['briefing', 'claude', 'ergebnis'];
 const ADVICE = ['why', 'how', 'need', 'law', 'traps'];
 
 const src = process.argv[2] ? readFileSync(process.argv[2], 'utf8') : readFileSync(0, 'utf8');

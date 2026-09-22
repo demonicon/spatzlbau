@@ -27,6 +27,7 @@ import {
 import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
 import { dashboardView, columns } from './views/dashboard.js';
+import { isMoreOpen } from './ui/detail.js';
 
 const UI_KEY = 'spatzlbau-ui';
 
@@ -39,6 +40,8 @@ ui.openCols = new Set(); // collapsible column ("Bei Anna") that the person open
 ui.allCols = new Set(); // columns showing more than the first eight rows
 ui.doneCols = new Set(); // columns showing their done tasks as well
 ui.blockedCols = new Set(); // columns with "N warten auf einen Vorgänger" unfolded
+ui.more = {}; // Akte: task id -> "Mehr" open? (undefined = automatic, see isMoreOpen)
+ui.adviceAdd = new Set(); // Akte: tasks showing the empty advice fields
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
@@ -231,6 +234,9 @@ function wireEvents() {
   ui.wide = mq.matches;
   mq.addEventListener('change', () => {
     ui.wide = mq.matches;
+    // the Akte moves between inline and panel, so this render cannot be skipped: a field that is
+    // being typed in gives up focus first (which saves it) instead of freezing the old layout
+    if (isTyping()) document.activeElement.blur();
     render();
   });
 
@@ -258,6 +264,7 @@ function wireEvents() {
       const f = el.dataset.field;
       let v = el.type === 'checkbox' ? el.checked : el.value;
       if (f === 'offset_days') v = parseInt(v || '0', 10);
+      if (f === 'title') v = String(v).replace(/\s+/g, ' ').trim() || t.title; // the title field wraps, but stays one line of text
       if (f === 'wait_on') v = v || null;
       const patch = { [f]: v };
       if (f === 'type' && v === 'claude' && !t.status) patch.status = 'briefing';
@@ -395,12 +402,18 @@ function wireEvents() {
           await updateTask(t.id, { advice: { ...(t.advice || {}), [k]: v } });
           return;
         }
-        case 'go':
-          await updateTask(t.id, { status: 'go' });
-          await addComment(t.id, 'Go erteilt – Claude darf starten.');
+        // docs/changes/009: briefing -> claude -> ergebnis, nothing in between
+        case 'to-claude':
+          await updateTask(t.id, { status: 'claude' });
+          await addComment(t.id, 'An Claude übergeben.');
           return;
-        case 'answered':
-          await updateTask(t.id, { status: 'arbeit' });
+        case 'more':
+          ui.more[t.id] = !isMoreOpen(t);
+          render();
+          return;
+        case 'advice-add':
+          ui.adviceAdd.add(t.id);
+          render();
           return;
         case 'accept':
           await updateTask(t.id, { status: 'ergebnis', done: true, ...doneBy(true) });

@@ -64,7 +64,7 @@ create table if not exists public.tasks (
   done          boolean not null default false,
   done_by       text check (done_by in ('S', 'A')),      -- who ticked it off (009, "Seit deinem letzten Besuch")
   wait_on       text check (wait_on in ('S', 'A', 'C')),
-  status        text check (status in ('briefing', 'go', 'recherche', 'rueckfragen', 'arbeit', 'ergebnis')),
+  status        text check (status in ('briefing', 'claude', 'ergebnis')),   -- delegation, three states (009)
   blocked_by    text[] not null default '{}',           -- task ids
   brief         jsonb not null default '{}'::jsonb,     -- {goal, ctx, result}
   advice        jsonb not null default '{}'::jsonb,     -- {why, how, need, law, traps}
@@ -96,6 +96,9 @@ create table if not exists public.comments (
 );
 
 alter table public.tasks add column if not exists done_by text;
+update public.tasks set status = 'claude' where status in ('go', 'recherche', 'rueckfragen', 'arbeit');
+alter table public.tasks drop constraint if exists tasks_status_check;
+alter table public.tasks add constraint tasks_status_check check (status in ('briefing', 'claude', 'ergebnis'));
 alter table public.tasks drop constraint if exists tasks_done_by_check;
 alter table public.tasks add constraint tasks_done_by_check check (done_by in ('S', 'A'));
 
