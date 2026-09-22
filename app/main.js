@@ -65,9 +65,7 @@ ui.recAdd = false; // the "new monthly cost" field in the Finanzen view
 ui.printOpen = false; // "Umzugstag drucken" sheet
 ui.offline = false; // no connection: the cached state is shown read-only (009)
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
-// docs/changes/010: the same deploy serves "/" (live) and "/preview/" (the preview branch,
-// same Supabase project); the only visible difference is this hint in the status line
-ui.preview = location.pathname.includes('/preview/');
+// ui.preview (docs/changes/010) is set in state.js, where the writers it stops live
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
 ui.changelogUnreadOnly = false; // auto-opened panel shows only the versions newer than last_seen_version
@@ -91,20 +89,23 @@ function renderStatus(kind, msg) {
   if (kind === 'saved' || kind === 'saving' || kind === 'live') lastError = '';
   const el = $('#status');
   if (!el) return;
+  // docs/changes/012: the preview writes tasks, costs and settings like the real app, but never
+  // the reading state – and it says so, in every state of the line
+  const set = (text, cls = '') => {
+    el.textContent = [text, ui.preview ? 'Vorschau – Lesestand wird nicht gespeichert' : ''].filter(Boolean).join(' · ');
+    el.className = ['status', cls, ui.preview ? 'prev' : ''].filter(Boolean).join(' ');
+  };
   if (lastError) {
-    el.textContent = lastError;
-    el.className = 'status err';
+    set(lastError, 'err');
     return;
   }
   if (ui.offline) {
     const at = state.loadedAt ? new Date(state.loadedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '–';
-    el.textContent = 'Offline – Stand von ' + at;
-    el.className = 'status off';
+    set('Offline – Stand von ' + at, 'off');
     return;
   }
   const parts = [kind === 'saving' ? msg : lastSaved ? 'gespeichert ' + lastSaved : '', live ? 'Live' : 'verbinde …'];
-  el.textContent = parts.filter(Boolean).join(' · ');
-  el.className = 'status';
+  set(parts.filter(Boolean).join(' · '));
   if (updateReady) {
     el.insertAdjacentHTML('beforeend', ' · <button class="link up" data-act="reload">Neue Version – neu laden</button>');
   }

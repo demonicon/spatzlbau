@@ -47,7 +47,7 @@ function headHTML() {
     </div>
     <div class="who-row">
       <span class="who ${state.person}" aria-label="Angemeldet als ${OWN[state.person]}"><span class="initial" aria-hidden="true">${state.person}</span>${OWN[state.person]}</span>
-      ${ui.preview ? `<span class="preview-badge" title="Testversion unter /preview/ – gleiche Datenbank wie die echte App">Vorschau</span>` : ''}
+      ${ui.preview ? `<span class="preview-badge" title="Testversion unter /preview/ – gleiche Datenbank wie die echte App, aber dein Lesestand wird hier nicht gespeichert">Vorschau</span>` : ''}
       ${ui.wide ? `<button class="link head-link" data-act="screen" data-to="finanzen">Finanzen</button>` : ''}
       <span class="spacer"></span>
       <span class="status" id="status" role="status"></span>

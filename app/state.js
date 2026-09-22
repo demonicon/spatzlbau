@@ -26,6 +26,10 @@ export const ui = {
   confirm: null, // 'del:<id>' | null
   phaseOpen: {}, // phase id -> bool (default open)
   editingAdvice: null, // '<taskId>:<key>'
+  // docs/changes/010: the same deploy serves "/" and "/preview/" out of the same database.
+  // The preview is read-only for the per-person reading state (012 bugfix), so the flag lives
+  // here, next to the three writers it stops – not only in the view layer.
+  preview: typeof location !== 'undefined' && location.pathname.includes('/preview/'),
 };
 
 /* ---------- change notification ---------- */
@@ -202,6 +206,7 @@ export async function loadPersonRow() {
 // Silent on purpose (no status line, no throw): this runs while the page is going away.
 let visitWritten = 0;
 export async function markVisit() {
+  if (ui.preview) return; // the preview never ends a visit: it would move the live block (012)
   if (state.lastVisitAt === undefined || !state.person) return; // column not there / not logged in
   const now = Date.now();
   if (now - visitWritten < 60000) return;
@@ -222,6 +227,8 @@ export async function markCommentsSeen(taskId) {
   const fresher = new Set(state.comments.filter((c) => c.created_at > state.lastVisitAt).map((c) => c.id));
   const ids = [...state.seenComments].filter((id) => fresher.has(id));
   state.seenComments = new Set(ids);
+  // the dot goes away while this session lasts, but the preview does not remember it (012)
+  if (ui.preview) return;
   await supabase.from('allowlist').update({ seen_comments: ids }).eq('person', state.person);
 }
 
@@ -229,6 +236,8 @@ export async function setLastSeenVersion(version) {
   if (state.lastSeenVersion === version) return;
   state.lastSeenVersion = version;
   notify();
+  // closing "Was ist neu?" in the preview must not mark the version as read for the real app (012)
+  if (ui.preview) return;
   // RLS + column grant: only the own row, only this column
   return write('allowlist', () => supabase.from('allowlist').update({ last_seen_version: version }).eq('person', state.person));
 }
