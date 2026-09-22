@@ -315,7 +315,7 @@ export function dashboardView() {
     kpisHTML() +
     phaseChipsHTML() +
     filterRow +
-    (q && !cols.length ? `<p class="empty no-hits">Nichts gefunden zu „${esc(q)}“.</p>` : `<div class="cols">${cols.map(columnHTML).join('')}</div>`) +
+    (q && !cols.length ? `<p class="empty no-hits">Kein Treffer für „${esc(q)}“ – auch nicht in den Teilschritten.</p>` : `<div class="cols">${cols.map(columnHTML).join('')}</div>`) +
     addBoxHTML() +
     `</div>` +
     (ui.mode === 'panel' ? panelHTML(panelTask) : '') +
