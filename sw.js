@@ -1,7 +1,10 @@
 // Minimal service worker: caches the app shell so the PWA opens instantly.
 // Strategy: network first, cache as fallback (fresh code after every deploy, no stale JS).
 // Offline editing is deliberately out of scope; Supabase requests are never cached.
-const VERSION = 'spatzlbau-v0.2.0';
+// BUILD is stamped with the commit SHA by .github/workflows/pages.yml (docs/changes/003);
+// locally the placeholder stays, which is fine – it is just a fixed dev cache name.
+const BUILD = '__BUILD__';
+const VERSION = 'spatzlbau-' + BUILD;
 const SHELL = [
   './',
   './index.html',
@@ -25,7 +28,13 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' bypasses the HTTP cache so a fresh deploy never precaches stale files
+  e.waitUntil(
+    caches
+      .open(VERSION)
+      .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener('activate', (e) => {
@@ -38,7 +47,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // Supabase, CDN: untouched
   e.respondWith(
-    fetch(e.request)
+    // no-cache = revalidate with the server (ETag) instead of trusting the 10-minute HTTP cache of GitHub Pages
+    fetch(e.request, { cache: 'no-cache' })
       .then((res) => {
         if (res.ok) caches.open(VERSION).then((c) => c.put(e.request, res.clone()));
         return res;
