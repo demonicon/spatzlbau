@@ -1,6 +1,6 @@
 # Änderungsauftrag 008 – Härtung
 
-Stand: 22.09.2026 · Status: umgesetzt, PR offen · Branch: `feature/haertung`
+Stand: 22.09.2026 · Status: deployt 22.09.2026 (Merge 7e67ad9, Pages-Lauf 20 – Lauf 19 scheiterte an einem GitHub-OIDC-Timeout, Re-Run per workflow_dispatch) · Branch: `feature/haertung`
 Herkunft: Self-Test nach 006 (Punkte 1, 4, 5). Keine sichtbare Änderung, kein Changelog-Eintrag.
 
 ## Was sich ändert
