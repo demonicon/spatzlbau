@@ -1,6 +1,7 @@
 # Änderungsauftrag 013b – Nachtrag zu 013
 
-Stand: 22.09.2026 · Status: offen · Branch: `feature/audit-fixes` (derselbe wie 013), als eigene Commits nach dem 013-Stopp
+Stand: 22.09.2026 · Status: umgesetzt (22.09.2026, in `preview` zum Prüfen am Handy) · Branch: `feature/audit-fixes` (derselbe wie 013), als eigene Commits nach dem 013-Stopp
+Abweichungen: `docs/changes/013-abweichungen.md`, Abschnitt 11 · Screenshots: `docs/changes/013-screenshots/n2-*.png`, `n3-*.png`
 Grund: 013 lief bereits, als diese Punkte dazukamen. Wo ein Punkt schon in der laufenden Fassung von 013 steht, gilt er als erledigt – in der Abweichungsliste vermerken, welche Fassung gebaut wurde.
 
 ## Nachträge
@@ -18,9 +19,13 @@ Grund: 013 lief bereits, als diese Punkte dazukamen. Wo ein Punkt schon in der l
 
 ## Akzeptanzkriterien (zusätzlich zu 013)
 
-- [ ] Avatar zeigt nur das Kürzel; Name per Tooltip und im Bereichstitel
-- [ ] Zwei Icons, aktiver Zustand sichtbar; Haus setzt Filter und Phase zurück
-- [ ] Version als Text, ⓘ öffnet Changelog und trägt den Neu-Punkt; kein Dauerknopf "Neu laden"; Fußzeile ohne "Finanzen"
-- [ ] Besuchsblock ohne rotes Feld
-- [ ] Ladezustand mit Gate-Leisten-Animation, statisch bei reduzierter Bewegung
-- [ ] Changelog-Eintrag von 013 um einen Satz ergänzt: "Oben rechts findest du jetzt Aufgaben und Finanzen als Symbole."
+- [x] Avatar zeigt nur das Kürzel; Name per Tooltip und im Bereichstitel (mit A6 gebaut)
+- [x] Zwei Icons, aktiver Zustand sichtbar; Haus setzt Filter und Phase zurück (mit A6 gebaut)
+- [x] Version als Text, ⓘ öffnet Changelog und trägt den Neu-Punkt; kein Dauerknopf "Neu laden"; Fußzeile ohne "Finanzen" (mit A6 gebaut)
+- [x] Besuchsblock ohne rotes Feld – fett, Umriss in Textfarbe, Autoren-Punkt mit Initial
+- [x] Ladezustand mit Gate-Leisten-Animation (1,2 s, Schleife), bei reduzierter Bewegung drei stehende Punkte
+- [x] Changelog-Eintrag von 013 um den Satz ergänzt: "Oben rechts findest du jetzt Aufgaben und Finanzen als Symbole."
+
+## Umsetzung
+
+N1 war mit A6 bereits gebaut (Zwei-Icon-Fassung) und blieb unverändert. N2 und N3 kamen als eigene Commits nach dem 013-Stopp: `f6237e3` (Besuchsblock ohne Rot) und `66a776a` (Ladezustand). Geprüft im kopflosen Chrome bei 380 px, **10 von 10** Prüfungen grün, ohne Login und ohne Datenbank – unter anderem gegen die Farbwerte `--danger` und `--danger-bg`, die im Besuchsblock nirgends mehr vorkommen, und mit emulierter Einstellung „Bewegung reduzieren".

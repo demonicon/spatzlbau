@@ -35,7 +35,7 @@ Die 40 px sind **kleiner als die sonst geltenden 44 px** Tap-Ziel – so steht e
 
 Der Auftrag sagt „Warnfarbe nur beim letzten". Bei 380 px scrollt die Chip-Zeile seitlich, und der letzte Chip liegt außerhalb des Bildschirms – ausgerechnet der, der die Person betrifft. Er steht deshalb **vorn** und ist als einziger farbig. Die Farbregel bleibt, die Reihenfolge nicht.
 
-*(Nachtrag 013b N2 will diesen Chip ohne Rot. Noch nicht umgesetzt – siehe Abschnitt 11.)*
+*(Seit 013b N2 ist der Chip nicht mehr rot, sondern fett mit Umriss – siehe Abschnitt 11.)*
 
 ## 5. A2/A3 – die Spaltenzahl richtet sich nach dem Platz, nicht nach einer Stufe
 
@@ -77,13 +77,13 @@ Der Auftrag nennt eine Größe. Ein 7-mm-Kästchen je Teilschritt macht das Blat
 
 Die RLS erlaubt beiden Personen `update` und `delete` auf `comments` (Stand `schema.sql`, seit 002). Die Beschränkung auf eigene Kommentare steckt in der Oberfläche, nicht in der Datenbank. Keine Migration – der Auftrag verlangt keine, und eine engere Policy wäre eine Schema-Änderung, die Sebastian einspielen müsste. Wenn das gewünscht ist: eigener Auftrag.
 
-## 11. Stand von 013b (Nachtrag, kam während der Umsetzung dazu)
+## 11. 013b (Nachtrag, kam während der Umsetzung dazu) – umgesetzt
 
-- **N1** (Kopfzeile, zwei Icons, Version als Text, Fußzeile): durch A6 **erledigt**, Fassung wie oben.
-- **N2** (Besuchsblock ohne Rot): **offen** – der Chip „wartet auf dich" ist derzeit rot hinterlegt.
-- **N3** (Lade-Animation in der Gate-Leiste): **offen**.
+- **N1** (Kopfzeile, zwei Icons, Version als Text, Fußzeile): war mit A6 schon gebaut, Zwei-Icon-Fassung, unverändert übernommen.
+- **N2** (Besuchsblock ohne Rot): umgesetzt. Der Chip „wartet auf dich" ist jetzt fett mit Umriss in Textfarbe, die aufgeklappte Zeile trägt einen Balken links statt einer roten Fläche. Die Kommentar-Chips tragen den Autoren-Punkt mit Initial.
+- **N3** (Lade-Animation): umgesetzt. „Lade …" bleibt, darunter füllt sich die Gate-Leiste in 1,2 s von links nach rechts und leert sich wieder; bei „Bewegung reduzieren" stehen stattdessen drei Punkte.
 
-013b sagt selbst, seine Punkte kommen „als eigene Commits nach dem 013-Stopp" – deshalb stehen N2 und N3 hier nur als Stand, nicht als Versäumnis.
+**Was N2 nicht anfasst:** Die Aufgabenzeile trägt weiterhin ein rotes „wartet auf dich", die Spalte „Wartet auf mich" eine rote Trennlinie und die Akte ein rotes Band (alles aus 009). N2 nennt ausdrücklich nur den Besuchsblock. Wenn Rot überall allein der Überfälligkeit gehören soll, ist das ein eigener Auftrag – im Moment ist die Regel im Besuchsblock strenger als im Rest der Liste.
 
 ## 12. Was geprüft wurde
 
