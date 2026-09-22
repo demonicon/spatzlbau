@@ -69,7 +69,8 @@ function renderStatus(kind, msg) {
   if (kind === 'saved') lastSaved = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   if (kind === 'live') live = true;
   if (kind === 'error') lastError = msg;
-  if (kind === 'saved' || kind === 'saving') lastError = '';
+  // 'live' after a reconnect clears the error, too (docs/changes/010 point 2)
+  if (kind === 'saved' || kind === 'saving' || kind === 'live') lastError = '';
   const el = $('#status');
   if (!el) return;
   if (lastError) {

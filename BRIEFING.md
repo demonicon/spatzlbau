@@ -23,7 +23,7 @@ Dazu die drei nicht verhandelbaren Rahmenbedingungen:
 |---|---|---|
 | Frontend | Vanilla JS mit ES-Modulen, kein Framework, kein Build-Step; Supabase-JS per CDN-ESM mit gepinnter Version; Content-Security-Policy als `<meta>` in `index.html` (keine Inline-Skripte/-Styles, Skripte nur self + jsdelivr, Verbindungen nur Supabase) – Auftrag 008 | Deploy = git push; kleine App; leicht iterierbar |
 | Hosting | GitHub Pages aus öffentlichem Repo (Fallback Cloudflare Pages bei privatem Repo); zusätzlich `preview` → `/preview/`, gleiche Datenbank, Hinweis „Vorschau“ in der App (Auftrag 010) | kostenlos, kein Server; Cloud-Sitzungen testen ohne die Live-App zu berühren |
-| Daten | Supabase (Postgres) mit Realtime | Login, Allowlist, feldgenaue Updates, REST für Claude |
+| Daten | Supabase (Postgres) mit Realtime; ein Ereignis wird feldgenau in den lokalen Stand eingearbeitet, Voll-Reload nur nach Verbindungsabbruch (Auftrag 010) | Login, Allowlist, feldgenaue Updates |
 | Auth | Supabase Auth, E-Mail + Passwort (`signInWithPassword`); Konten legt Sebastian im Dashboard an, keine Selbstregistrierung, kein Passwort-Reset per Mail (Änderungsauftrag 001) | Magic Link scheiterte am Mail-Limit des Supabase-Standardversands; Passwort-Login braucht beim Anmelden keine Mail |
 | Zugriffsschutz | Row Level Security: nur E-Mails aus `allowlist` lesen/schreiben | echter Ausschluss, nicht nur Obscurity |
 | Claude-Lesezugriff | Supabase-Connector (MCP) in Claude Desktop/Code, liest mit den eigenen Zugriffsrechten (Auftrag 010) | eine unauthentifizierte Export-Funktion mit Token in der Query-String war eine offene Tür ohne Nutzen, sobald der Connector direkten Zugriff gibt |

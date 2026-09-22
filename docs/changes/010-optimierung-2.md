@@ -1,6 +1,6 @@
 # Änderungsauftrag 010 – Optimierungsschleife 2
 
-Stand: 22.09.2026 · Status: vorgemerkt (Entwurf) · Branch: `feature/optimierung-2` · Modell: Sonnet, für Punkt 2 Opus
+Stand: 22.09.2026 · Status: 1, 4, 5, 6 umgesetzt und geprüft; Punkt 2 umgesetzt, Live-Test zu zweit steht noch aus · Branch: `feature/optimierung-2` · Modell: Sonnet, für Punkt 2 Opus
 Reihenfolge: nach 004 und 009. Ausnahme: Punkt 4 darf als eigener Vorab-PR laufen. Umsetzung: ein Branch `feature/optimierung-2`, Commit-Reihenfolge 4 · 1 · 5 · 6 · 2, Stopp vor Punkt 2 mit Zwischenbericht.
 Scope-Regel: Punkte sind unabhängig; jeder kann einzeln gestrichen werden, ohne die anderen zu berühren.
 
