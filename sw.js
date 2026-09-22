@@ -23,6 +23,7 @@ const SHELL = [
   './app/ui/task.js',
   './app/ui/detail.js',
   './app/filters.js',
+  './app/changelog.js',
   './app/views/dashboard.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
