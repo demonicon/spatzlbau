@@ -1,7 +1,20 @@
 {
   "entries": [
     {
+      "version": "1.0",
+      "release": "1.0",
+      "date": "22.09.2026",
+      "title": "Version 1.0 – die App, mit der ihr umzieht",
+      "new": [],
+      "improved": [
+        "Die App hat jetzt eine Versionsnummer statt eines Datums – unten in der Fußzeile steht ab jetzt z. B. „1.0“.",
+        "Die Liste „Was ist neu?“ ist jetzt nach Version gruppiert; die neueste ist aufgeklappt, ältere kannst du bei Bedarf aufklappen."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2026.09.22.7",
+      "release": "0.7",
       "title": "Kürzer am Handy, breiter am Rechner",
       "new": [
         "Oben rechts findest du jetzt Aufgaben und Finanzen als Symbole.",
@@ -23,6 +36,7 @@
     },
     {
       "version": "2026.09.22.6",
+      "release": "0.6",
       "title": "Suchen: tippen, finden, dort sein",
       "new": [
         "Oben gibt es jetzt ein Suchfeld – tippe ein Wort, finde die Aufgabe, tippe drauf und du bist dort.",
@@ -39,6 +53,7 @@
     },
     {
       "version": "2026.09.22.5",
+      "release": "0.5",
       "title": "Kosten: was der Umzug kostet, an einer Stelle",
       "new": [
         "Zu jeder Aufgabe kannst du jetzt Kosten eintragen – geschätzt, angeboten, beauftragt, bezahlt.",
@@ -53,6 +68,7 @@
     },
     {
       "version": "2026.09.22.4",
+      "release": "0.4",
       "title": "Die App zeigt zuerst, was bei dir liegt",
       "new": [
         "Du siehst jetzt zuerst, was bei dir liegt – und was Anna oder Claude seit deinem letzten Besuch geschrieben haben.",
@@ -69,6 +85,7 @@
     },
     {
       "version": "2026.09.22.3",
+      "release": "0.3",
       "title": "Am Computer: Liste und Aufgabe nebeneinander",
       "new": [
         "Am Computer siehst du Liste und Aufgabe jetzt nebeneinander. Die Aufgabe bleibt rechts offen, während du links weiterklickst.",
@@ -82,6 +99,7 @@
     },
     {
       "version": "2026.09.22.2",
+      "release": "0.2",
       "title": "Neuigkeiten kommen von selbst",
       "new": [
         "Neuigkeiten zeigen sich jetzt von selbst, wenn du die App öffnest – einmal, danach findest du sie unten über die Versionsnummer."
@@ -93,6 +111,7 @@
     },
     {
       "version": "2026.09.22",
+      "release": "0.1",
       "title": "Spatzlbau hat ein neues Gesicht – und sagt jetzt Bescheid, wenn es Neues gibt",
       "new": [
         "Anmelden mit E-Mail und Passwort. Kein Warten auf eine Login-Mail mehr.",
