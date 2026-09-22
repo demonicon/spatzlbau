@@ -9,6 +9,7 @@ import {
   byId,
   phases,
   loadAll,
+  loadSnapshot,
   subscribeRealtime,
   updateTask,
   insertTask,
@@ -30,6 +31,7 @@ import { dashboardView, columns } from './views/dashboard.js';
 import { isMoreOpen } from './ui/detail.js';
 
 const UI_KEY = 'spatzlbau-ui';
+const PERSON_KEY = 'spatzlbau-person';
 
 // dashboard state (docs/changes/009): no filter on open – the columns already answer "what is mine";
 // the phase is a chip (null = all phases) and is remembered per device
@@ -42,6 +44,8 @@ ui.doneCols = new Set(); // columns showing their done tasks as well
 ui.blockedCols = new Set(); // columns with "N warten auf einen Vorgänger" unfolded
 ui.more = {}; // Akte: task id -> "Mehr" open? (undefined = automatic, see isMoreOpen)
 ui.adviceAdd = new Set(); // Akte: tasks showing the empty advice fields
+ui.printOpen = false; // "Umzugstag drucken" sheet
+ui.offline = false; // no connection: the cached state is shown read-only (009)
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
@@ -68,6 +72,12 @@ function renderStatus(kind, msg) {
   if (lastError) {
     el.textContent = lastError;
     el.className = 'status err';
+    return;
+  }
+  if (ui.offline) {
+    const at = state.loadedAt ? new Date(state.loadedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '–';
+    el.textContent = 'Offline – Stand von ' + at;
+    el.className = 'status off';
     return;
   }
   const parts = [kind === 'saving' ? msg : lastSaved ? 'gespeichert ' + lastSaved : '', live ? 'Live' : 'verbinde …'];
@@ -99,6 +109,7 @@ function render() {
   renderPending = false;
   ensurePhase();
   const focusKey = keyOf(document.activeElement);
+  document.body.classList.toggle('printing', !!ui.printOpen);
   $('#view').innerHTML = dashboardView();
   // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set via CSSOM
   for (const el of $('#view').querySelectorAll('.gate .bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
@@ -205,6 +216,12 @@ function setExpanded(id) {
 
 /* ---------- events ---------- */
 const fail = (e) => e && toast('Nicht gespeichert – bitte nochmal versuchen');
+// what still works without a connection: looking, folding, filtering, printing (docs/changes/009)
+const OFFLINE_OK = new Set([
+  'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
+  'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'more', 'advice-add',
+  'print', 'print-close', 'print-now',
+]);
 
 function wireEvents() {
   const view = $('#view');
@@ -212,7 +229,10 @@ function wireEvents() {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (ui.changelogOpen) closeChangelog();
-    else if (ui.expanded && ui.wide) {
+    else if (ui.printOpen) {
+      ui.printOpen = false;
+      render();
+    } else if (ui.expanded && ui.wide) {
       // a field still being typed in saves on blur – let that happen before the panel goes
       if (document.activeElement?.closest?.('#panel')) document.activeElement.blur();
       setExpanded(null); // Escape empties the side panel
@@ -225,6 +245,19 @@ function wireEvents() {
     if (id && byId(id)) openTaskFromHash();
     else if (!id) ui.expanded = null;
     render();
+  });
+  // no connection: show the cached state read-only; back online: reload, no page reload needed (009)
+  window.addEventListener('offline', () => {
+    ui.offline = true;
+    render();
+  });
+  window.addEventListener('online', () => {
+    loadAll()
+      .then(() => {
+        ui.offline = false;
+        render();
+      })
+      .catch(() => {});
   });
   // leaving the app ends the visit: the next open measures "Seit deinem letzten Besuch" from here (009)
   document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && markVisit().catch(() => {}));
@@ -242,6 +275,14 @@ function wireEvents() {
 
   view.addEventListener('change', (e) => {
     const el = e.target;
+    if (ui.offline) {
+      render(); // put the control back the way the cached state says
+      return toast('Ohne Netz kannst du nur lesen');
+    }
+    if (el.dataset.input === 'kontakte') {
+      setSetting('umzugstag_kontakte', el.value).catch(fail);
+      return;
+    }
     if (el.id === 'einzug') {
       ui.dateEdit = false;
       setSetting('einzugstermin', el.value || '').catch(fail);
@@ -306,6 +347,7 @@ function wireEvents() {
     const b = e.target.closest('[data-act]');
     if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT') return;
     const act = b.dataset.act;
+    if (ui.offline && !OFFLINE_OK.has(act)) return toast('Ohne Netz kannst du nur lesen');
     const row = b.closest('[data-id]'); // task row, or the side panel
     const t = row ? byId(row.dataset.id) : null;
     const input = (sel, root = row) => $(sel, root);
@@ -333,6 +375,19 @@ function wireEvents() {
           return;
         case 'reload':
           location.reload();
+          return;
+        case 'print':
+          ui.printOpen = !ui.printOpen;
+          render();
+          if (ui.printOpen) $('#printsheet')?.scrollIntoView({ block: 'start' });
+          return;
+        case 'print-close':
+          ui.printOpen = false;
+          render();
+          $('.foot')?.scrollIntoView({ block: 'end' });
+          return;
+        case 'print-now':
+          window.print();
           return;
         case 'open':
           setExpanded(ui.expanded === t.id ? null : t.id);
@@ -477,9 +532,18 @@ async function enter(session) {
   show('loading');
   try {
     state.person = await auth.whoAmI();
+    try {
+      localStorage.setItem(PERSON_KEY, state.person || '');
+    } catch {}
   } catch (e) {
-    $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
-    return;
+    // offline: fall back to the person code of the last successful login (RLS is unaffected)
+    try {
+      state.person = localStorage.getItem(PERSON_KEY) || null;
+    } catch {}
+    if (!state.person) {
+      $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
+      return;
+    }
   }
   if (!state.person) {
     $('#denied-email').textContent = state.email || '';
@@ -488,9 +552,16 @@ async function enter(session) {
   }
   try {
     await Promise.all([loadAll(), loadChangelog(), loadPersonRow()]);
+    ui.offline = false;
   } catch (e) {
-    $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
-    return;
+    // no connection: the move-in day still works – last loaded state, read only (009)
+    const at = await loadSnapshot();
+    if (!at) {
+      $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
+      return;
+    }
+    ui.offline = true;
+    await loadChangelog();
   }
   ui.filter = null;
   ui.changelogOpen = false;

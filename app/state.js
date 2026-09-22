@@ -10,6 +10,7 @@ export const state = {
   lastVisitAt: undefined, // allowlist.last_visit_at: when this person last left; null = never here, undefined = unknown (009)
   seenComments: new Set(), // ids of new comments this person already opened (009)
   visitReady: false, // true once migration 006 is applied: last_visit_at / seen_comments / done_by exist (009)
+  loadedAt: null, // when the data last came from the server (009, offline notice)
   settings: {}, // key -> value (jsonb)
   tasks: [], // non-deleted tasks
   subtasks: [],
@@ -109,6 +110,44 @@ export function dueInfo(t) {
   return { label: offsetLabel(t), cls: '', sort: d, diff: null };
 }
 
+/* ---------- offline: the last loaded state stays on the device (docs/changes/009) ----------
+   Read only. Nothing is ever written while offline, so there is nothing to sync back.
+   localStorage instead of the Cache API: see docs/changes/009-abweichungen.md. */
+const SNAP_KEY = 'spatzlbau-snapshot';
+
+function saveSnapshot() {
+  try {
+    localStorage.setItem(
+      SNAP_KEY,
+      JSON.stringify({
+        saved_at: state.loadedAt,
+        settings: state.settings,
+        tasks: state.tasks,
+        subtasks: state.subtasks,
+        comments: state.comments,
+      }),
+    );
+  } catch {} // quota or private mode: the app just has no offline copy
+}
+
+/** Fill the state from the copy on this device. Returns when it was taken, or null. */
+export function loadSnapshot() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SNAP_KEY) || 'null');
+    if (!d || !Array.isArray(d.tasks)) return null;
+    state.settings = d.settings || {};
+    state.tasks = d.tasks;
+    state.subtasks = d.subtasks || [];
+    state.comments = d.comments || [];
+    state.loadedAt = d.saved_at || null;
+    state.loaded = true;
+    notify();
+    return state.loadedAt;
+  } catch {
+    return null;
+  }
+}
+
 /* ---------- loading ---------- */
 export async function loadAll() {
   const [settings, tasks, subtasks, comments] = await Promise.all([
@@ -124,7 +163,9 @@ export async function loadAll() {
   state.subtasks = subtasks.data;
   state.comments = comments.data;
   state.loaded = true;
+  state.loadedAt = new Date().toISOString();
   notify();
+  saveSnapshot();
 }
 
 /* ---------- per-person state in the allowlist row (005b: changelog, 009: last visit) ---------- */

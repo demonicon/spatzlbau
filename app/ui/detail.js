@@ -27,7 +27,7 @@ function subtasksHTML(t) {
   const subs = subsOf(t.id);
   const done = subs.filter((s) => s.done).length;
   return `<h3>Teilschritte ${subs.length ? `<small>${done}/${subs.length}</small>` : ''}</h3>
-    ${subs.map((s) => `<div class="sub ${s.done ? 'done' : ''}" data-sub="${s.id}"><input type="checkbox" ${s.done ? 'checked' : ''} data-act="sub-done" aria-label="Teilschritt erledigt"><span>${esc(s.title)}</span><button class="ico" data-act="sub-del" aria-label="Teilschritt löschen">×</button></div>`).join('')}
+    ${subs.map((s) => `<div class="sub ${s.done ? 'done' : ''}" data-sub="${s.id}"><input type="checkbox" ${s.done ? 'checked' : ''} ${ui.offline ? 'disabled' : ''} data-act="sub-done" aria-label="Teilschritt erledigt"><span>${esc(s.title)}</span><button class="ico" data-act="sub-del" aria-label="Teilschritt löschen">×</button></div>`).join('')}
     <div class="row"><input type="text" data-input="sub" placeholder="Neuer Teilschritt" aria-label="Neuer Teilschritt"><button class="btn small" data-act="sub-add">Hinzufügen</button></div>`;
 }
 
@@ -117,7 +117,7 @@ export function detailHTML(t) {
 
   return `<div class="detail" data-detail="${t.id}">
     <div class="akte-top">
-      <input type="checkbox" class="check" ${t.done ? 'checked' : ''} data-act="done" aria-label="Erledigt">
+      <input type="checkbox" class="check" ${t.done ? 'checked' : ''} ${ui.offline ? 'disabled' : ''} data-act="done" aria-label="Erledigt">
       <textarea class="akte-title" data-field="title" rows="${Math.min(4, Math.ceil(t.title.length / 26))}" aria-label="Titel">${esc(t.title)}</textarea>
     </div>
     <div class="akte-meta">

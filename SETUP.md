@@ -34,6 +34,8 @@ Notieren für Schritt 6: Project URL, Publishable/Anon-Key, Secret/Service-Role-
 
 Das Skript kann jederzeit erneut ausgeführt werden (z. B. nach Adressänderung); Daten und Token bleiben erhalten.
 
+Spätere Schema-Änderungen kommen als einzelne Dateien in `supabase/migrations/` (`NNN_aXXX_thema.sql`, NNN aufsteigend). Sie werden im selben SQL-Editor in dieser Reihenfolge ausgeführt und sind mehrfach ausführbar; Claude Code sagt im Änderungsauftrag, welche dran ist. `schema.sql` enthält immer den Gesamtstand für eine Neueinrichtung.
+
 Token später nochmal anzeigen:
 ```sql
 select value #>> '{}' as export_token from settings where key = 'export_token';

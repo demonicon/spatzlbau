@@ -32,7 +32,7 @@ export function taskHTML(t) {
     .map((a) => `<span class="ndot ${a}" role="img" aria-label="neuer Kommentar von ${OWN[a] || a}"></span>`)
     .join('');
   return `<div class="${cls}" data-id="${t.id}">
-    <input type="checkbox" class="check" ${t.done ? 'checked' : ''} data-act="done" aria-label="Erledigt">
+    <input type="checkbox" class="check" ${t.done ? 'checked' : ''} ${ui.offline ? 'disabled' : ''} data-act="done" aria-label="Erledigt">
     <div class="body">
       <button class="t" data-act="open" aria-expanded="${ui.expanded === t.id}">${esc(t.title)}</button>
       <div class="meta"><span class="own ${t.owner}">${OWN[t.owner]}</span><span class="due ${dueCls}">${esc(dueLabel(t))}</span>${subs}${com}${dots}${claude}${wait}${block}</div>

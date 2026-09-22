@@ -9,6 +9,7 @@ import { FILTERS, matches, count, atClaude, isBlocked, isLate, isCritical, waits
 import { taskHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
 import { compareVersions, hasUnread } from '../changelog.js';
+import { printHTML } from './print.js';
 
 const DAY = 86400000;
 const CAP = 8; // rows per column before "alle n zeigen"
@@ -260,6 +261,7 @@ export function dashboardView() {
     `</div>` +
     (ui.wide ? panelHTML(panelTask) : '') +
     `</div>` +
+    (ui.printOpen ? printHTML() : '') +
     (ui.changelogOpen ? changelogHTML() : '') +
     footerHTML()
   );
@@ -284,7 +286,7 @@ function footerHTML() {
   const version = cur
     ? `<button class="link version" data-act="changelog" aria-expanded="${!!ui.changelogOpen}" title="${build() ? 'Build ' + build() : ''}">${esc(cur.version)}${unseen ? '<span class="dot" aria-label="neu">Neu</span>' : ''}</button>`
     : `<span title="${build() ? 'Build ' + build() : ''}">Version unbekannt</span>`;
-  return `<footer class="foot">${version}<button class="link" data-act="reload">Neu laden</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`;
+  return `<footer class="foot">${version}<button class="link" data-act="reload">Neu laden</button><button class="link" data-act="print" aria-expanded="${!!ui.printOpen}">Umzugstag drucken</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`;
 }
 
 const SECTIONS = [['new', 'Neu'], ['improved', 'Verbessert'], ['fixed', 'Behoben']];

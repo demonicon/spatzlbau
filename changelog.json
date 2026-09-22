@@ -1,6 +1,22 @@
 {
   "entries": [
     {
+      "version": "2026.09.22.4",
+      "title": "Die App zeigt zuerst, was bei dir liegt",
+      "new": [
+        "Du siehst jetzt zuerst, was bei dir liegt – und was Anna oder Claude seit deinem letzten Besuch geschrieben haben.",
+        "Neben einer Aufgabe steht ein farbiger Punkt, wenn jemand dort etwas Neues geschrieben hat. Er verschwindet, sobald du die Aufgabe öffnest.",
+        "Am Umzugstag funktioniert die Liste auch ohne Netz, und du kannst sie ausdrucken – mit Kästchen zum Abhaken, Feldern für Zählerstände und Schlüssel.",
+        "Aufgaben, die auf eine andere warten, stehen zusammengeklappt am Ende einer Spalte. Ein Tipp auf den Grund bringt dich zur Aufgabe, die noch fehlt."
+      ],
+      "improved": [
+        "Eine kleine Aufgabe zeigt nur noch Titel, Frist, Teilschritte und Kommentare. Alles Weitere kommt über „Alle Felder anzeigen“.",
+        "Bei Claude gibt es nur noch drei Schritte: Briefing, bei Claude, Ergebnis liegt vor. Rückfragen sind ganz normale Kommentare.",
+        "Statt zehn Kacheln gibt es vier: Fristkritisch, Überfällig, Blockiert, Bei Claude. Die Phasen sind zu Knöpfen über der Liste geworden."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2026.09.22.3",
       "title": "Am Computer: Liste und Aufgabe nebeneinander",
       "new": [
