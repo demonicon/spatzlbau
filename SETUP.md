@@ -127,6 +127,17 @@ trägt Claude-Ergebnisse ein: `{"tasks":[{"id":"umzugsfirma","status":"ergebnis"
 
 ---
 
+## 7b. Seed ohne PC (GitHub Action, Auftrag 010)
+
+Ein Inhaltspaket einspielen, ohne dass jemand am Rechner sitzt: GitHub → Reiter **Actions** → Workflow **Seed** → **Run workflow**.
+
+- **package** – Pfad im Repo, Standard `seed.json`. Für ein Inhaltspaket z. B. `content/beispiel-004.json`.
+- **dry** – Häkchen setzen, um nur zu sehen, was sich ändern würde (nichts wird geschrieben).
+
+Ergebnis im Lauf-Log (Schritt „Merge … into the database“): wie viele Aufgaben/Teilschritte neu angelegt bzw. aktualisiert wurden. Nutzt dieselben Secrets wie der Backup-Workflow (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), keine weitere Einrichtung nötig. Macht dasselbe wie `node scripts/seed.mjs` lokal (Abschnitt 7a) – die Merge-Regeln in `app/seed-merge.js` sind identisch, nie destruktiv.
+
+---
+
 ## 8. Export-URL für Claude im Chat
 
 Nur-Lese-Zugriff auf den Gesamtstand als JSON. Aufbau:
