@@ -108,14 +108,16 @@ function visitHTML() {
   // first, not last: on a 380 px screen the chip row scrolls, and this is the one to see
   if (waits) parts.unshift(['waitme', waits, waits === 1 ? 'wartet auf dich' : 'warten auf dich', 'urgent']);
   if (!parts.length) return '';
-  // docs/changes/013 A1: one line of chips; the four full rows appear once a chip is active
+  // docs/changes/013 A1: one line of chips; the four full rows appear once a chip is active.
+  // docs/changes/013b N2: no red field here - red belongs to "überfällig". What stands out
+  // does so through weight and the author's dot.
   const open = parts.some(([key]) => key === ui.filter);
   if (!open) {
     return `<section class="visit chips-only" aria-label="Seit deinem letzten Besuch">
       <span class="visit-label">Seit deinem Besuch</span>
       ${parts
         .map(
-          ([key, n, label, cls]) => `<button class="vchip ${cls}" data-filter="${key}" aria-pressed="false" title="${esc(label)}"><b>${n}</b> ${esc(shortLabel(key, label))}</button>`,
+          ([key, n, label, cls]) => `<button class="vchip ${cls}" data-filter="${key}" aria-pressed="false" title="${esc(label)}">${authorDot(key)}<b>${n}</b> ${esc(shortLabel(key, label))}</button>`,
         )
         .join('')}
     </section>`;
@@ -125,11 +127,17 @@ function visitHTML() {
     ${parts
       .map(
         ([key, n, label, cls]) => `<button class="visit-part ${cls}" data-filter="${key}" aria-pressed="${ui.filter === key}">
-          <span class="n">${n}</span><span class="l">${esc(label)}</span>
+          ${authorDot(key)}<span class="n">${n}</span><span class="l">${esc(label)}</span>
         </button>`,
       )
       .join('')}
   </section>`;
+}
+
+// who wrote it, in their colour and with their initial - the same dot as in the task row (013b N2)
+function authorDot(key) {
+  const who = key.startsWith('new') ? key.slice(3) : '';
+  return who ? `<span class="ndot ${who}" aria-hidden="true">${who}</span>` : '';
 }
 
 // the chip says the same in two words: "1 Anna", "1 erledigt", "1 wartet auf dich"

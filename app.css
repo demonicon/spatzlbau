@@ -37,6 +37,24 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 
 /* screens: loading / login / denied */
 .screen { padding: 24px var(--gutter); color: var(--ink-2); }
+/* docs/changes/013b N3: waiting looks like the gate bar of the app, filling left to right in
+   1.2 s and emptying again - it says "this app", not "some spinner" */
+.load-text { margin: 0; font-size: var(--fs-ui); }
+.load-gates { display: flex; gap: 4px; margin-top: 14px; max-width: 320px; }
+.load-gates i { flex: 1; height: 6px; background: var(--line); overflow: hidden; }
+.load-gates i::after { content: ''; display: block; height: 100%; background: var(--ink); transform: scaleX(0); transform-origin: left center; animation: loadfill 1.2s ease-in-out infinite; }
+.load-gates i:nth-child(2)::after { animation-delay: 0.08s; }
+.load-gates i:nth-child(3)::after { animation-delay: 0.16s; }
+.load-gates i:nth-child(4)::after { animation-delay: 0.24s; }
+.load-gates i:nth-child(5)::after { animation-delay: 0.32s; }
+@keyframes loadfill { 0% { transform: scaleX(0); } 40% { transform: scaleX(1); } 60% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+/* no motion wanted: three dots that simply stand there */
+.load-dots { display: none; gap: 6px; margin-top: 16px; }
+.load-dots i { width: 8px; height: 8px; border-radius: var(--r-pill); background: var(--line-dash); }
+@media (prefers-reduced-motion: reduce) {
+  .load-gates { display: none; }
+  .load-dots { display: flex; }
+}
 .card { background: var(--card); border: 1px solid var(--line); padding: var(--gutter); }
 .card h2 { margin: 0 0 6px; font-size: 20px; }
 .card label { display: block; font-size: var(--fs-meta); color: var(--ink-2); margin: 12px 0 6px; }
@@ -102,16 +120,23 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .visit-label { flex: none; font-size: var(--fs-micro); color: var(--ink-3); }
 .vchip { flex: none; min-height: var(--tap); padding: 0 12px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--card); font-size: var(--fs-small); color: var(--ink-2); white-space: nowrap; }
 .vchip b { color: var(--ink); font-size: var(--fs-meta); }
-.vchip.urgent { background: var(--danger-bg); border-color: var(--danger-bg); color: var(--danger); }
-.vchip.urgent b { color: var(--danger); }
+/* docs/changes/013b N2: what waits for me is heavier and outlined, not red - red stays with
+   "überfällig", so the two cannot be confused at a glance */
+.vchip.urgent { border-color: var(--ink); color: var(--ink); font-weight: 600; }
+.vchip .ndot { width: 16px; height: 16px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: var(--fs-nano); font-weight: 700; line-height: 1; margin-left: -3px; }
+.vchip .ndot.S, .visit-part .ndot.S { background: var(--seb); }
+.vchip .ndot.A, .visit-part .ndot.A { background: var(--anna); }
+.vchip .ndot.C, .visit-part .ndot.C { background: var(--claude); }
 .visit { margin: 12px var(--gutter) 0; border: 1px solid var(--ink); background: var(--card); }
 .visit h2 { margin: 0; padding: 8px 12px 6px; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--line); }
 .visit-part { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--line); }
 .visit-part:last-child { border-bottom: 0; }
 .visit-part .n { font-size: 20px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; min-width: 22px; }
 .visit-part .l { font-size: var(--fs-meta); color: var(--ink); line-height: 1.25; }
-.visit-part.urgent { background: var(--danger-bg); }
-.visit-part.urgent .n { color: var(--danger); }
+.visit-part .ndot { width: 16px; height: 16px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: var(--fs-nano); font-weight: 700; line-height: 1; flex: none; }
+/* 013b N2: the row that waits for me is bold and carries a mark on the left - no red field */
+.visit-part.urgent { box-shadow: inset 3px 0 0 var(--ink); }
+.visit-part.urgent .l { font-weight: 600; }
 .visit-part[aria-pressed=true] { box-shadow: inset 3px 0 0 var(--ink); }
 
 /* ---------- KPI tiles: four, one row (docs/changes/009) ---------- */
