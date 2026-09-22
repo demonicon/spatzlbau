@@ -1,7 +1,7 @@
 // One task row (list item) as in the design handoff; the detail panel is appended when expanded.
 import { esc } from './dom.js';
 import { OWN, STEP_LABEL } from './labels.js';
-import { ui, blockers, dueInfo, subProgress, comsOf, einzug } from '../state.js';
+import { state, ui, blockers, dueInfo, subProgress, comsOf, einzug } from '../state.js';
 import { isBlocked, isLate, isCritical } from '../filters.js';
 import { detailHTML } from './detail.js';
 
@@ -29,8 +29,16 @@ export function taskHTML(t) {
   const cls = ['task', t.done ? 'done' : '', blocked ? 'blocked' : '', open ? 'open' : '', open && ui.wide ? 'selected' : ''].join(' ');
   const dueCls = isLate(t) ? 'late' : isCritical(t) ? 'crit' : '';
   const claude = t.type === 'claude' ? `<span class="tag claude">Claude · ${STEP_LABEL[t.status] || 'Briefing offen'}</span>` : t.type === 'assist' ? `<span class="tag">Claude unterstützt</span>` : '';
-  const wait = t.wait_on ? `<span class="tag">wartet auf ${OWN[t.wait_on]}</span>` : '';
-  const block = blocked ? `<span class="tag block">blockiert: ${esc(bl[0].title.slice(0, 34))}${bl[0].title.length > 34 ? '…' : ''}${bl.length > 1 ? ' +' + (bl.length - 1) : ''}</span>` : '';
+  // docs/changes/009: what waits for the logged-in person is the loudest thing in the row
+  const wait = t.wait_on
+    ? t.wait_on === state.person
+      ? `<span class="tag wait-me">wartet auf dich</span>`
+      : `<span class="tag">wartet auf ${OWN[t.wait_on]}</span>`
+    : '';
+  // docs/changes/009: the reason is a link to the blocking task – this is where the dependency graph lives
+  const block = blocked
+    ? `<button class="tag block" data-act="goto" data-ref="${esc(bl[0].id)}">blockiert: ${esc(bl[0].title.slice(0, 34))}${bl[0].title.length > 34 ? '…' : ''}${bl.length > 1 ? ' +' + (bl.length - 1) : ''}</button>`
+    : '';
   const subs = sp ? `<span>${sp[0]}/${sp[1]} Teilschritte</span>` : '';
   const com = coms ? `<span class="muted">${coms} ${coms === 1 ? 'Kommentar' : 'Kommentare'}</span>` : '';
   return `<div class="${cls}" data-id="${t.id}">
@@ -42,5 +50,3 @@ export function taskHTML(t) {
     ${open && !ui.wide ? detailHTML(t) : ''}
   </div>`;
 }
-
-export const listHTML = (tasks, empty = 'Nichts hier.') => tasks.map(taskHTML).join('') || `<p class="empty">${empty}</p>`;

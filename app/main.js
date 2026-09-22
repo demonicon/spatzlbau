@@ -23,14 +23,18 @@ import {
 } from './state.js';
 import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
-import { dashboardView } from './views/dashboard.js';
+import { dashboardView, columns } from './views/dashboard.js';
 
 const UI_KEY = 'spatzlbau-ui';
 
-// dashboard state (docs/changes/002): one active filter, "Diese Woche" on every open; phase is remembered per device
-ui.filter = 'week';
+// dashboard state (docs/changes/009): no filter on open – the columns already answer "what is mine";
+// the phase is a chip (null = all phases) and is remembered per device
+ui.filter = null;
 ui.phase = null;
 ui.dateEdit = false;
+ui.openCols = new Set(); // collapsible column ("Bei Anna") that the person opened
+ui.allCols = new Set(); // columns showing more than the first eight rows
+ui.doneCols = new Set(); // columns showing their done tasks as well
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
@@ -76,11 +80,8 @@ function isTyping() {
 }
 function ensurePhase() {
   const list = phases();
-  if (!list.length) return;
-  if (!list.some((p) => p.id === ui.phase)) {
-    const firstOpen = state.tasks.filter((t) => !t.done).sort((a, b) => a.phase - b.phase)[0];
-    ui.phase = firstOpen ? firstOpen.phase : list[0].id;
-  }
+  // null = chip "alle"; anything else has to exist
+  if (ui.phase !== null && list.length && !list.some((p) => p.id === ui.phase)) ui.phase = null;
 }
 function render() {
   if (!state.loaded) return;
@@ -106,7 +107,9 @@ function keyOf(el) {
   const scope = el.closest('[data-id]');
   const own = FOCUS_ATTRS.filter((a) => el.hasAttribute(a)).map((a) => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('');
   const sub = el.closest('[data-sub]');
-  const sel = (sub ? `[data-sub="${CSS.escape(sub.dataset.sub)}"] ` : '') + el.tagName.toLowerCase() + own + (el.id ? '#' + CSS.escape(el.id) : '');
+  // the first class disambiguates controls that share an attribute (gate segment vs. phase chip)
+  const cls = el.classList[0] ? '.' + CSS.escape(el.classList[0]) : '';
+  const sel = (sub ? `[data-sub="${CSS.escape(sub.dataset.sub)}"] ` : '') + el.tagName.toLowerCase() + cls + own + (el.id ? '#' + CSS.escape(el.id) : '');
   return { scope: scope ? scope.dataset.id : null, sel };
 }
 function restoreFocus(key) {
@@ -125,7 +128,7 @@ function saveUI() {
 function loadUI() {
   try {
     const u = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
-    if (Number.isInteger(u.phase)) ui.phase = u.phase;
+    if (Number.isInteger(u.phase) || u.phase === null) ui.phase = u.phase;
   } catch {}
 }
 
@@ -163,7 +166,16 @@ function openTaskFromHash() {
   ui.phase = t.phase;
   if (ui.filter && !FILTERS[ui.filter].test(t)) ui.filter = null;
   ui.expanded = t.id;
+  revealTask(t);
   return true;
+}
+// the task has to be visible: open its column, show it even past the eighth row or among the done ones
+function revealTask(t) {
+  for (const c of columns()) {
+    if (![...c.open, ...c.done].some((x) => x.id === t.id)) continue;
+    ui.openCols.add(c.key);
+    if (c.done.some((x) => x.id === t.id)) ui.doneCols.add(c.key);
+  }
 }
 // the open task lives in the URL, so a link to it can be shared (docs/changes/006)
 function syncHash() {
@@ -264,10 +276,11 @@ function wireEvents() {
       else render();
       return;
     }
-    // gate bar and phase tabs select the phase; the filter stays
+    // gate bar and phase chips select the phase; the filter stays
     const ph = e.target.closest('[data-phase]');
     if (ph) {
-      ui.phase = parseInt(ph.dataset.phase, 10);
+      const want = ph.dataset.phase === 'all' ? null : parseInt(ph.dataset.phase, 10);
+      ui.phase = ui.phase === want ? null : want; // tapping the active phase again shows all phases
       saveUI();
       if (!ui.wide) setExpanded(null);
       else render();
@@ -306,6 +319,29 @@ function wireEvents() {
           return;
         case 'open':
           setExpanded(ui.expanded === t.id ? null : t.id);
+          return;
+        // docs/changes/009: "blockiert: …" is a link to the blocking task
+        case 'goto': {
+          const dep = byId(b.dataset.ref);
+          if (!dep) return;
+          if (ui.phase !== null && dep.phase !== ui.phase) ui.phase = dep.phase;
+          if (ui.filter && !FILTERS[ui.filter].test(dep)) ui.filter = null;
+          revealTask(dep);
+          setExpanded(dep.id);
+          if (!ui.wide) $(`#view .task[data-id="${CSS.escape(dep.id)}"]`)?.scrollIntoView({ block: 'start' });
+          return;
+        }
+        case 'col-toggle':
+          ui.openCols.has(b.dataset.ref) ? ui.openCols.delete(b.dataset.ref) : ui.openCols.add(b.dataset.ref);
+          render();
+          return;
+        case 'col-all':
+          ui.allCols.add(b.dataset.ref);
+          render();
+          return;
+        case 'col-done':
+          ui.doneCols.add(b.dataset.ref);
+          render();
           return;
         case 'panel-close':
           setExpanded(null);
@@ -380,7 +416,7 @@ function wireEvents() {
           const w = parseInt(input('[data-input=new-w]', box).value || '0', 10);
           const dir = parseInt(input('[data-input=new-dir]', box).value, 10);
           const id = await insertTask({
-            phase: +box.dataset.p,
+            phase: parseInt(input('[data-input=new-p]', box).value, 10),
             title,
             owner: input('[data-input=new-o]', box).value,
             offset_days: w * 7 * dir,
@@ -388,8 +424,10 @@ function wireEvents() {
             type: input('[data-input=new-type]', box).value,
           });
           const nt = byId(id);
-          // keep the new task visible: drop the filter if it would hide it
+          // keep the new task visible: drop the filter and the phase chip if they would hide it
           if (nt && ui.filter && !FILTERS[ui.filter].test(nt)) ui.filter = null;
+          if (nt && ui.phase !== null && nt.phase !== ui.phase) ui.phase = nt.phase;
+          if (nt) revealTask(nt);
           setExpanded(id);
           toast('Aufgabe hinzugefügt');
           return;

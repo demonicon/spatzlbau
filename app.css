@@ -80,37 +80,25 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .gate .bar i { position: absolute; inset: 0 auto 0 0; background: var(--ink); }
 .gate.complete .bar i { background: var(--ok); }
 
-/* ---------- KPI tiles ---------- */
-.kpis { margin: 18px var(--gutter) 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); }
-.kpi-top { grid-column: 1 / -1; background: var(--card); padding: 10px 12px 8px; display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; align-items: center; }
-.kpi-open { min-height: var(--tap); display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; }
-.kpi-open[aria-pressed=true] { border-bottom-color: var(--ink); }
-.kpi-open .n { font-size: var(--fs-kpi); font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
-.kpi-open .l { font-size: var(--fs-micro); color: var(--ink-2); margin-top: 3px; }
-.owners { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-.owner { min-height: var(--tap); display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border-radius: var(--r-tag); font-size: var(--fs-small); font-weight: 600; }
-.owner b { font-weight: 700; }
-.owner.S { background: var(--seb-bg); color: var(--seb); }
-.owner.A { background: var(--anna-bg); color: var(--anna); }
-.owner.B { background: var(--both-bg); color: var(--both); }
-.owner[aria-pressed=true] { box-shadow: 0 0 0 2px currentColor; }
-.tile { background: var(--card); min-height: 64px; padding: 10px 12px 8px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; }
+/* ---------- KPI tiles: four, one row (docs/changes/009) ---------- */
+.kpis { margin: 18px var(--gutter) 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.tile { background: var(--card); min-height: 64px; padding: 10px 8px 8px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; }
 .tile[aria-pressed=true] { border-bottom-color: var(--ink); }
 .tile .n { font-size: var(--fs-tile); font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
 .tile .n span { padding: 0 4px; margin-left: -4px; }
-.tile .l { font-size: var(--fs-micro); color: var(--ink-2); margin-top: 4px; }
-.tile .l span { color: var(--ink-3); }
+.tile .l { font-size: var(--fs-micro); color: var(--ink-2); margin-top: 4px; line-height: 1.2; hyphens: auto; overflow-wrap: anywhere; }
+.tile .l span { color: var(--ink-3); display: none; } /* sub-counts from 600 px on */
 .tile.zero .n { color: var(--ink-3); }
 .tile.critical:not(.zero) .n span { background: var(--mark); }
 .tile.late:not(.zero) .n { color: var(--danger); }
 
-/* ---------- phase tabs ---------- */
-.tabs { display: flex; gap: 2px; overflow-x: auto; margin: 22px 0 0; padding: 0 var(--gutter); border-bottom: 1px solid var(--line); scrollbar-width: none; }
-.tabs::-webkit-scrollbar { display: none; }
-.tabs [role=tab] { flex: none; min-height: var(--tap); padding: 8px 10px 10px; font-size: var(--fs-ui); white-space: nowrap; color: var(--ink-2); border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: baseline; gap: 6px; }
-.tabs [role=tab] .no { font-size: var(--fs-micro); color: var(--ink-3); }
-.tabs [role=tab] .cnt { font-size: var(--fs-micro); color: var(--ink-3); }
-.tabs [role=tab][aria-selected=true] { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+/* ---------- phase chips (docs/changes/009: phases filter, they no longer navigate) ---------- */
+.chips-row { display: flex; align-items: center; gap: var(--gap); margin: 18px 0 0; padding: 0 var(--gutter); }
+.chips-label { font-size: var(--fs-micro); color: var(--ink-2); flex: none; }
+.pchips { display: flex; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.pchips::-webkit-scrollbar { display: none; }
+.pchip { flex: none; min-height: var(--tap); padding: 0 12px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: var(--r-pill); font-size: var(--fs-small); color: var(--ink-2); white-space: nowrap; }
+.pchip[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
 .gate-text { margin: 8px var(--gutter) 0; font-size: var(--fs-small); color: var(--ink-2); }
 
 /* active filter chip */
@@ -119,8 +107,18 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .filter-chip .x { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; font-size: 18px; }
 .filter-count { font-size: var(--fs-small); color: var(--ink-3); }
 
-/* ---------- task list ---------- */
-.list { padding: 4px var(--gutter) 24px; flex: 1; }
+/* ---------- columns: one per person (docs/changes/009) ---------- */
+.col { margin-top: 20px; }
+.col-head { width: 100%; display: flex; align-items: baseline; gap: var(--gap); min-height: var(--tap); padding: 0 var(--gutter) 6px; border-bottom: 1.5px solid var(--line); }
+.col.own-S .col-head { border-bottom-color: var(--seb); }
+.col.own-A .col-head { border-bottom-color: var(--anna); }
+.col.own-B .col-head { border-bottom-color: var(--both); }
+.col.own-wait .col-head { border-bottom-color: var(--danger); }
+.col .cnt { font-size: var(--fs-small); color: var(--ink-2); }
+.col .note { font-size: var(--fs-micro); color: var(--ink-3); margin-left: auto; text-align: right; }
+.col .chev { font-size: 18px; color: var(--ink-3); width: 24px; text-align: center; margin-left: 4px; }
+.col-body { padding: 0 var(--gutter); }
+.col-more { min-height: 48px; padding: 10px 0; font-size: var(--fs-meta); color: var(--ink-2); text-decoration: underline; display: block; }
 .empty { color: var(--ink-3); font-size: var(--fs-ui); padding: 14px 0; margin: 0; }
 .task { display: grid; grid-template-columns: var(--tap) 1fr; align-items: start; border-bottom: 1px solid var(--line); padding: 4px 0; }
 .task .check { width: var(--tap); height: var(--tap); margin: 0; appearance: none; -webkit-appearance: none; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
@@ -139,12 +137,15 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .own.A { background: var(--anna-bg); color: var(--anna); }
 .own.B { background: var(--both-bg); color: var(--both); }
 .own.C { background: var(--claude-bg); color: var(--claude); }
+.own.wait { background: var(--danger-bg); color: var(--danger); }
 .due { padding: 0 3px; margin: 0 -3px; }
 .due.crit { background: var(--mark); color: var(--ink); font-weight: 600; }
 .due.late { color: var(--danger); font-weight: 600; }
 .tag { font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid var(--line); }
 .tag.claude { background: var(--claude-bg); color: var(--claude); border-color: transparent; }
-.tag.block { border: 0; padding: 0; color: var(--ink-3); }
+.tag.wait-me { background: var(--danger-bg); color: var(--danger); border-color: transparent; font-weight: 600; }
+.tag.block { border: 0; padding: 0; color: var(--ink-3); text-decoration: underline dotted; text-underline-offset: 2px; font-size: var(--fs-micro); }
+.tag.block:hover { color: var(--ink); }
 .muted { color: var(--ink-3); }
 
 /* ---------- detail panel ("Akte", unchanged in function) ---------- */
@@ -202,7 +203,7 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 .steps li.cur span { color: var(--claude); font-weight: 600; }
 .confirm { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; background: var(--danger-bg); padding: 6px 10px; font-size: var(--fs-meta); }
 .confirm.block { display: flex; margin: 10px var(--gutter) 0; background: var(--claude-bg); }
-.addbox { margin: 12px 0 4px; background: var(--card); border: 1px dashed var(--line-dash); padding: 10px 12px; }
+.addbox { margin: 18px var(--gutter) 24px; background: var(--card); border: 1px dashed var(--line-dash); padding: 10px 12px; }
 .addbox .row:first-child { margin-top: 0; }
 
 /* ---------- page footer (utilities) ---------- */
@@ -226,9 +227,10 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 .toast.show { opacity: 1; }
 
 /* =====================================================================
-   docs/changes/006 – wider screens. Everything above this line is the
-   380-px layout and stays untouched; these queries only add on top.
-   ≤ 599 px mobile · 600–899 px tablet · ≥ 900 px desktop (two columns)
+   Wider screens (docs/changes/006, regrouped in 009). Everything above this
+   line is the phone layout; these queries only add on top.
+   <= 599 px phone (columns stacked) - 600-899 px tablet - >= 900 px desktop
+   (three person columns next to the Akte panel)
    ===================================================================== */
 @media (min-width: 600px) {
   .wrap { max-width: 760px; }
@@ -238,16 +240,16 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
   .hero-row .hero .t { max-width: 170px; }
   .hero-row .gates { flex: 1 1 300px; min-width: 0; margin-top: 0; }
   .hero-row .date-edit { flex: 1 0 100%; order: 3; }
-  /* wider tiles: three per row */
-  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  /* five equal tabs, no scrolling: number + name in one line (name may wrap), count underneath */
-  .tabs [role=tab] { flex: 1 1 0; min-width: 0; white-space: normal; padding-left: 4px; padding-right: 4px; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; align-items: baseline; align-content: end; }
-  .tabs [role=tab] .cnt { grid-column: 2; }
+  /* room for the sub-counts on the tiles (issues.md #3: never show less on the bigger screen) */
+  .tile { padding: 10px 12px 8px; }
+  .tile .l span { display: inline; }
+  /* all phases fit without scrolling */
+  .pchips { flex-wrap: wrap; overflow-x: visible; }
 }
 
 @media (min-width: 900px) {
   .wrap { max-width: 1280px; }
-  /* list left, panel right – always, so nothing jumps when the first task opens */
+  /* list left, panel right - always, so nothing jumps when the first task opens */
   .board { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(340px, 440px); align-items: start; }
   .col-list { min-width: 0; }
   /* the Akte as a sticky side panel that scrolls on its own */
@@ -257,27 +259,24 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
   .panel-head { display: flex; align-items: center; gap: 6px; padding: 8px 0 0; min-height: 52px; }
   .panel .detail { margin: 0; }
   .task.selected { border-left: 3px solid var(--ink); margin-left: -3px; background: var(--card); }
-  /* tabs and gate text in one row */
-  .tabs-row { display: flex; align-items: flex-end; gap: 8px 20px; margin-top: 22px; padding: 0 var(--gutter); flex-wrap: wrap; }
-  .tabs-row .tabs { flex: 1 1 520px; min-width: 0; margin: 0; padding: 0; gap: 10px; }
-  .tabs-row .gate-text { flex: 0 1 280px; min-width: 0; margin: 0 0 6px; text-wrap: pretty; }
-  /* the list column is ~800 px wide: gate text goes under the tabs */
-  .tabs-row .gate-text { flex: 1 0 100%; margin: 8px 0 0; }
-  /* KPI tiles uniform, two rows of five: Offen, the three owners, then the six filters */
-  .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .kpi-top, .owners { display: contents; }
-  .kpi-open { background: var(--card); min-height: 72px; padding: 10px 10px 8px; }
-  .kpi-open .n { font-size: var(--fs-tile); }
-  .kpi-open .l { margin-top: 5px; }
-  .owner { min-height: 72px; padding: 10px 10px 8px; border-radius: 0; flex-direction: column-reverse; align-items: flex-start; justify-content: center; gap: 5px; font-weight: 400; font-size: var(--fs-micro); border-bottom: 2px solid transparent; }
-  .owner b { font-size: var(--fs-tile); font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
-  .owner[aria-pressed=true] { box-shadow: none; border-bottom-color: currentColor; }
-  .tile { min-height: 72px; padding: 10px 10px 8px; }
-  .tile .l { line-height: 1.25; overflow-wrap: anywhere; }
-  .tile .l span { display: none; } /* sub-counts only in the two-column layout */
+  /* three columns side by side: me, shared, the other person (docs/changes/009) */
+  .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); margin-top: 20px; border-top: 1px solid var(--line); }
+  .col { background: var(--paper); margin-top: 0; padding-bottom: 12px; min-width: 0; }
+  .col-head { padding: 12px 12px 8px; flex-wrap: wrap; }
+  .col .note { flex-basis: 100%; margin-left: 0; text-align: left; }
+  .col-body { padding: 0 12px; }
+  .col-more { padding: 10px 12px; }
+  /* narrow columns: keep the 44 px tap target but pull the box to the edge */
+  .cols .task { grid-template-columns: 36px 1fr; }
+  .cols .task .check { margin-left: -4px; }
+  .cols .task .t { font-size: var(--fs-ui); }
+  .cols .task .own { display: none; } /* the column head already says whose task it is */
 }
 
-/* keyboard: the tab strip clips outlines on narrow screens (it scrolls), so keep the ring inside */
-@media (min-width: 600px) {
-  .tabs [role=tab]:focus-visible, .panel :focus-visible { outline-offset: -2px; }
+/* keyboard: the chip row clips outlines on narrow screens (it scrolls), so keep the ring inside */
+@media (max-width: 599px) {
+  .pchip:focus-visible { outline-offset: -2px; }
+}
+@media (min-width: 900px) {
+  .panel :focus-visible { outline-offset: -2px; }
 }

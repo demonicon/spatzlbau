@@ -1,4 +1,4 @@
-// Dashboard filters (docs/changes/002): predicates over tasks, KPI definitions, "Diese Woche".
+// Dashboard filters and the person grouping (docs/changes/002, reduced in 009).
 // Pure functions on top of state.js – no writes, no DOM.
 import { state, blockers, dueInfo, einzug } from './state.js';
 
@@ -10,22 +10,19 @@ export const isDelegated = (t) => !t.done && t.type === 'claude';
 export const atClaude = (t) => isDelegated(t) && ['go', 'recherche', 'arbeit'].includes(t.status);
 export const isWaiting = (t) => !t.done && (!!t.wait_on || (t.type === 'claude' && ['rueckfragen', 'ergebnis'].includes(t.status)));
 
-// "Diese Woche": what the logged-in person can act on now – own or shared tasks that are open and
-// not blocked and not currently with Claude, plus anything explicitly waiting for this person.
-export const isMineNow = (t, me) =>
-  !t.done && ((['B', me].includes(t.owner) && !isBlocked(t) && !atClaude(t)) || t.wait_on === me);
+/* ---------- person grouping (docs/changes/009) ---------- */
+export const other = (me) => (me === 'S' ? 'A' : 'S');
+// waits for me: someone set wait_on to me, or Claude has delivered and we have to decide
+export const waitsOnMe = (t, me) => !t.done && (t.wait_on === me || (t.type === 'claude' && t.status === 'ergebnis'));
 
+// docs/changes/009: the ten tiles became four – the three owner counts are the column heads now,
+// "Offen" is the count in every column head, and "Diese Woche" is what the "Ich" column shows.
 export const FILTERS = {
-  week: { label: 'Diese Woche', test: (t) => isMineNow(t, state.person) },
-  open: { label: 'Offen', test: isOpen },
-  S: { label: 'Offen · Sebastian', test: (t) => isOpen(t) && t.owner === 'S' },
-  A: { label: 'Offen · Anna', test: (t) => isOpen(t) && t.owner === 'A' },
-  B: { label: 'Offen · gemeinsam', test: (t) => isOpen(t) && t.owner === 'B' },
   claude: { label: 'Bei Claude', test: isDelegated },
-  wait: { label: 'Wartet auf jemanden', test: isWaiting },
   blocked: { label: 'Blockiert', test: isBlocked },
   critical: { label: 'Fristkritisch', test: isCritical },
   late: { label: 'Überfällig', test: isLate },
+  wait: { label: 'Wartet auf jemanden', test: isWaiting },
 };
 
 export const matches = (t, key) => !key || !FILTERS[key] || FILTERS[key].test(t);
