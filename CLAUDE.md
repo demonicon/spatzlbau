@@ -30,6 +30,11 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Commit-Messages: Präfix `feat:`, `fix:`, `content:`, `chore:`. Kleine Commits.
 - Vor dem Push: `index.html` lokal öffnen (Live-Server) und auf ~380 px prüfen.
 
+## Preview-Deploy (Auftrag 010)
+- Zwei Ziele, ein Pages-Workflow, eine Datenbank: `main` → `/`, Branch `preview` → `/preview/`. Jeder Deploy baut beide neu (der jeweils andere Branch wird mitgecheckt, sonst würde ein Push den anderen Pfad löschen).
+- Cloud-Sitzungen (ohne direkten Kontakt zu Sebastian) mergen ihre Branches nach `preview`, nicht nach `main`. Sebastian prüft `/preview/` am Handy (erkennbar am Hinweis „Vorschau“ in der Statuszeile) und merged danach selbst `preview` → `main`.
+- Lokale Sitzungen mit Sebastian im Chat mergen wie gehabt direkt nach `main`, sobald er zustimmt.
+
 ## Tests gegen die Live-Datenbank
 - Tests, die als echte Person (Sebastian oder Anna) eingeloggt laufen oder in die Live-Datenbank schreiben, werden **vorher angesagt** – nicht nebenbei erledigt. Lesende Abfragen und in Transaktionen zurückgerollte Migrationsprüfungen sind davon nicht betroffen.
 - Testdaten werden danach entfernt und der Nachweis gezeigt (Abfrage mit Ergebnis, nicht nur die Behauptung). Das gilt auch für Nebenwirkungen: `last_seen_version`, `last_visit_at`, `seen_comments`, `done_by`, `status`, Briefing-Felder, `settings`-Schlüssel.

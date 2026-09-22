@@ -47,6 +47,9 @@ ui.adviceAdd = new Set(); // Akte: tasks showing the empty advice fields
 ui.printOpen = false; // "Umzugstag drucken" sheet
 ui.offline = false; // no connection: the cached state is shown read-only (009)
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
+// docs/changes/010: the same deploy serves "/" (live) and "/preview/" (the preview branch,
+// same Supabase project); the only visible difference is this hint in the status line
+ui.preview = location.pathname.includes('/preview/');
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
 ui.changelogUnreadOnly = false; // auto-opened panel shows only the versions newer than last_seen_version

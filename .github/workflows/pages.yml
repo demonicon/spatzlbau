@@ -1,9 +1,12 @@
-# Publishes the repository root to GitHub Pages on every push to main (no build step).
+# Publishes the repository root to GitHub Pages on every push to main or preview
+# (no build step). docs/changes/010 point 4: main always serves "/", preview always
+# serves "/preview/" alongside it - each deploy checks out both branches and combines
+# them into one artifact, because a Pages deploy always replaces the whole site.
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, preview]
   workflow_dispatch:
 
 permissions:
@@ -22,15 +25,49 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Validate changelog.json (first entry = version shown in the app)
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
+      - name: Validate changelog.json (main)
+        working-directory: site
         run: python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
-      - name: Stamp build with commit SHA (service worker cache version, footer)
-        run: sed -i "s/__BUILD__/${GITHUB_SHA:0:7}/g" sw.js app/config.js
+      - name: Stamp main build with its own commit SHA
+        working-directory: site
+        run: |
+          SHA=$(git rev-parse HEAD)
+          sed -i "s/__BUILD__/${SHA:0:7}/g" sw.js app/config.js
+
+      - name: Check whether a preview branch exists
+        id: preview
+        run: |
+          if git ls-remote --exit-code --heads "https://github.com/${{ github.repository }}" preview > /dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Checkout preview branch
+        if: steps.preview.outputs.exists == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: preview
+          path: site/preview
+      - name: Validate changelog.json (preview)
+        if: steps.preview.outputs.exists == 'true'
+        working-directory: site/preview
+        run: python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
+      - name: Stamp preview build with its own commit SHA
+        if: steps.preview.outputs.exists == 'true'
+        working-directory: site/preview
+        run: |
+          SHA=$(git rev-parse HEAD)
+          sed -i "s/__BUILD__/${SHA:0:7}/g" sw.js app/config.js
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: site
           name: github-pages-${{ github.run_id }}-${{ github.run_attempt }} # unique per (re-)run, see docs/changes/008b
       - id: deployment
         uses: actions/deploy-pages@v4

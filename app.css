@@ -59,6 +59,8 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .who .initial { width: 32px; height: 32px; border-radius: var(--r-pill); background: var(--who-fg); color: #fff; font-size: var(--fs-ui); font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .who.S { --who-fg: var(--seb); --who-bg: var(--seb-bg); }
 .who.A { --who-fg: var(--anna); --who-bg: var(--anna-bg); }
+/* docs/changes/010: only visible on the /preview/ deploy of the app */
+.preview-badge { min-height: 26px; padding: 0 10px; display: inline-flex; align-items: center; background: var(--ink); color: #fff; border-radius: var(--r-pill); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.02em; }
 .status { font-size: var(--fs-micro); color: var(--ink-3); text-align: right; }
 .status.err { color: var(--danger); }
 .status .up { font-size: var(--fs-micro); color: var(--ink); font-weight: 600; padding: 10px 0 10px 4px; }

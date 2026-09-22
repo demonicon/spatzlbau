@@ -4,7 +4,12 @@
 // BUILD is stamped with the commit SHA by .github/workflows/pages.yml (docs/changes/003);
 // locally the placeholder stays, which is fine – it is just a fixed dev cache name.
 const BUILD = '__BUILD__';
-const VERSION = 'spatzlbau-' + BUILD;
+// docs/changes/010: main ("/") and preview ("/preview/") are two independent deployments of the
+// same origin. Cache Storage is per-origin, not per service-worker scope, so without a distinct
+// tag here a redeploy of one would delete the other's cache on activate() (both use the same
+// VERSION name otherwise, e.g. right after preview is first branched off main).
+const SCOPE_TAG = self.location.pathname.includes('/preview/') ? 'preview' : 'live';
+const VERSION = 'spatzlbau-' + SCOPE_TAG + '-' + BUILD;
 const SHELL = [
   './',
   './index.html',
