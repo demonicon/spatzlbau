@@ -94,7 +94,8 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .visit-part[aria-pressed=true] { box-shadow: inset 3px 0 0 var(--ink); }
 
 /* ---------- KPI tiles: four, one row (docs/changes/009) ---------- */
-.kpis { margin: 18px var(--gutter) 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.kpis { margin: 18px var(--gutter) 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.tile.money .n { font-size: var(--fs-ui); letter-spacing: 0; }
 .tile { background: var(--card); min-height: 64px; padding: 10px 8px 8px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; }
 .tile[aria-pressed=true] { border-bottom-color: var(--ink); }
 .tile .n { font-size: var(--fs-tile); font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
@@ -262,6 +263,46 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 /* the amount a task carries, in its row in the list */
 .cost-badge { font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid var(--line); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+/* ---------- Finanzen view (docs/changes/007 commit 2) ----------
+   Tables and numbers, no chart. Warning colour only for overdue payments. */
+.fin { padding-bottom: 8px; }
+.fin-head { display: flex; align-items: center; gap: var(--gap); padding: 12px var(--gutter) 0; }
+.fin-head .back { text-decoration: none; }
+.fin-title { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 6px var(--gutter) 0; }
+.fin-numbers { margin: 14px var(--gutter) 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.fin-num { background: var(--card); min-height: 64px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; gap: 3px; border-bottom: 2px solid transparent; text-align: left; }
+.fin-num .n { font-size: var(--fs-tile); font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.fin-num .l { font-size: var(--fs-micro); color: var(--ink-2); line-height: 1.2; }
+.fin-num[aria-pressed=true] { border-bottom-color: var(--ink); }
+.fin-num.balance { grid-column: 1 / -1; }
+.fin-num.balance .n { font-size: var(--fs-kpi); }
+.fin-payments { margin: 10px var(--gutter) 0; display: flex; flex-wrap: wrap; gap: var(--gap) 16px; }
+.fin-payments button { min-height: var(--tap); font-size: var(--fs-small); color: var(--ink-2); display: inline-flex; align-items: center; gap: 5px; }
+.fin-payments button[aria-pressed=true] { color: var(--ink); text-decoration: underline; }
+.fin-payments .late b { color: var(--danger); }
+.fin-buffer { margin: 10px var(--gutter) 0; display: flex; flex-wrap: wrap; gap: var(--gap) 10px; align-items: center; font-size: var(--fs-meta); color: var(--ink-2); }
+.fin-buffer b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.fin-buffer .cost-form { flex: 1 0 100%; }
+.fin-block { margin: 22px var(--gutter) 0; }
+.fin-block h2, .fin-phase h2 { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--ink-2); margin: 0 0 6px; padding-bottom: 5px; border-bottom: 1px solid var(--ink); }
+.fin-hint { margin: 8px 0 0; font-size: var(--fs-small); color: var(--ink-2); }
+.fin-note { margin: 6px 0 0; font-size: var(--fs-micro); color: var(--ink-3); }
+.fin-table { width: 100%; border-collapse: collapse; font-size: var(--fs-meta); font-variant-numeric: tabular-nums; }
+.fin-table th, .fin-table td { text-align: right; padding: 8px 4px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.fin-table thead th { font-size: var(--fs-micro); font-weight: 600; color: var(--ink-2); text-transform: none; letter-spacing: 0; }
+.fin-table th:first-child, .fin-table tbody th { text-align: left; font-weight: 400; white-space: normal; }
+.fin-table .calc { color: var(--ink-2); }
+.fin-settings .row { align-items: flex-end; }
+.fin-settings .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); flex: 1 1 140px; min-width: 0; }
+.fin-settings .lbl input { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
+.fin-phase { margin: 22px var(--gutter) 0; }
+.fin-task { padding: 6px 0 2px; border-bottom: 1px solid var(--line); }
+.fin-task-head { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.fin-task-title { flex: 1 1 auto; min-height: var(--tap); padding: 8px 0; font-size: var(--fs-body); line-height: 1.3; text-align: left; overflow-wrap: anywhere; }
+.fin-task-title:hover { text-decoration: underline; }
+.fin-tasks .empty { margin: 0 var(--gutter); }
+.head-link { text-decoration: none; font-size: var(--fs-small); }
+
 /* ---------- page footer (utilities) ---------- */
 .foot { padding: 8px var(--gutter) 24px; padding-bottom: max(24px, env(safe-area-inset-bottom)); display: flex; gap: var(--gutter); flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); font-size: var(--fs-small); color: var(--ink-3); }
 .foot .link { font-size: var(--fs-small); }
@@ -296,6 +337,8 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
   .hero-row .hero .t { max-width: 170px; }
   .hero-row .gates { flex: 1 1 300px; min-width: 0; margin-top: 0; }
   .hero-row .date-edit { flex: 1 0 100%; order: 3; }
+  /* five tiles fit in one row from here on */
+  .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   /* room for the sub-counts on the tiles (issues.md #3: never show less on the bigger screen) */
   .tile { padding: 10px 12px 8px; }
   .tile .l span { display: inline; }
@@ -312,6 +355,9 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 
 @media (min-width: 900px) {
   .wrap { max-width: 1280px; }
+  .fin-numbers { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .fin-num.balance { grid-column: auto; }
+  .fin-num.balance .n { font-size: var(--fs-tile); }
   /* list left, panel right - always, so nothing jumps when the first task opens */
   .board { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(340px, 440px); align-items: start; }
   .col-list { min-width: 0; }

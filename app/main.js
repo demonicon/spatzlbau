@@ -31,8 +31,9 @@ import {
 import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
 import { dashboardView, columns } from './views/dashboard.js';
+import { finanzenView } from './views/finanzen.js';
 import { isMoreOpen } from './ui/detail.js';
-import { parseAmount } from './costs.js';
+import { parseAmount, bufferRow, bufferPct, suggestedBuffer } from './costs.js';
 
 const UI_KEY = 'spatzlbau-ui';
 const PERSON_KEY = 'spatzlbau-person';
@@ -51,6 +52,10 @@ ui.adviceAdd = new Set(); // Akte: tasks showing the empty advice fields
 ui.costEdit = null; // cost row with its fields open (007)
 ui.costPay = null; // cost row asking for date, person and receipt
 ui.costAdd = null; // task id showing the "new cost row" form
+ui.screen = 'dashboard'; // 'dashboard' | 'finanzen' (#finanzen, docs/changes/007)
+ui.finFilter = null; // which cost rows the Finanzen view shows
+ui.finSettings = false; // the small settings area (move-out dates, split, buffer)
+ui.bufferEdit = false;
 ui.printOpen = false; // "Umzugstag drucken" sheet
 ui.offline = false; // no connection: the cached state is shown read-only (009)
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
@@ -121,7 +126,7 @@ function render() {
   ensurePhase();
   const focusKey = keyOf(document.activeElement);
   document.body.classList.toggle('printing', !!ui.printOpen);
-  $('#view').innerHTML = dashboardView();
+  $('#view').innerHTML = ui.screen === 'finanzen' ? finanzenView() : dashboardView();
   // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set via CSSOM
   for (const el of $('#view').querySelectorAll('.gate .bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
   restoreFocus(focusKey);
@@ -188,6 +193,7 @@ function closeChangelog() {
 }
 // opened via a task link (#task=<id>)? then the person has a goal – no automatic panel
 const openedViaTaskLink = () => /^#task=/.test(location.hash);
+const openedViaFinanzen = () => location.hash === '#finanzen';
 const hashTaskId = () => (openedViaTaskLink() ? decodeURIComponent(location.hash.slice('#task='.length)) : null);
 function openTaskFromHash() {
   const t = byId(hashTaskId());
@@ -209,7 +215,7 @@ function revealTask(t) {
 }
 // the open task lives in the URL, so a link to it can be shared (docs/changes/006)
 function syncHash() {
-  const want = ui.expanded ? '#task=' + encodeURIComponent(ui.expanded) : '';
+  const want = ui.screen === 'finanzen' ? '#finanzen' : ui.expanded ? '#task=' + encodeURIComponent(ui.expanded) : '';
   if (location.hash === want) return;
   history.replaceState(null, '', location.pathname + location.search + want);
 }
@@ -232,6 +238,7 @@ const OFFLINE_OK = new Set([
   'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
   'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'more', 'advice-add',
   'print', 'print-close', 'print-now',
+  'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
 ]);
 
 function wireEvents() {
@@ -252,6 +259,12 @@ function wireEvents() {
   // browser back/forward or a pasted link: follow the hash
   window.addEventListener('hashchange', () => {
     if (!state.loaded) return;
+    if (openedViaFinanzen()) {
+      ui.screen = 'finanzen';
+      render();
+      return;
+    }
+    ui.screen = 'dashboard';
     const id = hashTaskId();
     if (id && byId(id)) openTaskFromHash();
     else if (!id) ui.expanded = null;
@@ -289,6 +302,15 @@ function wireEvents() {
     if (ui.offline) {
       render(); // put the control back the way the cached state says
       return toast('Ohne Netz kannst du nur lesen');
+    }
+    // the small finance settings area (007): dates and percentages, one key at a time
+    if (el.dataset.setting) {
+      const key = el.dataset.setting;
+      const raw = el.value.trim();
+      const v = key.endsWith('_pct') || key.startsWith('split') ? parseAmount(raw) : raw || null;
+      if (v === null && raw) return toast('Wert nicht lesbar');
+      setSetting(key, v).catch(fail);
+      return;
     }
     if (el.dataset.input === 'kontakte') {
       setSetting('umzugstag_kontakte', el.value).catch(fail);
@@ -464,6 +486,62 @@ function wireEvents() {
           await addComment(t.id, v);
           return;
         }
+        /* ---------- Finanzen view (007, addendum) ---------- */
+        case 'screen':
+          ui.screen = b.dataset.to;
+          ui.finFilter = null;
+          syncHash();
+          render();
+          window.scrollTo({ top: 0 });
+          return;
+        case 'fin-open': // from the Finanzen list into the Akte of that task
+          ui.screen = 'dashboard';
+          ui.finFilter = null;
+          revealTask(byId(b.dataset.ref));
+          setExpanded(b.dataset.ref);
+          return;
+        case 'fin-filter':
+          ui.finFilter = ui.finFilter === b.dataset.to ? null : b.dataset.to;
+          render();
+          return;
+        case 'fin-filter-clear':
+          ui.finFilter = null;
+          render();
+          return;
+        case 'fin-settings':
+          ui.finSettings = !ui.finSettings;
+          render();
+          if (ui.finSettings) $('#fin-settings')?.scrollIntoView({ block: 'start' });
+          return;
+        case 'buffer-add':
+          await addCost(null, { label: 'Puffer', amount: suggestedBuffer() });
+          return;
+        case 'buffer-edit':
+          ui.bufferEdit = !ui.bufferEdit;
+          render();
+          return;
+        case 'buffer-cancel':
+          ui.bufferEdit = false;
+          render();
+          return;
+        case 'buffer-save': {
+          const amount = parseAmount($('[data-buffer=amount]', $('#view')).value);
+          const pct = parseAmount($('[data-buffer=pct]', $('#view')).value);
+          if (amount === null) return toast('Betrag nicht lesbar');
+          ui.bufferEdit = false;
+          if (pct !== null && pct !== bufferPct()) await setSetting('buffer_pct', pct);
+          await updateCost(b.dataset.ref, { amount });
+          return;
+        }
+        case 'buffer-pct-apply': {
+          const pct = parseAmount($('[data-buffer=pct]', $('#view')).value);
+          if (pct === null) return toast('Prozentsatz nicht lesbar');
+          if (pct !== bufferPct()) await setSetting('buffer_pct', pct);
+          ui.bufferEdit = false;
+          await updateCost(b.dataset.ref, { amount: suggestedBuffer() });
+          return;
+        }
+
         /* ---------- cost rows (007) ---------- */
         case 'cost-add':
           ui.costAdd = t.id;
@@ -654,6 +732,7 @@ async function enter(session) {
   if (state.lastVisitAt === null) markVisit().catch(() => {});
   const viaLink = openedViaTaskLink();
   if (viaLink) openTaskFromHash();
+  if (openedViaFinanzen()) ui.screen = 'finanzen';
   show('app');
   render();
   if (viaLink) $('.task.open')?.scrollIntoView({ block: 'start' });

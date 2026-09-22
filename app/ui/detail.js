@@ -156,12 +156,11 @@ function costHTML(c) {
   </div>`;
 }
 
-export function costsHTML(t) {
-  const rows = costsOf(t.id);
+/** The rows of one task - used by the Akte and, unchanged, by the Finanzen view (007). */
+export function costRowsHTML(t, filter = () => true) {
+  const rows = costsOf(t.id).filter(filter);
   const adding = ui.costAdd === t.id;
-  const counted = taskAmount(t.id); // what the task row shows, history excluded
-  return `<h3>Kosten ${rows.length ? `<small>${rows.length} · ${counted ? (counted.estimated ? '≈ ' : '') + eur(counted.sum) : 'nichts gezählt'}</small>` : ''}</h3>
-    ${rows.map(costHTML).join('')}
+  return `${rows.map(costHTML).join('')}
     ${
       adding
         ? `<div class="cost-form cost-new">
@@ -171,8 +170,15 @@ export function costsHTML(t) {
             </div>
             <div class="row"><button class="btn small primary" data-act="cost-add-save">Hinzufügen</button><button class="btn small" data-act="cost-add-cancel">Abbrechen</button></div>
           </div>`
-        : `<button class="col-more" data-act="cost-add">${rows.length ? '+ Kostenzeile' : 'Kosten erfassen'}</button>`
+        : `<button class="col-more" data-act="cost-add">${costsOf(t.id).length ? '+ Kostenzeile' : 'Kosten erfassen'}</button>`
     }`;
+}
+
+export function costsHTML(t) {
+  const counted = taskAmount(t.id); // the same number the task row shows, history excluded
+  const n = costsOf(t.id).length;
+  return `<h3>Kosten ${n ? `<small>${n} · ${counted ? (counted.estimated ? '≈ ' : '') + eur(counted.sum) : 'nichts gezählt'}</small>` : ''}</h3>
+    ${costRowsHTML(t)}`;
 }
 
 function fieldsHTML(t) {

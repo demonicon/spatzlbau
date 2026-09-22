@@ -91,3 +91,134 @@ export function isCostLate(c) {
 export const stepOf = (c) => COST_STEPS.indexOf(c.status);
 export const nextStep = (c) => COST_STEPS[stepOf(c) + 1] || null;
 export const prevStep = (c) => COST_STEPS[stepOf(c) - 1] || null;
+
+/* ---------- the numbers behind the Finanzen view (docs/changes/007 commit 2) ---------- */
+
+const settingNum = (key, fallback) => {
+  const v = state.settings[key];
+  return v === null || v === undefined || v === '' ? fallback : Number(v);
+};
+
+/** Who owes whom. Positive = Anna owes Sebastian. Only rows that were actually paid count. */
+export function balance() {
+  const split = settingNum('split_default_s', 50);
+  let n = 0;
+  for (const c of state.costs) {
+    if (!c.paid_on || !c.paid_by) continue;
+    const amount = num(c.amount) * (c.kind === 'rueckfluss' ? -1 : 1); // a refund flows back to whoever received it
+    const shareS = c.belongs_to === 'S' ? 1 : c.belongs_to === 'A' ? 0 : (c.split_s === null || c.split_s === undefined ? split : Number(c.split_s)) / 100;
+    // the payer advanced the whole amount but owes only their own share
+    n += c.paid_by === 'S' ? amount * (1 - shareS) : -amount * shareS;
+  }
+  return Math.round(n * 100) / 100;
+}
+
+export function balanceText(n = balance()) {
+  if (Math.abs(n) < 0.005) return 'ausgeglichen';
+  return n > 0 ? `Anna schuldet dir ${eur(n)}` : `Du schuldest Anna ${eur(-n)}`;
+}
+
+const dayStart = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+/** Payments that need attention: due within a week, and overdue. */
+export function payments() {
+  const today = dayStart();
+  const in7 = new Date(today);
+  in7.setDate(in7.getDate() + 7);
+  let due7 = 0;
+  let late = 0;
+  for (const c of state.costs) {
+    if (c.status === 'bezahlt' || !c.due_on || !isCounted(c)) continue;
+    const d = new Date(c.due_on + 'T00:00:00');
+    if (d < today) late++;
+    else if (d <= in7) due7++;
+  }
+  return { due7, late };
+}
+
+export const monthKey = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+export const monthName = (key) => {
+  const [y, m] = key.split('-');
+  return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' });
+};
+
+/** Rent of the old flat per person, from the recurring rows the content package delivers. */
+function oldRent(person) {
+  const col = person === 'S' ? 'amount_s' : 'amount_a';
+  return state.recurring
+    .filter((r) => /kaltmiete|nebenkosten/i.test(r.label || ''))
+    .reduce((n, r) => n + num(r[col]), 0);
+}
+
+/** Double rent for one month: the new flat already runs while an old one has not ended yet. */
+export function doubleRent(key) {
+  const einzug = typeof state.settings.einzugstermin === 'string' ? state.settings.einzugstermin : '';
+  if (!einzug) return null;
+  const out = { S: state.settings.move_out_s, A: state.settings.move_out_a };
+  if (!out.S || !out.A) return null; // the hint row asks for the dates instead
+  if (key < einzug.slice(0, 7)) return 0; // before moving in there is nothing doubled
+  let sum = 0;
+  for (const p of ['S', 'A']) if (key <= String(out[p]).slice(0, 7)) sum += oldRent(p);
+  return Math.round(sum * 100) / 100;
+}
+
+export const moveOutMissing = () => !state.settings.move_out_s || !state.settings.move_out_a;
+
+/** Month by month: what falls due, what of it is paid, plus the calculated double rent. */
+export function cashflow() {
+  const einzug = typeof state.settings.einzugstermin === 'string' ? state.settings.einzugstermin : '';
+  const from = dayStart();
+  const last = einzug ? new Date(einzug + 'T00:00:00') : new Date(from);
+  last.setMonth(last.getMonth() + 2);
+  if (last < from) last.setTime(from.getTime());
+  const months = [];
+  const cur = new Date(from.getFullYear(), from.getMonth(), 1);
+  const end = new Date(last.getFullYear(), last.getMonth(), 1);
+  while (cur <= end && months.length < 36) {
+    months.push(monthKey(cur));
+    cur.setMonth(cur.getMonth() + 1);
+  }
+  return months.map((key) => {
+    const rows = state.costs.filter((c) => c.due_on && c.due_on.slice(0, 7) === key && isCounted(c) && c.kind === 'einmalig');
+    return {
+      key,
+      label: monthName(key),
+      due: rows.reduce((n, c) => n + num(c.amount), 0),
+      paid: rows.filter((c) => c.status === 'bezahlt').reduce((n, c) => n + num(c.amount), 0),
+      rent: doubleRent(key),
+    };
+  });
+}
+
+/** The buffer row lives in costs without a task (docs/changes/004). */
+export const bufferRow = () => state.costs.find((c) => !c.task_id) || null;
+export const bufferPct = () => settingNum('buffer_pct', 20);
+
+/** What the buffer should be: the percentage on everything counted that belongs to a task. */
+export function suggestedBuffer() {
+  const base = state.costs
+    .filter((c) => c.task_id && c.kind === 'einmalig' && isCounted(c))
+    .reduce((n, c) => n + num(c.amount), 0);
+  return Math.round(base * bufferPct()) / 100;
+}
+
+/** Tasks that carry cost rows, grouped by phase - the list under the block. */
+export function tasksWithCosts(match = () => true) {
+  const ids = new Set(state.costs.filter((c) => c.task_id && match(c)).map((c) => c.task_id));
+  return state.tasks.filter((t) => ids.has(t.id)).sort((a, b) => a.phase - b.phase || a.offset_days - b.offset_days || a.sort - b.sort);
+}
+
+/** The filters the five numbers and the payment line switch on. */
+export const FIN_FILTERS = {
+  paid: { label: 'bezahlt', test: (c) => c.status === 'bezahlt' },
+  refunds: { label: 'Rückflüsse', test: (c) => c.kind === 'rueckfluss' },
+  open: { label: 'offen', test: (c) => c.status !== 'bezahlt' && isCounted(c) },
+  planned: { label: 'gezählt', test: (c) => isCounted(c) },
+  due7: { label: 'fällig in 7 Tagen', test: (c) => c.status !== 'bezahlt' && !!c.due_on && isCounted(c) && !isCostLate(c) && new Date(c.due_on + 'T00:00:00') <= new Date(Date.now() + 7 * 86400000) },
+  late: { label: 'überfällig', test: (c) => isCostLate(c) && isCounted(c) },
+};
+export const finMatch = (c, key) => !key || !FIN_FILTERS[key] || FIN_FILTERS[key].test(c);

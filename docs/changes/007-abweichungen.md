@@ -1,9 +1,9 @@
-# Änderungsauftrag 007 – Abweichungsliste (Stand nach Commit 1)
+# Änderungsauftrag 007 – Abweichungsliste (Stand nach Commit 2)
 
 Stand: 22.09.2026 · Branch `feature/finanzen` · Quelle: `docs/changes/007-finanzen.md`
-Screenshots: `docs/changes/007-screenshots/` – `akte-kosten-380`, `akte-kosten-1280` (drei Zeilen in drei Zuständen), `akte-kosten-offen-380` (Zeile aufgeklappt), `akte-kosten-bezahlt-1280` („Bezahlt am …")
+Screenshots: `docs/changes/007-screenshots/` – Commit 1: `akte-kosten-380`, `akte-kosten-1280` (drei Zeilen in drei Zuständen), `akte-kosten-offen-380`, `akte-kosten-bezahlt-1280`. Commit 2: `finanzen-380`, `finanzen-1280`, `finanzen-doppelmiete-380` (mit Auszugsterminen), `dashboard-kachel-380`.
 
-**Kein Schema, keine Migration** – 004 steht, `costs_summary` bleibt unverändert. Commit 2 (Kachel + Kosten-Block) und Commit 3 (laufende Kosten) folgen nach deiner Freigabe.
+**Kein Schema, keine Migration** – 004 steht, `costs_summary` bleibt unverändert. Commit 3 (laufende Kosten) folgt nach deiner Freigabe.
 
 **Zu den Screenshots:** synthetische Daten, direkt in die Ansicht gerendert – ohne Login, ohne Schreibzugriff auf die Datenbank. Damit lassen sich die drei Zustände nebeneinander zeigen, ohne echte Kostenzeilen anzulegen.
 
@@ -42,13 +42,31 @@ Angebote, die gegen eine beauftragte Zeile derselben Aufgabe verloren haben, ble
 | Sehr viele Zeilen an einer Aufgabe | Bleiben alle stehen; eine Begrenzung wäre Sortierung durch die Hintertür (nicht Teil von 007) |
 | Beträge über 99.999 € | `numeric(10,2)` trägt bis 99.999.999,99 €; die Spalte bricht nicht, das Schild in der Zeile wird nur breiter |
 
-## 4. Noch offen (Commits 2 und 3)
+## 4. Commit 2 – Finanzansicht (Nachtrag vom 22.09.)
 
-- Kachel „Kosten", Kosten-Block mit den fünf Zahlen, Zahlungen-Zeile, Cashflow nach Monat, Puffer
+| Stelle im Auftrag | Gebaut | Grund |
+|---|---|---|
+| „Fünfte Kachel … Antippen = Filter **und** Einblenden des Blocks" | Die Kachel **öffnet die Ansicht** `#finanzen` und filtert nichts mehr | Nachtrag vom 22.09.: der Block ist eine eigene Ansicht geworden |
+| Vier Kacheln in einer Reihe (009) | Am Handy jetzt **3 + 2** in zwei Reihen, ab 600 px alle fünf in einer | Fünf Kacheln nebeneinander lassen bei 380 px 68 px je Kachel – „Fristkritisch" bricht dann mitten im Wort |
+| „Jede Zahl antippbar → filtert auf bezahlt / Rückflüsse / offen" | geplant → alles Gezählte · bisher bezahlt → bezahlt · Rückflüsse → Rückflüsse · **netto → offen** | Die vierte Zahl braucht ein eigenes Ziel; „offen" ist das, was davon noch zu zahlen ist |
+| Filter wirken „auf die Liste" | Sie filtern die **Kostenzeilen in der Finanzansicht**; Aufgaben ohne passende Zeile fallen weg | Die Aufgabenliste des Dashboards ist eine andere Ansicht geworden |
+| Saldo „positiv = Anna schuldet Sebastian" | Gerechnet über **bezahlte** Zeilen: wer bezahlt hat, hat ausgelegt und schuldet nur den eigenen Anteil (`belongs_to`, `split_s`, sonst `split_default_s`). Ein Rückfluss mit Zahldatum zählt als negativer Vorschuss für den, der ihn bekommen hat. Wortlaut ausgeschrieben, kein Vorzeichen | Offene Zeilen sagen nichts darüber, wer am Ende auslegt |
+| „Einstellungen = ein kleiner Bereich im Kopf" | Ein aufklappbarer Bereich **in der Finanzansicht** (Fußzeile „Einstellungen" und der Hinweis in der Cashflow-Tabelle führen hin) | Die fünf Werte sind Finanzwerte; im Dashboard-Kopf stünden sie neben Aufgaben, wo sie niemand sucht. Der Einzugstermin bleibt zusätzlich im Kopf des Dashboards, wo er seit 002 steht |
+| Cashflow „Monat \| fällig \| davon bezahlt" | Übernommen, Zeitraum von diesem Monat bis zwei Monate nach Einzug. **Rückflüsse stehen nicht in der Spalte „fällig"** | Eine Spalte ohne Vorzeichen, die Aus- und Eingänge mischt, wäre falsch zu lesen; Rückflüsse stehen in den fünf Zahlen und bei ihrer Aufgabe |
+| Doppelmiete | Monatsgenau: sobald die neue Wohnung läuft und die alte noch nicht gekündigt ausgelaufen ist, zählt deren Kaltmiete + Nebenkosten aus `recurring`. Keine Tagesanteile | Der Auftrag nennt Monatszeilen; Tagesanteile bräuchten Mietbeginn und -ende auf den Tag |
+| „Doppelmiete als eigene, nicht editierbare Zeile" | Als eigene **Spalte** je Monat, grau, mit Fußnote „berechnet – nicht bearbeitbar" | Als Zeile je Monat hätte die Tabelle doppelt so viele Zeilen; die Spalte zeigt dasselbe |
+| Puffer | Zeile mit Satz und Betrag; aufklappen erlaubt Betrag **oder** Satz zu ändern, dazu „Satz auf Summe anwenden". Fehlt die Zeile: „Puffer anlegen" mit Vorschlag | Der Auftrag lässt beides zu; der Knopf macht sichtbar, was der Satz gerade ergäbe |
+| „Aufgabe antippen öffnet die Akte" | Springt ins Dashboard, deckt die Aufgabe auf (auch aus eingeklappten Bereichen) und öffnet die Akte, `#task=<id>` in der Adresszeile | – |
+| Offline | Die Ansicht ist lesbar (Kosten und laufende Kosten liegen im Offline-Stand), Navigation und Filter funktionieren, jeder Schreibweg meldet „Ohne Netz kannst du nur lesen" | wie alle Schreibwege seit 009 |
+
+**Geprüft für Commit 2:** die fünf Zahlen von Hand gegen die Daten nachgerechnet (geplant 6.030 = 1.740 + 500 + 270 + 180 + 2.400 + 940, netto 4.830, Saldo −950 = 250 ausgelegt von Sebastian gegen 1.200 von Anna); Doppelmiete Januar 1.760 € (beide Altwohnungen), Februar 790 € (nur Anna), März 0; `#finanzen` über die echte Adressleiste bei 380 und 1280 px; Zeile in der Finanzansicht ändern → Betrag in der Akte **und** im Schild der Aufgabenzeile sofort neu (1.880 €), ohne Reload; Rückweg über Fußzeile und Kachel.
+
+## 5. Noch offen (Commit 3)
+
 - Laufende Kosten (`recurring`) samt Link aus „Kostenmodell klären"
 - Changelog-Eintrag und `BRIEFING.md` Abschnitt 5 – kommen mit dem letzten Commit, damit sie den fertigen Stand beschreiben
 
-## 5. Geprüft
+## 6. Geprüft
 
 - `app/costs.js` gegen das echte Modul im Browser, ausgeloggt und ohne Schreibzugriff: 12 Fälle (Betragsparsen deutsch/englisch, Formatierung, Zählregel mit und ohne feste Zeile, Angebot als Historie, Puffer, Summen, Schild mit und ohne „≈", Rückflüsse nicht im Schild, Überfälligkeit, Schrittgrenzen)
 - Zählregel gegen die Datenbank-View in einer zurückgerollten Transaktion – identisch

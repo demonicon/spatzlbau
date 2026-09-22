@@ -30,6 +30,7 @@ const SHELL = [
   './app/changelog.js',
   './app/views/dashboard.js',
   './app/views/print.js',
+  './app/views/finanzen.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
 ];

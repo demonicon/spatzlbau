@@ -9,6 +9,7 @@ import { FILTERS, matches, count, atClaude, isBlocked, isLate, isCritical, waits
 import { taskHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
 import { compareVersions, hasUnread } from '../changelog.js';
+import { summary, eurShort } from '../costs.js';
 import { printHTML } from './print.js';
 
 const DAY = 86400000;
@@ -46,6 +47,7 @@ function headHTML() {
     <div class="who-row">
       <span class="who ${state.person}" aria-label="Angemeldet als ${OWN[state.person]}"><span class="initial" aria-hidden="true">${state.person}</span>${OWN[state.person]}</span>
       ${ui.preview ? `<span class="preview-badge" title="Testversion unter /preview/ – gleiche Datenbank wie die echte App">Vorschau</span>` : ''}
+      ${ui.wide ? `<button class="link head-link" data-act="screen" data-to="finanzen">Finanzen</button>` : ''}
       <span class="spacer"></span>
       <span class="status" id="status" role="status"></span>
     </div>
@@ -115,6 +117,7 @@ const TILES = [
   ['claude', 'Bei Claude', 'claude'],
 ];
 function kpisHTML() {
+  const net = summary().net;
   return `<section class="kpis" aria-label="Kennzahlen">${TILES.map(([key, label, kind]) => {
     const n = count(key);
     const sub = kind === 'claude' ? `· am Zug ${state.tasks.filter(atClaude).length}` : '';
@@ -122,7 +125,12 @@ function kpisHTML() {
       <span class="n"><span>${n}</span></span>
       <span class="l">${label}${sub ? `<span> ${sub}</span>` : ''}</span>
     </button>`;
-  }).join('')}</section>`;
+  }).join('')}
+    <button class="tile money ${net ? '' : 'zero'}" data-act="screen" data-to="finanzen">
+      <span class="n"><span>${net ? eurShort(net) : '–'}</span></span>
+      <span class="l">Kosten<span> · netto</span></span>
+    </button>
+  </section>`;
 }
 
 function phaseChipsHTML() {
@@ -287,7 +295,7 @@ function footerHTML() {
   const version = cur
     ? `<button class="link version" data-act="changelog" aria-expanded="${!!ui.changelogOpen}" title="${build() ? 'Build ' + build() : ''}">${esc(cur.version)}${unseen ? '<span class="dot" aria-label="neu">Neu</span>' : ''}</button>`
     : `<span title="${build() ? 'Build ' + build() : ''}">Version unbekannt</span>`;
-  return `<footer class="foot">${version}<button class="link" data-act="reload">Neu laden</button><button class="link" data-act="print" aria-expanded="${!!ui.printOpen}">Umzugstag drucken</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`;
+  return `<footer class="foot">${version}<button class="link" data-act="screen" data-to="finanzen">Finanzen</button><button class="link" data-act="reload">Neu laden</button><button class="link" data-act="print" aria-expanded="${!!ui.printOpen}">Umzugstag drucken</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`;
 }
 
 const SECTIONS = [['new', 'Neu'], ['improved', 'Verbessert'], ['fixed', 'Behoben']];

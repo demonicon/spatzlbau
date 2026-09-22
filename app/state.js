@@ -16,11 +16,11 @@ export const state = {
   subtasks: [],
   comments: [],
   costs: [], // cost rows per task (docs/changes/007)
+  recurring: [], // monthly costs old vs new, for the double rent in the cashflow (007)
   loaded: false,
 };
 
 export const ui = {
-  view: 'week',
   filter: 'all',
   expanded: null, // task id with open detail
   confirm: null, // 'del:<id>' | null
@@ -127,6 +127,7 @@ function saveSnapshot() {
         subtasks: state.subtasks,
         comments: state.comments,
         costs: state.costs,
+        recurring: state.recurring,
       }),
     );
   } catch {} // quota or private mode: the app just has no offline copy
@@ -148,6 +149,7 @@ export function loadSnapshot() {
     state.subtasks = d.subtasks || [];
     state.comments = d.comments || [];
     state.costs = d.costs || [];
+    state.recurring = d.recurring || [];
     state.loadedAt = d.saved_at || null;
     state.loaded = true;
     notify();
@@ -159,20 +161,22 @@ export function loadSnapshot() {
 
 /* ---------- loading ---------- */
 export async function loadAll() {
-  const [settings, tasks, subtasks, comments, costs] = await Promise.all([
+  const [settings, tasks, subtasks, comments, costs, recurring] = await Promise.all([
     supabase.from('settings').select('key,value'),
     supabase.from('tasks').select('*').is('deleted_at', null),
     supabase.from('subtasks').select('*'),
     supabase.from('comments').select('*'),
     supabase.from('costs').select('*'),
+    supabase.from('recurring').select('*'),
   ]);
-  const err = settings.error || tasks.error || subtasks.error || comments.error || costs.error;
+  const err = settings.error || tasks.error || subtasks.error || comments.error || costs.error || recurring.error;
   if (err) throw err;
   state.settings = Object.fromEntries(settings.data.map((r) => [r.key, r.value]));
   state.tasks = tasks.data;
   state.subtasks = subtasks.data;
   state.comments = comments.data;
   state.costs = costs.data;
+  state.recurring = recurring.data;
   state.loaded = true;
   state.loadedAt = new Date().toISOString();
   notify();
@@ -285,6 +289,8 @@ export function applyRealtimeEvent(table, payload) {
       return deleted ? dropRow(state.comments, old?.id) : upsertRow(state.comments, row);
     case 'costs':
       return deleted ? dropRow(state.costs, old?.id) : upsertRow(state.costs, row);
+    case 'recurring':
+      return deleted ? dropRow(state.recurring, old?.id) : upsertRow(state.recurring, row);
     case 'settings': {
       const key = deleted ? old?.key : row.key;
       if (!key) return false;
@@ -320,7 +326,7 @@ export function subscribeRealtime() {
 
   let wasSubscribed = false;
   const ch = supabase.channel('spatzlbau-db');
-  for (const table of ['settings', 'tasks', 'subtasks', 'comments', 'costs']) {
+  for (const table of ['settings', 'tasks', 'subtasks', 'comments', 'costs', 'recurring']) {
     ch.on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
       let changed;
       try {
