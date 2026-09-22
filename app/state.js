@@ -492,6 +492,35 @@ export async function deleteCost(id) {
   return write('cost', () => supabase.from('costs').delete().eq('id', id));
 }
 
+/* ---------- monthly costs (docs/changes/007 commit 3) ---------- */
+export async function addRecurring(label) {
+  const rows = state.recurring;
+  const row = { label, amount_s: null, amount_a: null, amount_n: null, sort: rows.length ? Math.max(...rows.map((r) => r.sort)) + 1 : 0 };
+  status('saving', 'Speichern …');
+  const { data, error } = await supabase.from('recurring').insert(row).select().single();
+  if (error) {
+    status('error', 'Speichern fehlgeschlagen: ' + error.message);
+    throw error;
+  }
+  state.recurring.push(data);
+  status('saved', 'Gespeichert');
+  notify();
+}
+
+export async function updateRecurring(id, patch) {
+  const r = state.recurring.find((x) => x.id === id);
+  if (!r) return;
+  Object.assign(r, patch);
+  notify();
+  return write('recurring', () => supabase.from('recurring').update(patch).eq('id', id));
+}
+
+export async function deleteRecurring(id) {
+  state.recurring = state.recurring.filter((r) => r.id !== id);
+  notify();
+  return write('recurring', () => supabase.from('recurring').delete().eq('id', id));
+}
+
 export async function setSetting(key, value) {
   state.settings[key] = value;
   notify();

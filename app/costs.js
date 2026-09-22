@@ -222,3 +222,15 @@ export const FIN_FILTERS = {
   late: { label: 'überfällig', test: (c) => isCostLate(c) && isCounted(c) },
 };
 export const finMatch = (c, key) => !key || !FIN_FILTERS[key] || FIN_FILTERS[key].test(c);
+
+/* ---------- monthly costs, old against new (docs/changes/007 commit 3) ---------- */
+export const recurringRows = () => [...state.recurring].sort((a, b) => a.sort - b.sort || (a.created_at || '').localeCompare(b.created_at || ''));
+
+/** Per row and in total: what the two old flats cost, what the new one costs, and the delta. */
+export function recurringTotals(rows = recurringRows()) {
+  const s = rows.reduce((n, r) => n + num(r.amount_s), 0);
+  const a = rows.reduce((n, r) => n + num(r.amount_a), 0);
+  const nNew = rows.reduce((n, r) => n + num(r.amount_n), 0);
+  return { s, a, n: nNew, delta: Math.round((nNew - s - a) * 100) / 100 };
+}
+export const rowDelta = (r) => Math.round((num(r.amount_n) - num(r.amount_s) - num(r.amount_a)) * 100) / 100;

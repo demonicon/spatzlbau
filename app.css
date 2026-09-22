@@ -287,11 +287,25 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 .fin-block h2, .fin-phase h2 { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--ink-2); margin: 0 0 6px; padding-bottom: 5px; border-bottom: 1px solid var(--ink); }
 .fin-hint { margin: 8px 0 0; font-size: var(--fs-small); color: var(--ink-2); }
 .fin-note { margin: 6px 0 0; font-size: var(--fs-micro); color: var(--ink-3); }
+.fin-table-wrap { overflow-x: auto; scrollbar-width: thin; }
 .fin-table { width: 100%; border-collapse: collapse; font-size: var(--fs-meta); font-variant-numeric: tabular-nums; }
 .fin-table th, .fin-table td { text-align: right; padding: 8px 4px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .fin-table thead th { font-size: var(--fs-micro); font-weight: 600; color: var(--ink-2); text-transform: none; letter-spacing: 0; }
 .fin-table th:first-child, .fin-table tbody th { text-align: left; font-weight: 400; white-space: normal; }
 .fin-table .calc { color: var(--ink-2); }
+/* monthly costs: three amounts per row, editable right in the table */
+.fin-table.rec th:first-child { width: 34%; }
+.fin-table.rec input { width: 100%; min-width: 60px; min-height: var(--tap); padding: 6px 8px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-meta); text-align: right; font-variant-numeric: tabular-nums; }
+.fin-table.rec td { padding: 4px 3px; }
+.fin-table .delta { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.fin-table .sum th, .fin-table .sum td { font-weight: 600; border-top: 1px solid var(--ink); }
+@media (max-width: 599px) {
+  /* five columns on a phone: smaller type and tighter boxes, the table scrolls if it still needs to */
+  .fin-table.rec { font-size: var(--fs-small); }
+  .fin-table.rec th, .fin-table.rec td { padding: 4px 2px; }
+  .fin-table.rec input { min-width: 54px; padding: 6px 4px; font-size: var(--fs-small); }
+  .fin-table.rec th:first-child { width: auto; }
+}
 .fin-settings .row { align-items: flex-end; }
 .fin-settings .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); flex: 1 1 140px; min-width: 0; }
 .fin-settings .lbl input { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }

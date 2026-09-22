@@ -8,6 +8,7 @@ import { costRowsHTML } from '../ui/detail.js';
 import {
   summary, balance, balanceText, payments, cashflow, moveOutMissing, bufferRow, bufferPct,
   suggestedBuffer, tasksWithCosts, finMatch, FIN_FILTERS, eur, eurShort, num, costsOf, taskAmount,
+  recurringRows, recurringTotals, rowDelta,
 } from '../costs.js';
 
 const money = (v) => (v === null || v === undefined ? '–' : eur(v));
@@ -88,7 +89,7 @@ function cashflowHTML() {
         ? `<p class="fin-hint">Auszugstermine fehlen – <button class="link" data-act="fin-settings">in den Einstellungen setzen</button>. Ohne sie lässt sich die Doppelmiete nicht berechnen.</p>`
         : ''
     }
-    <table class="fin-table">
+    <div class="fin-table-wrap"><table class="fin-table">
       <thead><tr><th>Monat</th><th>fällig</th><th>davon bezahlt</th>${missing ? '' : '<th>Doppelmiete</th>'}</tr></thead>
       <tbody>
         ${rows
@@ -102,8 +103,45 @@ function cashflowHTML() {
           )
           .join('')}
       </tbody>
-    </table>
+    </table></div>
     ${missing ? '' : `<p class="fin-note">Doppelmiete (berechnet) aus Einzugstermin, Auszugsterminen und den laufenden Kosten – nicht bearbeitbar.</p>`}
+  </section>`;
+}
+
+/* ---------- monthly costs, old against new (commit 3) ---------- */
+const amountInput = (id, field, value) =>
+  `<input type="text" inputmode="decimal" data-rec-field="${field}" data-ref="${id}" value="${value === null || value === undefined ? '' : esc(String(num(value)).replace('.', ','))}" placeholder="–" aria-label="Betrag">`;
+
+function recurringHTML() {
+  const rows = recurringRows();
+  const t = recurringTotals(rows);
+  const delta = (v) => `<td class="delta ${v > 0 ? 'more' : ''}">${v ? (v > 0 ? '+' : '−') + eur(Math.abs(v)).replace('-', '') : '–'}</td>`;
+  return `<section class="fin-block fin-recurring" id="fin-recurring">
+    <h2>Laufende Kosten pro Monat</h2>
+    <div class="fin-table-wrap"><table class="fin-table rec">
+      <thead><tr><th>Posten</th><th>alt Sebastian</th><th>alt Anna</th><th>neu</th><th>Delta</th></tr></thead>
+      <tbody>
+        ${rows
+          .map(
+            (r) => `<tr data-rec="${r.id}">
+              <th scope="row">${esc(r.label)}</th>
+              <td>${amountInput(r.id, 'amount_s', r.amount_s)}</td>
+              <td>${amountInput(r.id, 'amount_a', r.amount_a)}</td>
+              <td>${amountInput(r.id, 'amount_n', r.amount_n)}</td>
+              ${delta(rowDelta(r))}
+            </tr>`,
+          )
+          .join('')}
+        ${rows.length ? `<tr class="sum"><th scope="row">Summe</th><td>${eur(t.s)}</td><td>${eur(t.a)}</td><td>${eur(t.n)}</td>${delta(t.delta)}</tr>` : ''}
+      </tbody>
+    </table></div>
+    ${rows.length ? '' : '<p class="fin-hint">Noch keine Posten. Sie kommen aus dem Inhaltspaket oder hier von Hand.</p>'}
+    ${
+      ui.recAdd
+        ? `<div class="row"><label class="lbl">Posten<input type="text" data-input="rec-label" placeholder="z. B. Strom"></label><button class="btn small primary" data-act="rec-add-save">Hinzufügen</button><button class="btn small" data-act="rec-add-cancel">Abbrechen</button></div>`
+        : `<button class="col-more" data-act="rec-add">+ Posten</button>`
+    }
+    <p class="fin-note">Delta = neu − (alt Sebastian + alt Anna). Ein Plus heißt: die neue Wohnung kostet monatlich mehr.</p>
   </section>`;
 }
 
@@ -173,6 +211,7 @@ export function finanzenView() {
     bufferHTML() +
     filterRow +
     cashflowHTML() +
+    recurringHTML() +
     settingsHTML() +
     `<div class="fin-tasks">${tasksHTML()}</div>` +
     `<footer class="foot"><button class="link" data-act="screen" data-to="dashboard">← Aufgaben</button><span class="spacer"></span><button class="link" data-act="fin-settings">Einstellungen</button></footer>` +

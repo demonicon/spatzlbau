@@ -1,9 +1,9 @@
-# Änderungsauftrag 007 – Abweichungsliste (Stand nach Commit 2)
+# Änderungsauftrag 007 – Abweichungsliste
 
 Stand: 22.09.2026 · Branch `feature/finanzen` · Quelle: `docs/changes/007-finanzen.md`
 Screenshots: `docs/changes/007-screenshots/` – Commit 1: `akte-kosten-380`, `akte-kosten-1280` (drei Zeilen in drei Zuständen), `akte-kosten-offen-380`, `akte-kosten-bezahlt-1280`. Commit 2: `finanzen-380`, `finanzen-1280`, `finanzen-doppelmiete-380` (mit Auszugsterminen), `dashboard-kachel-380`.
 
-**Kein Schema, keine Migration** – 004 steht, `costs_summary` bleibt unverändert. Commit 3 (laufende Kosten) folgt nach deiner Freigabe.
+**Kein Schema, keine Migration** – 004 steht, `costs_summary` bleibt unverändert. Alle drei Commits sind gebaut.
 
 **Zu den Screenshots:** synthetische Daten, direkt in die Ansicht gerendert – ohne Login, ohne Schreibzugriff auf die Datenbank. Damit lassen sich die drei Zustände nebeneinander zeigen, ohne echte Kostenzeilen anzulegen.
 
@@ -61,12 +61,23 @@ Angebote, die gegen eine beauftragte Zeile derselben Aufgabe verloren haben, ble
 
 **Geprüft für Commit 2:** die fünf Zahlen von Hand gegen die Daten nachgerechnet (geplant 6.030 = 1.740 + 500 + 270 + 180 + 2.400 + 940, netto 4.830, Saldo −950 = 250 ausgelegt von Sebastian gegen 1.200 von Anna); Doppelmiete Januar 1.760 € (beide Altwohnungen), Februar 790 € (nur Anna), März 0; `#finanzen` über die echte Adressleiste bei 380 und 1280 px; Zeile in der Finanzansicht ändern → Betrag in der Akte **und** im Schild der Aufgabenzeile sofort neu (1.880 €), ohne Reload; Rückweg über Fußzeile und Kachel.
 
-## 5. Noch offen (Commit 3)
+## 5. Commit 3 – laufende Kosten
 
-- Laufende Kosten (`recurring`) samt Link aus „Kostenmodell klären"
-- Changelog-Eintrag und `BRIEFING.md` Abschnitt 5 – kommen mit dem letzten Commit, damit sie den fertigen Stand beschreiben
+| Stelle im Auftrag | Gebaut | Grund |
+|---|---|---|
+| „Am Ende des Kosten-Blocks: Abschnitt ‚Laufende Kosten pro Monat'" | Zwischen Cashflow und Aufgabenliste, eigener Abschnitt `#fin-recurring` | Der Block ist mit dem Nachtrag zur Ansicht geworden; „am Ende des Blocks" heißt jetzt: vor den Aufgaben |
+| Tabelle Posten \| alt S \| alt A \| neu \| Delta, Summenzeile | Übernommen; Delta je Zeile und in der Summe, Vorzeichen ausgeschrieben (`+` teurer, `−` günstiger) | – |
+| „Beträge inline editierbar" | Drei Felder je Zeile, jedes schreibt für sich (`inputmode="decimal"`, leeres Feld = kein Wert) | Feldgenaue Schreibvorgänge wie überall sonst |
+| Bei 380 px | Die Tabelle wird kleiner gesetzt und scrollt notfalls in sich – die Seite bricht nicht aus (geprüft: `scrollWidth == innerWidth`), Eingabefelder bleiben ≥ 44 px hoch | Fünf Spalten mit drei Eingabefeldern passen sonst nicht. Erste Fassung schnitt die Delta-Spalte ab – im Test gefunden |
+| „Link ‚Laufende Kosten öffnen' in der Akte von ‚Kostenmodell klären'" | In der Akte der Aufgabe `kosten`; öffnet die Finanzansicht und scrollt zum Abschnitt | – |
+| Zeilen „kommen aus dem Inhaltspaket (`recurring` mit `seed_key`)" | Bleibt so; zusätzlich „+ Posten" für eine Zeile von Hand (ohne `seed_key`, wird vom Seed-Merge nicht angefasst) | Der Auftrag verlangt „neue Zeile möglich" |
 
-## 6. Geprüft
+## 6. Noch offen
+
+- Nichts aus dem Auftrag. Changelog-Eintrag (`2026.09.22.5`) und `BRIEFING.md` Abschnitt 5 sind mit diesem Commit nachgezogen.
+- **Nicht geprüft gegen die echte Datenbank:** alle Schreibwege (Kostenzeile anlegen/ändern/löschen, Statuswechsel, „Bezahlt am …", Puffer, laufende Kosten, Einstellungen). Dafür braucht es eine eingeloggte Sitzung mit Schreibzugriff – nach der Regel in `CLAUDE.md` vorher angesagt.
+
+## 7. Geprüft
 
 - `app/costs.js` gegen das echte Modul im Browser, ausgeloggt und ohne Schreibzugriff: 12 Fälle (Betragsparsen deutsch/englisch, Formatierung, Zählregel mit und ohne feste Zeile, Angebot als Historie, Puffer, Summen, Schild mit und ohne „≈", Rückflüsse nicht im Schild, Überfälligkeit, Schrittgrenzen)
 - Zählregel gegen die Datenbank-View in einer zurückgerollten Transaktion – identisch

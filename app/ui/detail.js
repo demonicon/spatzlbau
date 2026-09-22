@@ -233,6 +233,7 @@ export function detailHTML(t) {
     ${more && claude ? commentsHTML(t) : ''}
     ${subtasksHTML(t)}
     ${more || costsOf(t.id).length ? costsHTML(t) : ''}
+    ${t.id === 'kosten' ? `<p class="row"><button class="link" data-act="fin-recurring">Laufende Kosten öffnen →</button></p>` : ''}
     ${more ? adviceHTML(t) : ''}
     ${more && claude ? '' : commentsHTML(t)}
 

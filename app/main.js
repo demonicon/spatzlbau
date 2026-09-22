@@ -27,6 +27,8 @@ import {
   addCost,
   updateCost,
   deleteCost,
+  addRecurring,
+  updateRecurring,
 } from './state.js';
 import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
@@ -56,6 +58,7 @@ ui.screen = 'dashboard'; // 'dashboard' | 'finanzen' (#finanzen, docs/changes/00
 ui.finFilter = null; // which cost rows the Finanzen view shows
 ui.finSettings = false; // the small settings area (move-out dates, split, buffer)
 ui.bufferEdit = false;
+ui.recAdd = false; // the "new monthly cost" field in the Finanzen view
 ui.printOpen = false; // "Umzugstag drucken" sheet
 ui.offline = false; // no connection: the cached state is shown read-only (009)
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
@@ -239,6 +242,7 @@ const OFFLINE_OK = new Set([
   'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'more', 'advice-add',
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
+  'fin-recurring',
 ]);
 
 function wireEvents() {
@@ -302,6 +306,14 @@ function wireEvents() {
     if (ui.offline) {
       render(); // put the control back the way the cached state says
       return toast('Ohne Netz kannst du nur lesen');
+    }
+    // monthly costs: three amounts per row, each written on its own (007 commit 3)
+    if (el.dataset.recField) {
+      const raw = el.value.trim();
+      const v = raw === '' ? null : parseAmount(raw);
+      if (v === null && raw !== '') return toast('Betrag nicht lesbar – z. B. 780 oder 780,50');
+      updateRecurring(el.dataset.ref, { [el.dataset.recField]: v }).catch(fail);
+      return;
     }
     // the small finance settings area (007): dates and percentages, one key at a time
     if (el.dataset.setting) {
@@ -507,6 +519,29 @@ function wireEvents() {
         case 'fin-filter-clear':
           ui.finFilter = null;
           render();
+          return;
+        case 'rec-add':
+          ui.recAdd = true;
+          render();
+          $('[data-input=rec-label]', $('#view'))?.focus();
+          return;
+        case 'rec-add-cancel':
+          ui.recAdd = false;
+          render();
+          return;
+        case 'rec-add-save': {
+          const label = $('[data-input=rec-label]', $('#view')).value.trim();
+          if (!label) return toast('Bitte einen Posten eingeben');
+          ui.recAdd = false;
+          await addRecurring(label);
+          return;
+        }
+        case 'fin-recurring': // from the Akte of "Kostenmodell klären" straight to the table
+          ui.screen = 'finanzen';
+          ui.finFilter = null;
+          syncHash();
+          render();
+          $('#fin-recurring')?.scrollIntoView({ block: 'start' });
           return;
         case 'fin-settings':
           ui.finSettings = !ui.finSettings;
