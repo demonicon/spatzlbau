@@ -5,7 +5,7 @@ import { state, ui, blockers, subProgress, comsOf, unseenComments, dueLabel, cla
 import { isBlocked, isLate, isCritical } from '../filters.js';
 import { taskAmount, eurShort } from '../costs.js';
 import { term, mark, hitSubs } from '../search.js';
-import { detailHTML } from './detail.js';
+import { detailHTML, titleHTML } from './detail.js';
 
 export function taskHTML(t) {
   const q = term();
@@ -34,18 +34,22 @@ export function taskHTML(t) {
   const com = coms ? `<span class="muted">${coms} ${coms === 1 ? 'Kommentar' : 'Kommentare'}</span>` : '';
   // docs/changes/009: one dot per author who wrote something since this person's last visit;
   // it goes away as soon as the task is opened
+  // docs/changes/013 B4: the initial makes the dot readable without relying on colour alone
   const dots = [...new Set(unseenComments(t).map((c) => c.author))]
-    .map((a) => `<span class="ndot ${a}" role="img" aria-label="neuer Kommentar von ${OWN[a] || a}"></span>`)
+    .map((a) => `<span class="ndot ${a}" role="img" aria-label="neuer Kommentar von ${OWN[a] || a}">${a}</span>`)
     .join('');
   // docs/changes/012: while searching, the hit is bold and a matching subtask becomes a second line
   const subHits = q ? hitSubs(t, q) : [];
+  // docs/changes/013 A4: open and inline, this row is the head of the Akte - so the title
+  // turns into the heading and carries the pencil; the Akte below has no head of its own
+  const inlineHead = open && !ui.wide;
   return `<div class="${cls}" data-id="${t.id}">
     <input type="checkbox" class="check" ${t.done ? 'checked' : ''} ${ui.offline ? 'disabled' : ''} data-act="done" aria-label="Erledigt">
     <div class="body">
-      <button class="t" data-act="open" aria-expanded="${ui.expanded === t.id}">${q ? mark(t.title, q) : esc(t.title)}</button>
+      ${inlineHead ? `<div class="task-head">${titleHTML(t, 'akte-title-text t-head')}<button class="ico" data-act="open" aria-label="Akte schließen" aria-expanded="true">×</button></div>` : `<button class="t" data-act="open" aria-expanded="${ui.expanded === t.id}">${q ? mark(t.title, q) : esc(t.title)}</button>`}
       ${subHits.length ? `<div class="sub-hit">${subHits.map((s) => `<span><span class="arr" aria-hidden="true">↳</span> ${mark(s.title, q)}</span>`).join('')}</div>` : ''}
       <div class="meta"><span class="own ${t.owner}">${OWN[t.owner]}</span><span class="due ${dueCls}">${esc(dueLabel(t))}</span>${subs}${com}${dots}${cost}${claude}${wait}${block}</div>
     </div>
-    ${open && !ui.wide ? detailHTML(t) : ''}
+    ${inlineHead ? detailHTML(t, false) : ''}
   </div>`;
 }

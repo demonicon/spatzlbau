@@ -22,7 +22,13 @@
     <h1 id="title">Spatzlbau</h1>
   </header>
 
-  <section id="loading" class="screen">Lade …</section>
+  <!-- docs/changes/013b N3: the wait has the shape of the app - the empty gate bar fills and
+       empties again until the data is there. No spinner; without motion three quiet dots. -->
+  <section id="loading" class="screen">
+    <p class="load-text">Lade …</p>
+    <div class="load-gates" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="load-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+  </section>
 
   <section id="login" class="screen" hidden>
     <form id="login-form" class="card" novalidate>

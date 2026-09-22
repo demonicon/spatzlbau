@@ -17,7 +17,11 @@ import {
   setSubtaskDone,
   addSubtask,
   deleteSubtask,
+  updateSubtask,
   addComment,
+  updateComment,
+  deleteComment,
+  canEditComment,
   setSetting,
   loadPersonRow,
   setLastSeenVersion,
@@ -36,7 +40,7 @@ import { dashboardView, columns } from './views/dashboard.js';
 import { finanzenView } from './views/finanzen.js';
 import { isMoreOpen } from './ui/detail.js';
 import { searching } from './search.js';
-import { parseAmount, bufferRow, bufferPct, suggestedBuffer } from './costs.js';
+import { parseAmount, bufferRow, bufferPct, suggestedBuffer, costsOf } from './costs.js';
 
 const UI_KEY = 'spatzlbau-ui';
 const PERSON_KEY = 'spatzlbau-person';
@@ -64,7 +68,15 @@ ui.bufferEdit = false;
 ui.recAdd = false; // the "new monthly cost" field in the Finanzen view
 ui.printOpen = false; // "Umzugstag drucken" sheet
 ui.offline = false; // no connection: the cached state is shown read-only (009)
-ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
+ui.wide = false; // ≥ 900 px: the Akte is not inline any more (006)
+// docs/changes/013 A3: three steps instead of two - 'phone' (Akte inline), 'overlay' (Akte comes
+// in from the right over the list) and 'panel' (list and Akte side by side from 1180 px)
+ui.mode = 'phone';
+ui.titleEdit = null; // task id whose title field is open (013 A4)
+ui.subEdit = null; // subtask id whose row is in edit mode (013 B2)
+ui.comEdit = null; // comment id whose body field is open (013 B5)
+ui.costHint = null; // task id that shows the one-off line about the cost states (013 A5)
+ui.updateReady = false; // a newer build took over the service worker (003, bar since 013 A6)
 // ui.preview (docs/changes/010) is set in state.js, where the writers it stops live
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
@@ -80,7 +92,6 @@ function show(screen) {
 let lastSaved = '';
 let live = false;
 let lastError = '';
-let updateReady = false; // a newer build took over the service worker (docs/changes/003)
 function renderStatus(kind, msg) {
   if (kind === 'saved') lastSaved = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   if (kind === 'live') live = true;
@@ -106,9 +117,6 @@ function renderStatus(kind, msg) {
   }
   const parts = [kind === 'saving' ? msg : lastSaved ? 'gespeichert ' + lastSaved : '', live ? 'Live' : 'verbinde …'];
   set(parts.filter(Boolean).join(' · '));
-  if (updateReady) {
-    el.insertAdjacentHTML('beforeend', ' · <button class="link up" data-act="reload">Neue Version – neu laden</button>');
-  }
 }
 onStatus(renderStatus);
 
@@ -185,6 +193,21 @@ function loadUI() {
   } catch {}
 }
 
+/* ---------- one-off hints (docs/changes/013 A5): shown once per device, then never again ---------- */
+const HINT_KEY = 'spatzlbau-hints';
+function hints() {
+  try {
+    return JSON.parse(localStorage.getItem(HINT_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+function markHint(key) {
+  try {
+    localStorage.setItem(HINT_KEY, JSON.stringify({ ...hints(), [key]: true }));
+  } catch {}
+}
+
 /* ---------- changelog ---------- */
 async function loadChangelog() {
   try {
@@ -238,14 +261,30 @@ function syncHash() {
   if (location.hash === want) return;
   history.replaceState(null, '', location.pathname + location.search + want);
 }
+// docs/changes/013 B3: entering Finanzen gets its own step back - Browser-Zurück leaves it
+// again and lands on the list. Opening an Akte still replaces (decision from 006), unaffected.
+function openFinanzen() {
+  const already = ui.screen === 'finanzen';
+  ui.screen = 'finanzen';
+  ui.finFilter = null;
+  if (already) return; // opened again while already there: no second entry
+  history.pushState(null, '', location.pathname + location.search + '#finanzen');
+}
+
 function setExpanded(id) {
   const prev = ui.expanded;
   if (id) markCommentsSeen(id).catch(() => {}); // opening takes the "new" dot away (009)
   ui.expanded = id;
   ui.confirm = null;
   ui.editingAdvice = null;
+  ui.titleEdit = null;
+  ui.subEdit = null;
+  ui.comEdit = null;
+  // the cost states are explained the first time a task with costs is opened, then never again
+  ui.costHint = id && costsOf(id).length && !hints().costs ? id : null;
   syncHash();
   render();
+  if (ui.costHint) markHint('costs');
   // closing gives the keyboard focus back to the task's title in the list
   if (!id && prev) $(`#view .task[data-id="${CSS.escape(prev)}"] .t`)?.focus({ preventScroll: true });
 }
@@ -300,7 +339,8 @@ const OFFLINE_OK = new Set([
   'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'more', 'advice-add',
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
-  'fin-recurring', 'q-clear',
+  'fin-recurring', 'q-clear', 'home', 'overlay-close', 'title-edit', 'title-done',
+  'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
 ]);
 
 function wireEvents() {
@@ -320,14 +360,18 @@ function wireEvents() {
       return;
     }
     if (e.key !== 'Escape') return;
-    if (ui.changelogOpen) closeChangelog();
+    if (ui.titleEdit) {
+      if (document.activeElement?.closest?.('.akte-title')) document.activeElement.blur();
+      ui.titleEdit = null;
+      render();
+    } else if (ui.changelogOpen) closeChangelog();
     else if (ui.printOpen) {
       ui.printOpen = false;
       render();
     } else if (ui.expanded && ui.wide) {
       // a field still being typed in saves on blur – let that happen before the panel goes
       if (document.activeElement?.closest?.('#panel')) document.activeElement.blur();
-      setExpanded(null); // Escape empties the side panel
+      setExpanded(null); // Escape empties the side panel and closes the overlay
     }
   });
   // browser back/forward or a pasted link: follow the hash
@@ -360,16 +404,23 @@ function wireEvents() {
   // leaving the app ends the visit: the next open measures "Seit deinem letzten Besuch" from here (009)
   document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && markVisit().catch(() => {}));
   window.addEventListener('pagehide', () => markVisit().catch(() => {}));
-  // layout mode: the Akte moves between inline (narrow) and side panel (wide) – same behaviour, other place
-  const mq = matchMedia('(min-width: 900px)');
-  ui.wide = mq.matches;
-  mq.addEventListener('change', () => {
-    ui.wide = mq.matches;
-    // the Akte moves between inline and panel, so this render cannot be skipped: a field that is
-    // being typed in gives up focus first (which saves it) instead of freezing the old layout
-    if (isTyping()) document.activeElement.blur();
-    render();
-  });
+  // layout: the Akte moves between inline, overlay and side panel – same behaviour, other place
+  const mqWide = matchMedia('(min-width: 900px)');
+  const mqPanel = matchMedia('(min-width: 1180px)');
+  syncMode();
+  for (const mq of [mqWide, mqPanel]) {
+    mq.addEventListener('change', () => {
+      syncMode();
+      // the Akte changes place, so this render cannot be skipped: a field that is being typed in
+      // gives up focus first (which saves it) instead of freezing the old layout
+      if (isTyping()) document.activeElement.blur();
+      render();
+    });
+  }
+  function syncMode() {
+    ui.wide = mqWide.matches;
+    ui.mode = mqPanel.matches ? 'panel' : mqWide.matches ? 'overlay' : 'phone';
+  }
 
   // docs/changes/012: from the first character, without a delay
   view.addEventListener('input', (e) => {
@@ -419,6 +470,14 @@ function wireEvents() {
       setSubtaskDone(el.closest('.sub').dataset.sub, el.checked)
         .then((autoDone) => autoDone && toast('Alle Teilschritte erledigt – Aufgabe abgehakt'))
         .catch(fail);
+      return;
+    }
+    // renaming a subtask (013 B2): saves on blur, like the other text fields
+    if (el.dataset.subField === 'title') {
+      const s = state.subtasks.find((x) => x.id === el.dataset.ref);
+      if (!s) return;
+      const v = el.value.replace(/\s+/g, ' ').trim() || s.title; // never save an empty title
+      updateSubtask(s.id, { title: v }).catch(fail);
       return;
     }
     if (el.dataset.act === 'done' && t) {
@@ -580,8 +639,25 @@ function wireEvents() {
           await addSubtask(t.id, v);
           return;
         }
+        case 'sub-edit':
+          ui.subEdit = b.dataset.ref;
+          ui.confirm = null;
+          render();
+          $(`[data-sub="${CSS.escape(b.dataset.ref)}"] .sub-edit-title`, $('#view'))?.focus();
+          return;
+        case 'sub-edit-done':
+          ui.subEdit = null;
+          render();
+          return;
         case 'sub-del':
-          await deleteSubtask(b.closest('.sub').dataset.sub);
+          ui.confirm = 'subdel:' + b.dataset.ref;
+          render();
+          return;
+        case 'sub-del-yes':
+          ui.subEdit = null;
+          ui.confirm = null;
+          await deleteSubtask(b.dataset.ref);
+          toast('Teilschritt gelöscht');
           return;
         case 'com-add': {
           const ta = input('[data-input=com]');
@@ -590,11 +666,72 @@ function wireEvents() {
           await addComment(t.id, v);
           return;
         }
+        /* ---------- own comments (013 B5) ---------- */
+        case 'com-edit': {
+          const c = state.comments.find((x) => x.id === b.dataset.ref);
+          if (!c || !canEditComment(c)) return; // the ten minutes are over - stale button from an old render
+          ui.comEdit = c.id;
+          ui.confirm = null;
+          render();
+          $(`[data-com="${CSS.escape(c.id)}"] .com-edit`, $('#view'))?.focus();
+          return;
+        }
+        case 'com-cancel':
+          ui.comEdit = null;
+          render();
+          return;
+        case 'com-save': {
+          const ta = $(`[data-com="${CSS.escape(b.dataset.ref)}"] .com-edit`, $('#view'));
+          const v = ta.value.trim();
+          if (!v) return toast('Kommentar darf nicht leer sein');
+          ui.comEdit = null;
+          await updateComment(b.dataset.ref, { body: v });
+          return;
+        }
+        case 'com-del':
+          ui.confirm = 'comdel:' + b.dataset.ref;
+          render();
+          return;
+        case 'com-del-yes':
+          ui.comEdit = null;
+          ui.confirm = null;
+          await deleteComment(b.dataset.ref);
+          toast('Kommentar gelöscht');
+          return;
+        /* ---------- navigation (013 A6) ---------- */
+        case 'home': // the house: back to the plain list, no filter, all phases
+          ui.screen = 'dashboard';
+          ui.filter = null;
+          ui.phase = null;
+          ui.finFilter = null;
+          ui.q = '';
+          ui.qPrev = null;
+          saveUI();
+          setExpanded(null);
+          window.scrollTo({ top: 0 });
+          return;
+        case 'title-edit':
+          ui.titleEdit = b.dataset.ref;
+          render();
+          $(`[data-detail="${CSS.escape(b.dataset.ref)}"] .akte-title, #view .task[data-id="${CSS.escape(b.dataset.ref)}"] .akte-title`, $('#view'))?.focus();
+          return;
+        case 'title-done':
+          ui.titleEdit = null;
+          render();
+          return;
+        case 'overlay-close': // only the dimmed area around the Akte closes it (013 A3)
+          if (e.target.closest('.sheet')) return;
+          setExpanded(null);
+          return;
+
         /* ---------- Finanzen view (007, addendum) ---------- */
         case 'screen':
-          ui.screen = b.dataset.to;
-          ui.finFilter = null;
-          syncHash();
+          if (b.dataset.to === 'finanzen') openFinanzen();
+          else {
+            ui.screen = b.dataset.to;
+            ui.finFilter = null;
+            syncHash();
+          }
           render();
           window.scrollTo({ top: 0 });
           return;
@@ -629,9 +766,7 @@ function wireEvents() {
           return;
         }
         case 'fin-recurring': // from the Akte of "Kostenmodell klären" straight to the table
-          ui.screen = 'finanzen';
-          ui.finFilter = null;
-          syncHash();
+          openFinanzen();
           render();
           $('#fin-recurring')?.scrollIntoView({ block: 'start' });
           return;
@@ -907,8 +1042,8 @@ async function registerServiceWorker() {
       // the new build calls skipWaiting + clients.claim, so 'activated' means it now serves this page
       sw.addEventListener('statechange', () => {
         if (sw.state !== 'activated') return;
-        updateReady = true;
-        renderStatus('idle');
+        ui.updateReady = true; // docs/changes/013 A6: a bar says it, instead of a permanent button
+        render();
       });
     });
     const check = () => reg.update().catch(() => {});

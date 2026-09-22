@@ -72,6 +72,7 @@ export const doneByOther = (t) =>
 
 const fmtDate = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtShort = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+const fmtDay = (d) => d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
 
 // deadline relative to the move-in date, without a calendar date
 export function offsetLabel(t) {
@@ -92,6 +93,8 @@ export function dueLabel(t) {
   if (d < 0) return `überfällig seit ${-d} ${-d === 1 ? 'Tag' : 'Tagen'}`;
   if (d === 0) return 'heute';
   if (d === 1) return 'morgen';
+  // docs/changes/013 A5: near dates also say how near - a date alone is hard to feel
+  if (d < 60) return `bis ${fmtDay(date)} ${fmtShort(date)} (in ${d} Tagen)`;
   return 'bis ' + fmtShort(date);
 }
 
@@ -456,6 +459,15 @@ export async function deleteSubtask(id) {
   return write('subtask', () => supabase.from('subtasks').delete().eq('id', id));
 }
 
+// renaming a subtask (docs/changes/013 B2) - same shape as updateTask/updateCost
+export async function updateSubtask(id, patch) {
+  const s = state.subtasks.find((x) => x.id === id);
+  if (!s) return;
+  Object.assign(s, patch);
+  notify();
+  return write('subtask', () => supabase.from('subtasks').update(patch).eq('id', id));
+}
+
 export async function addComment(taskId, body) {
   const row = { task_id: taskId, author: state.person, body };
   status('saving', 'Speichern …');
@@ -467,6 +479,25 @@ export async function addComment(taskId, body) {
   state.comments.push(data);
   status('saved', 'Gespeichert');
   notify();
+}
+
+// docs/changes/013 B5: only the own comments, deleting always allowed, editing only for ten
+// minutes after writing it - a rule of the interface, RLS already allows both for either person
+const COMMENT_EDIT_MS = 10 * 60 * 1000;
+export const canEditComment = (c) => c.author === state.person && Date.now() - new Date(c.created_at).getTime() < COMMENT_EDIT_MS;
+
+export async function updateComment(id, patch) {
+  const c = state.comments.find((x) => x.id === id);
+  if (!c) return;
+  Object.assign(c, patch);
+  notify();
+  return write('comment', () => supabase.from('comments').update(patch).eq('id', id));
+}
+
+export async function deleteComment(id) {
+  state.comments = state.comments.filter((c) => c.id !== id);
+  notify();
+  return write('comment', () => supabase.from('comments').delete().eq('id', id));
 }
 
 /* ---------- cost rows (docs/changes/007) ----------

@@ -67,3 +67,7 @@ Screenshots (Vollseite): `docs/changes/006-screenshots/` – `380-dashboard`, `3
 - Escape schließt das Panel und gibt den Fokus an den Aufgabentitel in der Liste zurück; ein noch offenes Feld im Panel wird vorher verlassen (blur → speichern).
 - Sichtbarer Fokus: globaler Ring (`:focus-visible`), in der scrollenden Tab-Leiste und im scrollenden Panel nach innen versetzt, damit ihn kein `overflow` abschneidet.
 - `/`: keine Suche vorhanden (Abschnitt 3).
+
+## Nachtrag 22.09.2026 (Auftrag 013 A3)
+
+Die Entscheidung „stilles Panel statt Overlay" gilt ab 013 **erst ab 1180 px**. Zwischen 900 und 1179 px blieb daneben eine leere Panelfläche stehen (im UX-Audit vom 22.09. als Fehler aufgeführt): die Liste nutzt dort jetzt die volle Breite, und die Akte kommt als **Overlay von rechts** (440 px, Hintergrund abgedunkelt, schließt mit ×, Escape oder einem Tipp daneben). Der Grund für das stille Panel – „nichts springt, wenn die erste Aufgabe aufgeht" – trägt nur, solange links wie rechts genug Platz ist.
