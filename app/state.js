@@ -22,7 +22,7 @@ export const ui = {
   view: 'week',
   filter: 'all',
   expanded: null, // task id with open detail
-  confirm: null, // 'del:<id>' | 'seed' | null
+  confirm: null, // 'del:<id>' | null
   phaseOpen: {}, // phase id -> bool (default open)
   editingAdvice: null, // '<taskId>:<key>'
 };
@@ -130,6 +130,12 @@ function saveSnapshot() {
   } catch {} // quota or private mode: the app just has no offline copy
 }
 
+let snapshotTimer = null;
+const saveSnapshotSoon = () => {
+  clearTimeout(snapshotTimer);
+  snapshotTimer = setTimeout(saveSnapshot, 1000);
+};
+
 /** Fill the state from the copy on this device. Returns when it was taken, or null. */
 export function loadSnapshot() {
   try {
@@ -218,20 +224,119 @@ export async function setLastSeenVersion(version) {
   return write('allowlist', () => supabase.from('allowlist').update({ last_seen_version: version }).eq('person', state.person));
 }
 
-/* ---------- realtime: any change -> debounced reload ---------- */
+/* ---------- realtime (docs/changes/010 point 2) ----------
+   Work the single row out of the event into the local state instead of reloading every table.
+   A full reload is the fallback for two cases only: an event we cannot apply, and a reconnect
+   (while the socket was down we may have missed events).
+   An echo of our own write carries the values we already have, so it changes nothing and
+   draws nothing - that is what keeps typing and ticking free of flicker. */
+
+// everything except the bookkeeping column: an echo differs only in updated_at
+const sameRow = (a, b) => {
+  if (!a || !b) return false;
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    if (k === 'updated_at') continue;
+    if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) return false;
+  }
+  return true;
+};
+
+// returns true when the list really changed (and the view has to be drawn again)
+function upsertRow(list, row) {
+  const i = list.findIndex((x) => x.id === row.id);
+  if (i < 0) {
+    list.push(row);
+    return true;
+  }
+  const unchanged = sameRow(list[i], row);
+  list[i] = row; // keep the server's updated_at either way
+  return !unchanged;
+}
+
+function dropRow(list, id) {
+  const i = id === undefined ? -1 : list.findIndex((x) => x.id === id);
+  if (i < 0) return false;
+  list.splice(i, 1);
+  return true;
+}
+
+const hasFields = (o) => !!o && Object.keys(o).length > 0;
+
+/** Apply one postgres_changes payload. Exported for the tests; returns true if the state changed. */
+export function applyRealtimeEvent(table, payload) {
+  const row = hasFields(payload?.new) ? payload.new : null;
+  const old = hasFields(payload?.old) ? payload.old : null;
+  const deleted = payload?.eventType === 'DELETE';
+  if (!deleted && !row) throw new Error('event without row');
+
+  switch (table) {
+    case 'tasks':
+      // the app never deletes a task hard; deleted_at arrives as a plain update
+      if (deleted) return dropRow(state.tasks, old?.id);
+      return row.deleted_at ? dropRow(state.tasks, row.id) : upsertRow(state.tasks, row);
+    case 'subtasks':
+      return deleted ? dropRow(state.subtasks, old?.id) : upsertRow(state.subtasks, row);
+    case 'comments':
+      return deleted ? dropRow(state.comments, old?.id) : upsertRow(state.comments, row);
+    case 'settings': {
+      const key = deleted ? old?.key : row.key;
+      if (!key) return false;
+      if (deleted) {
+        if (!(key in state.settings)) return false;
+        delete state.settings[key];
+        return true;
+      }
+      if (JSON.stringify(state.settings[key]) === JSON.stringify(row.value)) return false;
+      state.settings[key] = row.value;
+      return true;
+    }
+    default:
+      throw new Error('unknown table ' + table);
+  }
+}
+
 let reloadTimer = null;
+let notifyTimer = null;
 export function subscribeRealtime() {
   const scheduleReload = () => {
     clearTimeout(reloadTimer);
     reloadTimer = setTimeout(() => loadAll().catch((e) => status('error', 'Aktualisieren fehlgeschlagen: ' + e.message)), 250);
   };
+  // a seed run or a burst of subtasks arrives as many events; draw once, not once per row
+  const scheduleNotify = () => {
+    clearTimeout(notifyTimer);
+    notifyTimer = setTimeout(() => {
+      notifyTimer = null;
+      notify();
+    }, 60);
+  };
+
+  let wasSubscribed = false;
   const ch = supabase.channel('spatzlbau-db');
   for (const table of ['settings', 'tasks', 'subtasks', 'comments']) {
-    ch.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleReload);
+    ch.on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+      let changed;
+      try {
+        changed = applyRealtimeEvent(table, payload);
+      } catch (e) {
+        console.warn('realtime event not applied, reloading instead', e);
+        scheduleReload();
+        return;
+      }
+      if (!changed) return; // our own write coming back
+      state.loadedAt = new Date().toISOString();
+      saveSnapshotSoon();
+      scheduleNotify();
+    });
   }
   ch.subscribe((s) => {
-    if (s === 'SUBSCRIBED') status('live', 'Live');
-    else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') status('error', 'Keine Live-Verbindung – Seite neu laden');
+    if (s === 'SUBSCRIBED') {
+      status('live', 'Live');
+      if (wasSubscribed) scheduleReload(); // reconnected: catch up on whatever we missed
+      wasSubscribed = true;
+    } else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') {
+      status('error', 'Keine Live-Verbindung – Seite neu laden');
+    }
   });
   return ch;
 }

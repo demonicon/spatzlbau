@@ -15,24 +15,24 @@ Vier Kernanforderungen der Nutzer:
 Dazu die drei nicht verhandelbaren Rahmenbedingungen:
 - **Fremde ausgeschlossen:** Login-Pflicht, Allowlist mit genau zwei E-Mail-Adressen
 - **Anna öffnet nur eine URL:** kein App-Store; ein von Sebastian angelegtes Konto (E-Mail + Passwort), sonst nichts
-- **Claude hat jederzeit Lesezugriff:** über eine nur-lesende Export-Funktion mit Token, damit die Delegations-Schleife (Abschnitt 4) ohne Copy-Paste läuft
+- **Claude hat jederzeit Lesezugriff:** direkt über den Supabase-Connector (MCP) im Chat, damit die Delegations-Schleife (Abschnitt 4) ohne Copy-Paste läuft (bis Auftrag 010: nur-lesende Export-Funktion mit Token)
 
 ## 2. Technische Entscheidungen (getroffen, nicht neu diskutieren)
 
 | Thema | Entscheidung | Begründung |
 |---|---|---|
 | Frontend | Vanilla JS mit ES-Modulen, kein Framework, kein Build-Step; Supabase-JS per CDN-ESM mit gepinnter Version; Content-Security-Policy als `<meta>` in `index.html` (keine Inline-Skripte/-Styles, Skripte nur self + jsdelivr, Verbindungen nur Supabase) – Auftrag 008 | Deploy = git push; kleine App; leicht iterierbar |
-| Hosting | GitHub Pages aus öffentlichem Repo (Fallback Cloudflare Pages bei privatem Repo) | kostenlos, kein Server |
-| Daten | Supabase (Postgres) mit Realtime | Login, Allowlist, feldgenaue Updates, REST für Claude |
+| Hosting | GitHub Pages aus öffentlichem Repo (Fallback Cloudflare Pages bei privatem Repo); zusätzlich `preview` → `/preview/`, gleiche Datenbank, Hinweis „Vorschau“ in der App (Auftrag 010) | kostenlos, kein Server; Cloud-Sitzungen testen ohne die Live-App zu berühren |
+| Daten | Supabase (Postgres) mit Realtime; ein Ereignis wird feldgenau in den lokalen Stand eingearbeitet, Voll-Reload nur nach Verbindungsabbruch (Auftrag 010) | Login, Allowlist, feldgenaue Updates |
 | Auth | Supabase Auth, E-Mail + Passwort (`signInWithPassword`); Konten legt Sebastian im Dashboard an, keine Selbstregistrierung, kein Passwort-Reset per Mail (Änderungsauftrag 001) | Magic Link scheiterte am Mail-Limit des Supabase-Standardversands; Passwort-Login braucht beim Anmelden keine Mail |
 | Zugriffsschutz | Row Level Security: nur E-Mails aus `allowlist` lesen/schreiben | echter Ausschluss, nicht nur Obscurity |
-| Claude-Lesezugriff | Postgres-Funktion `export_state(token text)` als RPC, `security definer`, gibt den Gesamtstand als JSON; Token in Tabelle `settings`, per SQL rotierbar | im Chat kann Claude nur GET-URLs abrufen, keine Header setzen → Token als Query-Parameter, `apikey` ebenfalls als Query-Parameter |
+| Claude-Lesezugriff | Supabase-Connector (MCP) in Claude Desktop/Code, liest mit den eigenen Zugriffsrechten (Auftrag 010) | eine unauthentifizierte Export-Funktion mit Token in der Query-String war eine offene Tür ohne Nutzen, sobald der Connector direkten Zugriff gibt |
 | Claude-Schreibzugriff | Nur über Claude Code mit Service-Role-Key aus lokaler `.env` – niemals im Repo | |
 | PWA | `manifest.json`, minimaler Service Worker (App-Shell cachen, network-first); Cache-Version = Commit-SHA, vom Pages-Workflow in `sw.js`/`app/config.js` gestempelt; neue Builds übernehmen sofort (`skipWaiting`/`clients.claim`) und melden sich in der Statuszeile mit „Neue Version – neu laden“ (Auftrag 003) | Offline-Bearbeitung ist bewusst **nicht** im Scope |
-| Backup | GitHub-Workflow „Backup“ täglich 03:00 UTC: `scripts/backup.mjs` sichert alle Tabellen (ohne E-Mails, ohne Export-Token) AES-verschlüsselt als Artefakt, 30 Tage; `scripts/restore.mjs` vergleicht (`--dry`) oder stellt wieder her (Auftrag 008b) | Supabase Free hat keine automatischen Backups |
+| Backup | GitHub-Workflow „Backup“ täglich 03:00 UTC: `scripts/backup.mjs` sichert alle Tabellen (ohne E-Mails) AES-verschlüsselt als Artefakt, 30 Tage; `scripts/restore.mjs` vergleicht (`--dry`) oder stellt wieder her (Auftrag 008b) | Supabase Free hat keine automatischen Backups |
 | Sprache | UI komplett Deutsch, Code/Kommentare Englisch | |
 
-Anon-Key und Projekt-URL dürfen im Repo stehen (per Design öffentlich, RLS schützt). Service-Role-Key und Export-Token niemals committen.
+Anon-Key und Projekt-URL dürfen im Repo stehen (per Design öffentlich, RLS schützt). Service-Role-Key niemals committen.
 
 ## 3. Datenmodell
 
@@ -76,7 +76,7 @@ Jede Aufgabe kann auf `type = claude` gestellt werden – dynamisch, keine feste
 
 „An Claude geben" schreibt zusätzlich den Kommentar „An Claude übergeben.". **Rückfragen und Antworten sind normale Kommentare** (Autor `C` für Claude, `S`/`A` für die Nutzer) – dafür gibt es keinen eigenen Zustand mehr. „Zurück auf Briefing" ist jederzeit möglich. Der Filter „Bei Claude" gruppiert die delegierten Aufgaben nach genau diesen drei Zuständen statt nach Personen.
 
-Ablauf technisch: Claude im Chat ruft `export_state` ab, sieht die Aufgaben im Zustand `claude` samt Briefing und Kommentaren, antwortet im Chat. Ergebnisse tragen die Nutzer ein oder Claude Code schreibt sie per Skript (`scripts/claude-result.mjs`, Eingabe: JSON `{tasks:[{id,status,result,comment,sub_add[]}]}`) in die Datenbank – Kommentare mit `author = 'C'`.
+Ablauf technisch: Claude im Chat liest über den Supabase-Connector die Aufgaben im Zustand `claude` samt Briefing und Kommentaren, antwortet im Chat. Ergebnisse tragen die Nutzer ein oder Claude Code schreibt sie per Skript (`scripts/claude-result.mjs`, Eingabe: JSON `{tasks:[{id,status,result,comment,sub_add[]}]}`) in die Datenbank – Kommentare mit `author = 'C'`.
 
 ## 5. Sichten und UI (Stand Änderungsauftrag 009, Design in design/handoff/2026-09-22-b)
 
@@ -108,7 +108,7 @@ spatzlbau/
 ├── app/            main.js, state.js, views/*.js, ui/*.js, supabase.js
 ├── app.css
 ├── manifest.json, sw.js, icons/
-├── supabase/schema.sql      Tabellen, RLS, allowlist, export_state, Realtime
+├── supabase/schema.sql      Tabellen, RLS, allowlist, Realtime
 ├── seed.json
 ├── content/               Inhaltspakete für den Seed-Merge (004)
 ├── scripts/claude-result.mjs, scripts/seed.mjs   (Node, nutzen .env mit SERVICE_ROLE_KEY)
@@ -124,13 +124,13 @@ spatzlbau/
 **Sebastian, im Browser (~15 Minuten):**
 1. supabase.com → Konto → neues Projekt (Region EU, Frankfurt). Projekt-URL, Anon-Key und Service-Role-Key notieren.
 2. Authentication → Providers → Email: „Allow new users to sign up“ aus. Unter Users die zwei Konten mit Passwort anlegen (Auto Confirm).
-3. SQL Editor → Inhalt von `supabase/schema.sql` einfügen und ausführen (enthält Platzhalter für die zwei E-Mails und erzeugt das Export-Token).
+3. SQL Editor → Inhalt von `supabase/schema.sql` einfügen und ausführen (enthält Platzhalter für die zwei E-Mails).
 4. github.com → neues öffentliches Repo `spatzlbau` (oder du erledigst das per `gh`, wenn eingeloggt).
 
 **Du, Claude Code:**
 1. Repo-Gerüst anlegen, `schema.sql` schreiben, `SETUP.md` schreiben – **zuerst**, damit Sebastian parallel klicken kann.
 2. App bauen, Seed-Skript, Result-Skript, PWA, Pages-Workflow.
-3. Nach Push: Pages-URL an Sebastian melden (für Supabase Redirect), Seed einspielen, Export-URL zusammensetzen und in `SETUP.md` dokumentieren (Token nur lokal anzeigen, nicht committen).
+3. Nach Push: Pages-URL an Sebastian melden (für Supabase Redirect), Seed einspielen.
 4. Smoke-Test-Checkliste ausführen (Abschnitt 8).
 
 Bevor du baust, frag Sebastian nach: Projekt-URL + Anon-Key, den zwei E-Mail-Adressen, ob `gh` und Node lokal verfügbar sind, Repo-Name.
@@ -141,7 +141,7 @@ Bevor du baust, frag Sebastian nach: Projekt-URL + Anon-Key, den zwei E-Mail-Adr
 2. Anna öffnet dieselbe URL auf dem Handy, loggt sich ein, sieht Sebastians Stand, hakt eine andere Aufgabe ab, kommentiert, fügt "Zum Home-Bildschirm" hinzu.
 3. Bei Sebastian erscheinen Annas Änderungen ohne Neuladen (Realtime).
 4. Ein drittes Konto (Testadresse, im Dashboard angelegt, nicht in der Allowlist) loggt sich ein: App zeigt „nicht freigeschaltet“, keine Daten sichtbar. Eine Adresse ohne Konto kann sich gar nicht anmelden.
-5. Sebastian gibt Claude im Chat die Export-URL; Claude liest den Stand und nennt die beiden Kommentare korrekt. Danach Token rotieren, um den Rotationsweg einmal geprobt zu haben.
+5. Sebastian fragt Claude im Chat nach dem Stand (Supabase-Connector); Claude liest ihn und nennt die beiden Kommentare korrekt.
 
 Erfolgskriterium: alle fünf Punkte grün. Erst dann beginnt die Weiterentwicklung.
 
@@ -150,5 +150,5 @@ Erfolgskriterium: alle fünf Punkte grün. Erst dann beginnt die Weiterentwicklu
 1. **Setup & Smoke-Test** – dieses Briefing
 2. **Konzeptrunde 2 (Chat) + UX/UI-Runde (Claude Code):** leichte Akte für kleine Aufgaben, Review-Export für Claude (alles Kommentierte/Geänderte seit letztem Review), Onboarding-Screen für Anna, Diese-Woche-Sicht schärfen
 3. **Inhalte Phase 1 + 2:** Beratungsfelder und Teilschritte für Vertrag/Kündigung, mit Rechtslage-Check, geliefert als Seed-Update
-4. **Delegation live:** erste echte Aufgabe (z. B. Umzugsunternehmen) durch die Schleife; danach optional Scheduled Task, der die Export-URL täglich prüft und bei Go-Aufgaben proaktiv startet
+4. **Delegation live:** erste echte Aufgabe (z. B. Umzugsunternehmen) durch die Schleife; danach optional Scheduled Task, der über den Connector täglich prüft und bei delegierten Aufgaben proaktiv startet
 5. **Inhalte Phase 3–5** und Betrieb bis zum Einzug

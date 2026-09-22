@@ -25,10 +25,16 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Farb-Tokens: Text nur mit Tokens, die auf `--paper` und Weiß mindestens 4,5:1 erreichen (`--ink`, `--ink-2`, `--ink-3`, `--danger`, Owner-Farben auf ihren Flächen). `--mark-deep` nie für Text; Tokens unter 4,5:1 (`--line`, `--line-dash`, `--mark`, Hintergründe) nur für Rahmen und Flächen.
 - Jede Datenänderung geht feldgenau über Supabase (`update` einzelner Spalten/Zeilen), nie den Gesamtstand überschreiben.
 - `seed.json` ist die einzige Quelle für Stammaufgaben und Beratungstexte. Inhaltsänderungen = Seed ändern + `scripts/seed.mjs` ausführen (merge, nie destruktiv).
-- Secrets: `.env` lokal (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `EXPORT_TOKEN`), in `.gitignore`. Anon-Key darf ins Repo.
+- Secrets: `.env` lokal (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), in `.gitignore`. Anon-Key darf ins Repo. Seit Auftrag 010 kein Export-Token mehr – Claude im Chat liest über den Supabase-Connector.
 - Schema-Änderungen als neue Datei in `supabase/migrations/NNN_aXXX_<thema>.sql` (NNN fortlaufend, XXX = Nummer des Änderungsauftrags, z. B. `005_a004_costs.sql`); `schema.sql` bleibt der Gesamtstand für Neueinrichtung. Die Migrationen 001–004 stammen von vor dieser Regel und behalten ihre Namen.
 - Commit-Messages: Präfix `feat:`, `fix:`, `content:`, `chore:`. Kleine Commits.
 - Vor dem Push: `index.html` lokal öffnen (Live-Server) und auf ~380 px prüfen.
+
+## Preview-Deploy (Auftrag 010)
+- Zwei Ziele, ein Pages-Workflow, eine Datenbank: `main` → `/`, Branch `preview` → `/preview/`. Jeder Deploy baut beide neu (der jeweils andere Branch wird mitgecheckt, sonst würde ein Push den anderen Pfad löschen).
+- Cloud-Sitzungen (ohne direkten Kontakt zu Sebastian) mergen ihre Branches nach `preview`, nicht nach `main`. Sebastian prüft `/preview/` am Handy (erkennbar am Hinweis „Vorschau“ in der Statuszeile) und merged danach selbst `preview` → `main`.
+- Lokale Sitzungen mit Sebastian im Chat mergen wie gehabt direkt nach `main`, sobald er zustimmt.
+- **`preview` und `main` nie auf denselben Commit setzen.** GitHub Pages erkennt Deploys am Commit der auslösenden Branch; steht derselbe Commit schon einmal deployt, wird der Lauf still übersprungen und die Seite behält den alten Inhalt. Der Workflow prüft nach jedem Deploy, was tatsächlich ausgeliefert wird, und schlägt in dem Fall fehl (statt grün zu lügen). `preview` nach einer Übernahme also nicht per Fast-Forward auf `main` ziehen, sondern mit dem nächsten echten Commit weiterarbeiten.
 
 ## Tests gegen die Live-Datenbank
 - Tests, die als echte Person (Sebastian oder Anna) eingeloggt laufen oder in die Live-Datenbank schreiben, werden **vorher angesagt** – nicht nebenbei erledigt. Lesende Abfragen und in Transaktionen zurückgerollte Migrationsprüfungen sind davon nicht betroffen.
@@ -44,5 +50,5 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 
 ## Was du nicht tust
 - Konzept oder Datenmodell eigenmächtig umbauen – Rückfrage an Sebastian
-- Export-Token, Service-Role-Key oder E-Mail-Adressen committen
+- Service-Role-Key oder E-Mail-Adressen committen
 - Offline-Sync bauen (bewusst außerhalb des Scopes)

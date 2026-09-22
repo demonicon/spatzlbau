@@ -1,6 +1,7 @@
-// Seed merge planner. Pure module, shared by the browser (admin button / first start)
-// and scripts/seed.mjs (Node, service role). It never touches the network: it takes the
-// seed and the current DB rows and returns a list of field-precise operations.
+// Seed merge planner (docs/changes/010 point 6: seed logic lives only in scripts/ now,
+// the browser app never had any of this after 008b). Pure module, used by scripts/seed.mjs.
+// It never touches the network: it takes the seed and the current DB rows and returns a list
+// of field-precise operations.
 //
 // Rules (see BRIEFING.md §3):
 // - unknown seed task  -> insert (with seed_snapshot)

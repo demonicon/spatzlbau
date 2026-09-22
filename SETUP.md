@@ -1,7 +1,7 @@
 # SETUP – Spatzlbau: Klickanleitung für Sebastian
 
 Reihenfolge: Supabase → SQL → Auth → GitHub → Rückmeldung an Claude Code. Dauer ca. 15 Minuten.
-Alles, was du eintippst oder kopierst, steht in Codeblöcken. Geheimnisse (Service-Role-Key, Export-Token) nur in die lokale `.env`, nie ins Repo.
+Alles, was du eintippst oder kopierst, steht in Codeblöcken. Geheimnisse (Service-Role-Key) nur in die lokale `.env`, nie ins Repo.
 
 ---
 
@@ -29,10 +29,9 @@ Notieren für Schritt 6: Project URL, Publishable/Anon-Key, Secret/Service-Role-
    ('anna@example.com',      'A');
    ```
 3. Supabase Dashboard → **SQL Editor** → **New query** → gesamten Dateiinhalt einfügen → **Run** (Strg+Enter).
-4. Unten erscheint eine Ergebniszeile: `status = ok`, `allowlisted_people = 2`, `export_token = <48 Zeichen>`.
-   **Token kopieren** und in die lokale `.env` (Schritt 6) – nicht ins Repo, nicht in den Chat.
+4. Unten erscheint eine Ergebniszeile: `status = ok`, `allowlisted_people = 2`.
 
-Das Skript kann jederzeit erneut ausgeführt werden (z. B. nach Adressänderung); Daten und Token bleiben erhalten.
+Das Skript kann jederzeit erneut ausgeführt werden (z. B. nach Adressänderung); Daten bleiben erhalten.
 
 Spätere Schema-Änderungen kommen als einzelne Dateien in `supabase/migrations/` (`NNN_aXXX_thema.sql`, NNN aufsteigend). Sie werden im selben SQL-Editor in dieser Reihenfolge ausgeführt und sind mehrfach ausführbar; Claude Code sagt im Änderungsauftrag, welche dran ist. `schema.sql` enthält immer den Gesamtstand für eine Neueinrichtung.
 
@@ -97,7 +96,6 @@ Datei `.env` im Projektordner (steht in `.gitignore`, wird nie committet), Vorla
 SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_… oder eyJ…
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_… oder eyJ…
-EXPORT_TOKEN=<Token aus Schritt 2>
 BACKUP_KEY=<lange Passphrase, siehe Abschnitt 10>
 ```
 
@@ -108,10 +106,10 @@ BACKUP_KEY=<lange Passphrase, siehe Abschnitt 10>
 Damit der Build starten kann, im Chat mit Claude Code angeben:
 - Project URL und Publishable/Anon-Key (dürfen im Chat stehen, landen im Repo)
 - Repo-URL auf GitHub und dein GitHub-Benutzername (für die Pages-URL)
-- Ob `.env` liegt (Service-Role-Key und Token **nicht** in den Chat schreiben – Claude Code liest die Datei lokal)
+- Ob `.env` liegt (Service-Role-Key **nicht** in den Chat schreiben – Claude Code liest die Datei lokal)
 - Ob Node (und ggf. `gh`) installiert sind
 
-Danach: Claude Code baut, pusht, meldet die Pages-URL, spielt den Seed ein (`node scripts/seed.mjs`) und dokumentiert hier die Export-URL.
+Danach: Claude Code baut, pusht, meldet die Pages-URL, spielt den Seed ein (`node scripts/seed.mjs`) und richtet den Supabase-Connector für Claude im Chat ein (Abschnitt 8).
 
 ## 7a. Skripte (Claude Code, lokal)
 
@@ -127,26 +125,20 @@ trägt Claude-Ergebnisse ein: `{"tasks":[{"id":"umzugsfirma","status":"ergebnis"
 
 ---
 
-## 8. Export-URL für Claude im Chat
+## 7b. Seed ohne PC (GitHub Action, Auftrag 010)
 
-Nur-Lese-Zugriff auf den Gesamtstand als JSON. Aufbau:
-```
-https://<projekt-ref>.supabase.co/rest/v1/rpc/export_state?token=<EXPORT_TOKEN>&apikey=<ANON_KEY>
-```
-Die fertige URL enthält das Token → **nicht** ins Repo, nur im Chat an Claude geben (Claude kann sie per GET abrufen). Falscher/fehlender Token → HTTP 401 und keine Daten.
+Ein Inhaltspaket einspielen, ohne dass jemand am Rechner sitzt: GitHub → Reiter **Actions** → Workflow **Seed** → **Run workflow**.
 
-Für dieses Projekt (Token aus `.env` einsetzen; Publishable-Key ist öffentlich und darf hier stehen):
-```
-https://rxhbwjbiwackxuswupuy.supabase.co/rest/v1/rpc/export_state?token=<EXPORT_TOKEN>&apikey=sb_publishable_sFPP1DbeeXoUBa0uWhI3-g_KjPQ0Qu3
-```
-Getestet am 13.09.2026: 200 + JSON mit richtigem Token, 401 mit falschem.
+- **package** – Pfad im Repo, Standard `seed.json`. Für ein Inhaltspaket z. B. `content/beispiel-004.json`.
+- **dry** – Häkchen setzen, um nur zu sehen, was sich ändern würde (nichts wird geschrieben).
 
-### Token rotieren
-Wenn die URL irgendwo gelandet ist, wo sie nicht hingehört (oder als Übung im Smoke-Test): SQL Editor →
-```sql
-select rotate_export_token();
-```
-Das Ergebnis ist das neue Token → `.env` aktualisieren, neue URL an Claude im Chat geben. Die alte URL ist sofort ungültig.
+Ergebnis im Lauf-Log (Schritt „Merge … into the database“): wie viele Aufgaben/Teilschritte neu angelegt bzw. aktualisiert wurden. Nutzt dieselben Secrets wie der Backup-Workflow (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`), keine weitere Einrichtung nötig. Macht dasselbe wie `node scripts/seed.mjs` lokal (Abschnitt 7a) – die Merge-Regeln in `app/seed-merge.js` sind identisch, nie destruktiv.
+
+---
+
+## 8. Claude im Chat liest über den Supabase-Connector
+
+Seit Auftrag 010 gibt es keinen Export-Token und keine `export_state`-Funktion mehr: eine unauthentifizierte Nur-Lese-Tür mit Token in der Query-String war eine offene Tür ohne Nutzen, sobald Claude im Chat direkt per Supabase-Connector (MCP) lesen kann. Einrichtung einmalig in Claude Desktop/Code: „Connectors“ → Supabase → mit dem Projekt verbinden ([Supabase-Doku](https://supabase.com/docs/guides/getting-started/mcp)). Danach fragt Sebastian im Chat direkt nach dem Stand, kein Link nötig – die Antworten unterliegen weiterhin ganz normal den RLS-Regeln (Anhang).
 
 ---
 
@@ -158,7 +150,7 @@ VS Code mit Erweiterung „Live Server“ → Rechtsklick auf `index.html` → �
 
 ## 10. Backup (Auftrag 008b)
 
-Supabase Free macht keine automatischen Datenbank-Backups. Deshalb sichert der Workflow „Backup“ täglich um 03:00 UTC alle Tabellen als verschlüsselte Datei und hebt sie 30 Tage als Workflow-Artefakt auf. Ohne E-Mail-Adressen (Allowlist nur Person + gelesene Version) und ohne Export-Token. Verschlüsselt, weil Artefakte eines öffentlichen Repos jeder mit GitHub-Konto herunterladen kann.
+Supabase Free macht keine automatischen Datenbank-Backups. Deshalb sichert der Workflow „Backup“ täglich um 03:00 UTC alle Tabellen als verschlüsselte Datei und hebt sie 30 Tage als Workflow-Artefakt auf. Ohne E-Mail-Adressen (Allowlist nur Person + gelesene Version). Verschlüsselt, weil Artefakte eines öffentlichen Repos jeder mit GitHub-Konto herunterladen kann.
 
 **Einmalig (~3 Minuten):**
 1. Eine lange Passphrase erzeugen (Passwortmanager, ≥ 20 Zeichen) und als `BACKUP_KEY` in die lokale `.env` – ohne sie ist kein Backup lesbar.
@@ -175,7 +167,7 @@ Supabase Free macht keine automatischen Datenbank-Backups. Deshalb sichert der W
 ```bash
 node scripts/restore.mjs backup-<datum>.json.enc
 ```
-Das Skript zeigt zuerst die Abweichungen je Tabelle und fragt im Terminal nach Bestätigung („ja“). Danach entspricht die Datenbank dem Backup: fehlende und geänderte Zeilen werden geschrieben, Zeilen, die nur in der Datenbank waren, gelöscht. Export-Token und E-Mail-Adressen bleiben unberührt.
+Das Skript zeigt zuerst die Abweichungen je Tabelle und fragt im Terminal nach Bestätigung („ja“). Danach entspricht die Datenbank dem Backup: fehlende und geänderte Zeilen werden geschrieben, Zeilen, die nur in der Datenbank waren, gelöscht. E-Mail-Adressen bleiben unberührt.
 
 **Lokales Backup ohne Workflow:** `node scripts/backup.mjs` schreibt `backup-<datum>.json.enc` (mit `BACKUP_KEY` in `.env`) bzw. unverschlüsselt ohne Key ins aktuelle Verzeichnis. Nicht ins Repo legen.
 
@@ -188,12 +180,10 @@ Gilt für alle Zugriffe über die App (Anon-Key + Login). Der Service-Role-Key (
 | Tabelle | Wer nicht eingeloggt ist | Eingeloggt, **nicht** auf der Allowlist | Eingeloggt und auf der Allowlist |
 |---|---|---|---|
 | `allowlist` | nichts | nichts | lesen (um die eigene Person S/A zu ermitteln); schreiben nur `last_seen_version` der **eigenen** Zeile (Spaltenrecht + Zeilenregel) |
-| `settings` | nichts | nichts | lesen, anlegen, ändern – **außer** `export_token` (unsichtbar, nur per SQL) |
+| `settings` | nichts | nichts | lesen, anlegen, ändern |
 | `tasks` | nichts | nichts | lesen, anlegen, ändern; **kein** Löschen (nur `deleted_at` setzen) |
 | `subtasks` | nichts | nichts | lesen, anlegen, ändern, löschen |
 | `comments` | nichts | nichts | lesen, ändern, löschen; anlegen nur mit **eigenem** Autor-Kürzel |
 
 - Allowlist-Prüfung: E-Mail aus dem Login-Token (klein geschrieben) muss in `allowlist` stehen.
-- `export_state(token)`: ohne Login aufrufbar, liefert alles (ohne Token-Wert, ohne gelöschte Aufgaben) – aber nur bei richtigem Token, sonst 403.
-- `rotate_export_token()`: nur per SQL Editor / Service Role.
 - Realtime-Änderungsereignisse unterliegen denselben Leseregeln – Fremde bekommen keine Events.

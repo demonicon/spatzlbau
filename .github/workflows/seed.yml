@@ -1,0 +1,40 @@
+# Merge a content package into the database from the browser, no PC needed
+# (docs/changes/010 point 1). Wraps scripts/seed.mjs, which is the merge logic itself and
+# stays the only place that runs it locally too.
+name: Seed
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Pfad des Inhaltspakets im Repo (z. B. seed.json oder content/beispiel-004.json)'
+        required: false
+        default: seed.json
+      dry:
+        description: 'Nur anzeigen, nichts schreiben'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Merge ${{ inputs.package }} into the database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          test -f "${{ inputs.package }}" || { echo "Paket nicht gefunden: ${{ inputs.package }}"; exit 1; }
+          if [ "${{ inputs.package }}" = "seed.json" ]; then
+            node scripts/seed.mjs ${{ inputs.dry && '--dry' || '' }}
+          else
+            node scripts/seed.mjs --file "${{ inputs.package }}" ${{ inputs.dry && '--dry' || '' }}
+          fi

@@ -1,9 +1,12 @@
-# Publishes the repository root to GitHub Pages on every push to main (no build step).
+# Publishes the repository root to GitHub Pages on every push to main or preview
+# (no build step). docs/changes/010 point 4: main always serves "/", preview always
+# serves "/preview/" alongside it - each deploy checks out both branches and combines
+# them into one artifact, because a Pages deploy always replaces the whole site.
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, preview]
   workflow_dispatch:
 
 permissions:
@@ -22,17 +25,97 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Validate changelog.json (first entry = version shown in the app)
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
+      - name: Validate changelog.json (main)
+        working-directory: site
         run: python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
-      - name: Stamp build with commit SHA (service worker cache version, footer)
-        run: sed -i "s/__BUILD__/${GITHUB_SHA:0:7}/g" sw.js app/config.js
+      - name: Stamp main build with its own commit SHA
+        working-directory: site
+        run: |
+          SHA=$(git rev-parse HEAD)
+          sed -i "s/__BUILD__/${SHA:0:7}/g" sw.js app/config.js
+
+      - name: Check whether a preview branch exists
+        id: preview
+        run: |
+          if git ls-remote --exit-code --heads "https://github.com/${{ github.repository }}" preview > /dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Checkout preview branch
+        if: steps.preview.outputs.exists == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: preview
+          path: site/preview
+      - name: Validate changelog.json (preview)
+        if: steps.preview.outputs.exists == 'true'
+        working-directory: site/preview
+        run: python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
+      - name: Stamp preview build with its own commit SHA
+        if: steps.preview.outputs.exists == 'true'
+        working-directory: site/preview
+        run: |
+          SHA=$(git rev-parse HEAD)
+          sed -i "s/__BUILD__/${SHA:0:7}/g" sw.js app/config.js
+
+      - name: Remember which build each side should serve
+        id: version
+        run: |
+          echo "main=$(git -C site rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+          if [ -d site/preview/.git ]; then
+            echo "preview=$(git -C site/preview rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+          else
+            echo "preview=" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: site
           name: github-pages-${{ github.run_id }}-${{ github.run_attempt }} # unique per (re-)run, see docs/changes/008b
       - id: deployment
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # Pages deduplicates deployments by pages_build_version = the pushed commit, and that is
+      # the wrong key here: the site is main + preview combined. If both branches ever point at
+      # the same commit (syncing preview onto main after a promotion, say), the deploy reports
+      # success within seconds and keeps serving the previous content - silently. GITHUB_SHA
+      # cannot be overridden (the runner protects the default variables), so instead of
+      # preventing that case we make it loud: check what the site actually serves.
+      - name: Check that the site really serves this build
+        env:
+          BASE: ${{ steps.deployment.outputs.page_url }}
+          WANT_MAIN: ${{ steps.version.outputs.main }}
+          WANT_PREVIEW: ${{ steps.version.outputs.preview }}
+        run: |
+          check() { # name, url, expected build stamp
+            for _ in 1 2 3 4 5 6 7 8; do
+              got=$(curl -fsS "$2" 2>/dev/null | grep -o "BUILD = '[0-9a-f]*'" | cut -d"'" -f2)
+              if [ "$got" = "$3" ]; then echo "$1: serving $got"; return 0; fi
+              sleep 15
+            done
+            echo "$1: expected $3, got '${got:-nothing}' at $2"
+            return 1
+          }
+          rc=0
+          check main "${BASE}app/config.js" "$WANT_MAIN" || rc=1
+          if [ -n "$WANT_PREVIEW" ]; then
+            check preview "${BASE}preview/app/config.js" "$WANT_PREVIEW" || rc=1
+          else
+            echo "preview: no preview branch, skipped"
+          fi
+          if [ "$rc" != 0 ]; then
+            echo
+            echo "The deployment reported success but the site serves something else."
+            echo "Most likely this commit was already deployed once under the same SHA and Pages"
+            echo "skipped it. Push a new commit (or change either branch) and deploy again."
+          fi
+          exit $rc

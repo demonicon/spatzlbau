@@ -47,6 +47,9 @@ ui.adviceAdd = new Set(); // Akte: tasks showing the empty advice fields
 ui.printOpen = false; // "Umzugstag drucken" sheet
 ui.offline = false; // no connection: the cached state is shown read-only (009)
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
+// docs/changes/010: the same deploy serves "/" (live) and "/preview/" (the preview branch,
+// same Supabase project); the only visible difference is this hint in the status line
+ui.preview = location.pathname.includes('/preview/');
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
 ui.changelogUnreadOnly = false; // auto-opened panel shows only the versions newer than last_seen_version
@@ -66,7 +69,8 @@ function renderStatus(kind, msg) {
   if (kind === 'saved') lastSaved = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   if (kind === 'live') live = true;
   if (kind === 'error') lastError = msg;
-  if (kind === 'saved' || kind === 'saving') lastError = '';
+  // 'live' after a reconnect clears the error, too (docs/changes/010 point 2)
+  if (kind === 'saved' || kind === 'saving' || kind === 'live') lastError = '';
   const el = $('#status');
   if (!el) return;
   if (lastError) {
