@@ -1,6 +1,6 @@
 // Dashboard filters and the person grouping (docs/changes/002, reduced in 009).
 // Pure functions on top of state.js – no writes, no DOM.
-import { state, blockers, dueInfo, einzug } from './state.js';
+import { state, blockers, dueInfo, einzug, freshComments, doneByOther } from './state.js';
 
 export const isOpen = (t) => !t.done;
 export const isBlocked = (t) => !t.done && blockers(t).length > 0;
@@ -17,12 +17,19 @@ export const waitsOnMe = (t, me) => !t.done && (t.wait_on === me || (t.type === 
 
 // docs/changes/009: the ten tiles became four – the three owner counts are the column heads now,
 // "Offen" is the count in every column head, and "Diese Woche" is what the "Ich" column shows.
+// The keys below "wait" are not tiles: they belong to "Seit deinem letzten Besuch".
 export const FILTERS = {
   claude: { label: 'Bei Claude', test: isDelegated },
   blocked: { label: 'Blockiert', test: isBlocked },
   critical: { label: 'Fristkritisch', test: isCritical },
   late: { label: 'Überfällig', test: isLate },
   wait: { label: 'Wartet auf jemanden', test: isWaiting },
+  waitme: { label: 'Wartet auf dich', test: (t) => waitsOnMe(t, state.person) },
+  // done: the filter shows tasks that are already ticked off – the columns have to unfold them
+  donenew: { label: 'Seit deinem Besuch erledigt', test: doneByOther, done: true },
+  newS: { label: 'Neu von Sebastian', test: (t) => freshComments(t).some((c) => c.author === 'S') },
+  newA: { label: 'Neu von Anna', test: (t) => freshComments(t).some((c) => c.author === 'A') },
+  newC: { label: 'Neu von Claude', test: (t) => freshComments(t).some((c) => c.author === 'C') },
 };
 
 export const matches = (t, key) => !key || !FILTERS[key] || FILTERS[key].test(t);

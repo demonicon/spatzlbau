@@ -7,6 +7,9 @@ export const state = {
   person: null, // 'S' | 'A'
   email: null,
   lastSeenVersion: undefined, // allowlist.last_seen_version of this person; undefined = could not be read (005b)
+  lastVisitAt: undefined, // allowlist.last_visit_at: when this person last left; null = never here, undefined = unknown (009)
+  seenComments: new Set(), // ids of new comments this person already opened (009)
+  visitReady: false, // true once migration 006 is applied: last_visit_at / seen_comments / done_by exist (009)
   settings: {}, // key -> value (jsonb)
   tasks: [], // non-deleted tasks
   subtasks: [],
@@ -50,6 +53,17 @@ export function subProgress(t) {
   return subs.length ? [subs.filter((s) => s.done).length, subs.length] : null;
 }
 
+/* "Seit deinem letzten Besuch" (docs/changes/009): everything written by someone else since
+   this person left. fresh = what the summary block and its filters count; unseen = what still
+   carries a dot in the row (opening the task takes the dot away, per task). */
+export function freshComments(t) {
+  if (!state.lastVisitAt) return [];
+  return comsOf(t.id).filter((c) => c.author !== state.person && c.created_at > state.lastVisitAt);
+}
+export const unseenComments = (t) => freshComments(t).filter((c) => !state.seenComments.has(c.id));
+export const doneByOther = (t) =>
+  !!state.lastVisitAt && t.done && !!t.done_by && t.done_by !== state.person && t.updated_at > state.lastVisitAt;
+
 const fmtDate = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 export function dueInfo(t) {
   const base = einzug();
@@ -87,11 +101,46 @@ export async function loadAll() {
   notify();
 }
 
-/* ---------- changelog read state, per person (allowlist.last_seen_version, docs/changes/005b) ---------- */
-export async function loadLastSeenVersion() {
-  const { data, error } = await supabase.from('allowlist').select('last_seen_version').eq('person', state.person).maybeSingle();
-  state.lastSeenVersion = error || !data ? undefined : data.last_seen_version; // null = never read anything
-  return state.lastSeenVersion;
+/* ---------- per-person state in the allowlist row (005b: changelog, 009: last visit) ---------- */
+// select('*') on purpose: the app keeps working when the 009 migration is not applied yet
+export async function loadPersonRow() {
+  const { data, error } = await supabase.from('allowlist').select('*').eq('person', state.person).maybeSingle();
+  if (error || !data) {
+    state.lastSeenVersion = undefined;
+    state.lastVisitAt = undefined;
+    return;
+  }
+  state.lastSeenVersion = data.last_seen_version; // null = never read anything
+  state.visitReady = 'last_visit_at' in data; // migration 006 applied?
+  state.lastVisitAt = state.visitReady ? data.last_visit_at : undefined;
+  state.seenComments = new Set(Array.isArray(data.seen_comments) ? data.seen_comments : []);
+}
+
+// leaving the app ends the visit; the block on the next open is measured from here.
+// Silent on purpose (no status line, no throw): this runs while the page is going away.
+let visitWritten = 0;
+export async function markVisit() {
+  if (state.lastVisitAt === undefined || !state.person) return; // column not there / not logged in
+  const now = Date.now();
+  if (now - visitWritten < 60000) return;
+  visitWritten = now;
+  // state.lastVisitAt stays as it was: the summary block must not vanish under the reader's hands
+  await supabase.from('allowlist').update({ last_visit_at: new Date().toISOString(), seen_comments: [] }).eq('person', state.person);
+}
+
+// opening a task takes its dot away – per task, so the other dots stay
+export async function markCommentsSeen(taskId) {
+  if (!state.lastVisitAt) return;
+  const t = byId(taskId);
+  const fresh = t ? unseenComments(t) : [];
+  if (!fresh.length) return;
+  fresh.forEach((c) => state.seenComments.add(c.id));
+  notify();
+  // only ids that are still newer than the last visit – the list can never grow without bound
+  const fresher = new Set(state.comments.filter((c) => c.created_at > state.lastVisitAt).map((c) => c.id));
+  const ids = [...state.seenComments].filter((id) => fresher.has(id));
+  state.seenComments = new Set(ids);
+  await supabase.from('allowlist').update({ seen_comments: ids }).eq('person', state.person);
 }
 
 export async function setLastSeenVersion(version) {
@@ -134,6 +183,10 @@ async function write(label, fn) {
 }
 
 /* ---------- mutations ---------- */
+// who ticked a task off (009). Skipped while migration 006 is not applied, so ticking keeps
+// working between the deploy and the moment Sebastian runs the migration.
+export const doneBy = (done) => (state.visitReady ? { done_by: done ? state.person : null } : {});
+
 export async function updateTask(id, patch) {
   const t = byId(id);
   if (!t) return;
@@ -183,7 +236,7 @@ export async function setSubtaskDone(id, done) {
   const t = byId(s.task_id);
   const subs = subsOf(s.task_id);
   if (t && !t.done && subs.length && subs.every((x) => x.done)) {
-    await updateTask(t.id, { done: true });
+    await updateTask(t.id, { done: true, ...doneBy(true) });
     return true;
   }
   return false;

@@ -18,8 +18,11 @@ import {
   deleteSubtask,
   addComment,
   setSetting,
-  loadLastSeenVersion,
+  loadPersonRow,
   setLastSeenVersion,
+  markVisit,
+  markCommentsSeen,
+  doneBy,
 } from './state.js';
 import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
@@ -185,6 +188,7 @@ function syncHash() {
 }
 function setExpanded(id) {
   const prev = ui.expanded;
+  if (id) markCommentsSeen(id).catch(() => {}); // opening takes the "new" dot away (009)
   ui.expanded = id;
   ui.confirm = null;
   ui.editingAdvice = null;
@@ -217,6 +221,9 @@ function wireEvents() {
     else if (!id) ui.expanded = null;
     render();
   });
+  // leaving the app ends the visit: the next open measures "Seit deinem letzten Besuch" from here (009)
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && markVisit().catch(() => {}));
+  window.addEventListener('pagehide', () => markVisit().catch(() => {}));
   // layout mode: the Akte moves between inline (narrow) and side panel (wide) – same behaviour, other place
   const mq = matchMedia('(min-width: 900px)');
   ui.wide = mq.matches;
@@ -241,7 +248,8 @@ function wireEvents() {
       return;
     }
     if (el.dataset.act === 'done' && t) {
-      updateTask(t.id, { done: el.checked }).catch(fail);
+      // done_by: who ticked it off – "Seit deinem letzten Besuch" must not count my own work (009)
+      updateTask(t.id, { done: el.checked, ...doneBy(el.checked) }).catch(fail);
       return;
     }
     if (el.dataset.field && t) {
@@ -389,7 +397,7 @@ function wireEvents() {
           await updateTask(t.id, { status: 'arbeit' });
           return;
         case 'accept':
-          await updateTask(t.id, { status: 'ergebnis', done: true });
+          await updateTask(t.id, { status: 'ergebnis', done: true, ...doneBy(true) });
           return;
         case 'back':
           await updateTask(t.id, { status: 'briefing' });
@@ -460,13 +468,15 @@ async function enter(session) {
     return;
   }
   try {
-    await Promise.all([loadAll(), loadChangelog(), loadLastSeenVersion()]);
+    await Promise.all([loadAll(), loadChangelog(), loadPersonRow()]);
   } catch (e) {
     $('#loading').textContent = 'Fehler beim Laden: ' + esc(e.message);
     return;
   }
-  ui.filter = 'week';
+  ui.filter = null;
   ui.changelogOpen = false;
+  // never been here: set the baseline now, otherwise everything would be "new" forever (009)
+  if (state.lastVisitAt === null) markVisit().catch(() => {});
   const viaLink = openedViaTaskLink();
   if (viaLink) openTaskFromHash();
   show('app');

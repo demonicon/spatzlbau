@@ -4,7 +4,7 @@
 import { BUILD } from '../config.js';
 import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
-import { state, ui, byId, phases, einzug } from '../state.js';
+import { state, ui, byId, phases, einzug, freshComments, doneByOther } from '../state.js';
 import { FILTERS, matches, count, atClaude, isBlocked, isLate, isCritical, waitsOnMe, other } from '../filters.js';
 import { taskHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
@@ -72,6 +72,37 @@ function gatesHTML() {
       </button>`;
     })
     .join('')}</div>`;
+}
+
+/* ---------- "Seit deinem letzten Besuch" (docs/changes/009) ----------
+   Only shown when something happened while this person was away; every part is a filter.
+   The block is measured against the visit that ended – it stays put until the app is opened
+   again, so it cannot disappear while it is being read. */
+function visitHTML() {
+  if (!state.lastVisitAt) return '';
+  const since = (c) => c.created_at > state.lastVisitAt;
+  const parts = [];
+  const youName = { S: 'Sebastian', A: 'Anna', C: 'Claude' };
+  for (const who of [other(state.person), 'C']) {
+    // only comments on tasks that still exist – a deleted task must not show up in the count
+    const n = state.comments.filter((c) => c.author === who && since(c) && byId(c.task_id)).length;
+    if (n) parts.push(['new' + who, n, `${n === 1 ? 'Kommentar' : 'Kommentare'} von ${youName[who]}`, '']);
+  }
+  const done = state.tasks.filter(doneByOther).length;
+  if (done) parts.push(['donenew', done, `${done === 1 ? 'Aufgabe' : 'Aufgaben'} erledigt`, '']);
+  const waits = count('waitme');
+  if (waits) parts.push(['waitme', waits, waits === 1 ? 'wartet auf dich' : 'warten auf dich', 'urgent']);
+  if (!parts.length) return '';
+  return `<section class="visit" aria-labelledby="visit-title">
+    <h2 id="visit-title">Seit deinem letzten Besuch</h2>
+    ${parts
+      .map(
+        ([key, n, label, cls]) => `<button class="visit-part ${cls}" data-filter="${key}" aria-pressed="${ui.filter === key}">
+          <span class="n">${n}</span><span class="l">${esc(label)}</span>
+        </button>`,
+      )
+      .join('')}
+  </section>`;
 }
 
 // four tiles, one row: only what triggers a decision (docs/changes/009)
@@ -145,10 +176,11 @@ function columnNote(c) {
 
 function columnHTML(c) {
   const holdsOpenTask = !!ui.expanded && [...c.open, ...c.done].some((t) => t.id === ui.expanded);
-  const collapsed = c.collapsible && !ui.openCols.has(c.key) && !holdsOpenTask;
+  // collapsed only in the normal view: with a filter on, the hits must be visible everywhere
+  const collapsed = c.collapsible && !ui.openCols.has(c.key) && !holdsOpenTask && !ui.filter;
   const all = ui.allCols.has(c.key) || c.open.findIndex((t) => t.id === ui.expanded) >= CAP;
   const rows = all ? c.open : c.open.slice(0, CAP);
-  const showDone = ui.doneCols.has(c.key) || c.done.some((t) => t.id === ui.expanded);
+  const showDone = ui.doneCols.has(c.key) || c.done.some((t) => t.id === ui.expanded) || !!FILTERS[ui.filter]?.done;
   const note = columnNote(c);
   const inner = `<span class="own ${c.cls}">${esc(c.name)}</span><span class="cnt">${c.open.length} offen</span>${note ? `<span class="note">${esc(note)}</span>` : ''}`;
   const head = c.collapsible
@@ -198,6 +230,7 @@ export function dashboardView() {
   return (
     `<div class="board"><div class="col-list">` +
     headHTML() +
+    visitHTML() +
     kpisHTML() +
     phaseChipsHTML() +
     filterRow +

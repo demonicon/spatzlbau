@@ -1,7 +1,7 @@
 // One task row (list item) as in the design handoff; the detail panel is appended when expanded.
 import { esc } from './dom.js';
 import { OWN, STEP_LABEL } from './labels.js';
-import { state, ui, blockers, dueInfo, subProgress, comsOf, einzug } from '../state.js';
+import { state, ui, blockers, dueInfo, subProgress, comsOf, einzug, unseenComments } from '../state.js';
 import { isBlocked, isLate, isCritical } from '../filters.js';
 import { detailHTML } from './detail.js';
 
@@ -41,11 +41,16 @@ export function taskHTML(t) {
     : '';
   const subs = sp ? `<span>${sp[0]}/${sp[1]} Teilschritte</span>` : '';
   const com = coms ? `<span class="muted">${coms} ${coms === 1 ? 'Kommentar' : 'Kommentare'}</span>` : '';
+  // docs/changes/009: one dot per author who wrote something since this person's last visit;
+  // it goes away as soon as the task is opened
+  const dots = [...new Set(unseenComments(t).map((c) => c.author))]
+    .map((a) => `<span class="ndot ${a}" role="img" aria-label="neuer Kommentar von ${OWN[a] || a}"></span>`)
+    .join('');
   return `<div class="${cls}" data-id="${t.id}">
     <input type="checkbox" class="check" ${t.done ? 'checked' : ''} data-act="done" aria-label="Erledigt">
     <div class="body">
       <button class="t" data-act="open" aria-expanded="${ui.expanded === t.id}">${esc(t.title)}</button>
-      <div class="meta"><span class="own ${t.owner}">${OWN[t.owner]}</span><span class="due ${dueCls}">${esc(dueLabel(t))}</span>${subs}${com}${claude}${wait}${block}</div>
+      <div class="meta"><span class="own ${t.owner}">${OWN[t.owner]}</span><span class="due ${dueCls}">${esc(dueLabel(t))}</span>${subs}${com}${dots}${claude}${wait}${block}</div>
     </div>
     ${open && !ui.wide ? detailHTML(t) : ''}
   </div>`;
