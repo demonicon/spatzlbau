@@ -34,6 +34,7 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Zwei Ziele, ein Pages-Workflow, eine Datenbank: `main` → `/`, Branch `preview` → `/preview/`. Jeder Deploy baut beide neu (der jeweils andere Branch wird mitgecheckt, sonst würde ein Push den anderen Pfad löschen).
 - Cloud-Sitzungen (ohne direkten Kontakt zu Sebastian) mergen ihre Branches nach `preview`, nicht nach `main`. Sebastian prüft `/preview/` am Handy (erkennbar am Hinweis „Vorschau“ in der Statuszeile) und merged danach selbst `preview` → `main`.
 - Lokale Sitzungen mit Sebastian im Chat mergen wie gehabt direkt nach `main`, sobald er zustimmt.
+- **`preview` und `main` nie auf denselben Commit setzen.** GitHub Pages erkennt Deploys am Commit der auslösenden Branch; steht derselbe Commit schon einmal deployt, wird der Lauf still übersprungen und die Seite behält den alten Inhalt. Der Workflow prüft nach jedem Deploy, was tatsächlich ausgeliefert wird, und schlägt in dem Fall fehl (statt grün zu lügen). `preview` nach einer Übernahme also nicht per Fast-Forward auf `main` ziehen, sondern mit dem nächsten echten Commit weiterarbeiten.
 
 ## Tests gegen die Live-Datenbank
 - Tests, die als echte Person (Sebastian oder Anna) eingeloggt laufen oder in die Live-Datenbank schreiben, werden **vorher angesagt** – nicht nebenbei erledigt. Lesende Abfragen und in Transaktionen zurückgerollte Migrationsprüfungen sind davon nicht betroffen.
