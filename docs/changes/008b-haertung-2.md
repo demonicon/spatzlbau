@@ -1,6 +1,6 @@
 # Änderungsauftrag 008b – Härtung, Teil 2: Kontrast, Backup, Aufräumen
 
-Stand: 22.09.2026 · Status: umgesetzt, PR offen – Backup-Workflow erst nach Setzen der Secrets manuell starten · Branch: `feature/haertung-2` · Modell: Sonnet (umgesetzt mit Opus)
+Stand: 22.09.2026 · Status: deployt 22.09.2026 (Merge 51ff56f, Pages-Lauf 22); erster Backup-Lauf 1 grün, Artefakt per `restore --dry` geprüft: keine Abweichungen · Branch: `feature/haertung-2` · Modell: Sonnet (umgesetzt mit Opus)
 Nach Merge von 008 (Pinnen, RLS, CSP) starten. Ein PR, keine sichtbare Änderung außer der Farbe, kein Changelog-Eintrag.
 
 ## 1. Kontrast
@@ -47,4 +47,4 @@ Tote Exporte in `state.js` entfernen (`runSeedMerge`, `bySort`, `forPerson`).
 - `restore.mjs`: Vergleich ignoriert `updated_at` (Trigger-Zeitstempel); Wiederherstellung = Upsert fehlender/geänderter Zeilen, Löschen der nur-in-DB-Zeilen (Kommentare, Teilschritte, Aufgaben, Settings), Allowlist nur `last_seen_version`, Export-Token unberührt.
 - Geprüft lokal: Backup 5 Tabellen (2/3/49/19/4), keine E-Mails, kein Token im Dump; `restore --dry` direkt danach: keine Abweichungen; verschlüsselt + richtiger Key: lesbar, falscher Key: Abbruch, fehlender Key: Abbruch; eine absichtliche Änderung wird als „geändert 1“ gemeldet (zurückgesetzt). App: keine Konsolenfehler, Realtime „Live“.
 - Aufräumen: `runSeedMerge`, `bySort`, `forPerson` und der `seed-merge`-Import aus `state.js` entfernt; `app/seed-merge.js` bleibt für `scripts/seed.mjs`, ist aus dem App-Shell-Cache raus.
-- Nicht ausgeführt: der manuelle Backup-Lauf (wartet auf die drei Secrets), Akzeptanzkriterium 2 damit offen.
+- Manueller Backup-Lauf 1 (workflow_dispatch, 19 s): Artefakt `backup-35717767949-1` (48 KB, `backup-2026-09-22.json.enc`, Ablauf 22.10.), im Artefakt kein Klartext; `restore --dry` mit lokalem `BACKUP_KEY` gegen die Live-DB: 2/3/49/19/4 Zeilen, keine Abweichungen. Akzeptanzkriterien 1–5 erfüllt.
