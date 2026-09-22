@@ -22,10 +22,11 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Vanilla JS, ES-Module, kein Build-Step, kein Framework. Keine neuen Abhängigkeiten ohne Rückfrage; Supabase-JS per CDN-ESM-Import.
 - UI-Texte Deutsch, Code und Kommentare Englisch. Kein Denglisch in Buttons.
 - Mobile-first, Tap-Ziele ≥ 44 px, keine `confirm`/`prompt`/`alert`.
+- Farb-Tokens: Text nur mit Tokens, die auf `--paper` und Weiß mindestens 4,5:1 erreichen (`--ink`, `--ink-2`, `--ink-3`, `--danger`, Owner-Farben auf ihren Flächen). `--mark-deep` nie für Text; Tokens unter 4,5:1 (`--line`, `--line-dash`, `--mark`, Hintergründe) nur für Rahmen und Flächen.
 - Jede Datenänderung geht feldgenau über Supabase (`update` einzelner Spalten/Zeilen), nie den Gesamtstand überschreiben.
 - `seed.json` ist die einzige Quelle für Stammaufgaben und Beratungstexte. Inhaltsänderungen = Seed ändern + `scripts/seed.mjs` ausführen (merge, nie destruktiv).
 - Secrets: `.env` lokal (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `EXPORT_TOKEN`), in `.gitignore`. Anon-Key darf ins Repo.
-- Schema-Änderungen als neue Datei in `supabase/migrations/NNN_*.sql`, `schema.sql` bleibt der Gesamtstand für Neueinrichtung.
+- Schema-Änderungen als neue Datei in `supabase/migrations/NNN_aXXX_<thema>.sql` (NNN fortlaufend, XXX = Nummer des Änderungsauftrags, z. B. `005_a004_costs.sql`); `schema.sql` bleibt der Gesamtstand für Neueinrichtung. Die Migrationen 001–004 stammen von vor dieser Regel und behalten ihre Namen.
 - Commit-Messages: Präfix `feat:`, `fix:`, `content:`, `chore:`. Kleine Commits.
 - Vor dem Push: `index.html` lokal öffnen (Live-Server) und auf ~380 px prüfen.
 

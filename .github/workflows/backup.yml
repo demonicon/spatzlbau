@@ -1,0 +1,35 @@
+# Daily database backup (docs/changes/008b): dumps all tables with scripts/backup.mjs and keeps the
+# encrypted file as a workflow artefact for 30 days. Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+# BACKUP_KEY (artefacts of a public repository are downloadable by anyone – hence encrypted).
+name: Backup
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC daily
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Dump all tables
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BACKUP_KEY: ${{ secrets.BACKUP_KEY }}
+        run: |
+          test -n "$BACKUP_KEY" || { echo "BACKUP_KEY secret missing – refusing to upload an unencrypted dump"; exit 1; }
+          node scripts/backup.mjs out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backup-${{ github.run_id }}-${{ github.run_attempt }}
+          path: out/backup-*.json.enc
+          retention-days: 30
+          if-no-files-found: error

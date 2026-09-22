@@ -96,6 +96,7 @@ SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_… oder eyJ…
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_… oder eyJ…
 EXPORT_TOKEN=<Token aus Schritt 2>
+BACKUP_KEY=<lange Passphrase, siehe Abschnitt 10>
 ```
 
 ---
@@ -150,6 +151,31 @@ Das Ergebnis ist das neue Token → `.env` aktualisieren, neue URL an Claude im 
 ## 9. Lokal testen
 
 VS Code mit Erweiterung „Live Server“ → Rechtsklick auf `index.html` → „Open with Live Server“ (Port 5500). Im Browser auf ~380 px Breite prüfen (DevTools → Gerätesymbol). Zwei Personen = zwei Browserprofile oder ein normales + ein privates Fenster.
+
+---
+
+## 10. Backup (Auftrag 008b)
+
+Supabase Free macht keine automatischen Datenbank-Backups. Deshalb sichert der Workflow „Backup“ täglich um 03:00 UTC alle Tabellen als verschlüsselte Datei und hebt sie 30 Tage als Workflow-Artefakt auf. Ohne E-Mail-Adressen (Allowlist nur Person + gelesene Version) und ohne Export-Token. Verschlüsselt, weil Artefakte eines öffentlichen Repos jeder mit GitHub-Konto herunterladen kann.
+
+**Einmalig (~3 Minuten):**
+1. Eine lange Passphrase erzeugen (Passwortmanager, ≥ 20 Zeichen) und als `BACKUP_KEY` in die lokale `.env` – ohne sie ist kein Backup lesbar.
+2. GitHub → Repo `spatzlbau` → Settings → Secrets and variables → Actions → **New repository secret**, dreimal: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (beide aus `.env`), `BACKUP_KEY` (die Passphrase).
+3. Actions-Tab → Workflow **Backup** → **Run workflow**. Nach ~1 Minute unter dem Lauf das Artefakt `backup-<lauf>` herunterladen (ZIP mit `backup-<datum>.json.enc`).
+4. Prüfen, dass es vollständig und lesbar ist:
+   ```bash
+   node scripts/restore.mjs backup-2026-09-22.json.enc --dry
+   ```
+   Erwartet: alle fünf Tabellen mit Zeilenzahlen und „keine Abweichungen“.
+5. Ab dann läuft es täglich. Kontrolle einmal pro Woche: Actions-Tab, letzter Backup-Lauf grün.
+
+**Wiederherstellen (Notfall):** Datei aus dem Artefakt herunterladen, dann
+```bash
+node scripts/restore.mjs backup-<datum>.json.enc
+```
+Das Skript zeigt zuerst die Abweichungen je Tabelle und fragt im Terminal nach Bestätigung („ja“). Danach entspricht die Datenbank dem Backup: fehlende und geänderte Zeilen werden geschrieben, Zeilen, die nur in der Datenbank waren, gelöscht. Export-Token und E-Mail-Adressen bleiben unberührt.
+
+**Lokales Backup ohne Workflow:** `node scripts/backup.mjs` schreibt `backup-<datum>.json.enc` (mit `BACKUP_KEY` in `.env`) bzw. unverschlüsselt ohne Key ins aktuelle Verzeichnis. Nicht ins Repo legen.
 
 ---
 

@@ -16,7 +16,6 @@ const SHELL = [
   './app/supabase.js',
   './app/state.js',
   './app/auth.js',
-  './app/seed-merge.js',
   './app/ui/dom.js',
   './app/ui/labels.js',
   './app/ui/task.js',

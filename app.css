@@ -4,7 +4,7 @@
 :root {
   /* surfaces & ink */
   --bg: #e9ebe6; --paper: #f4f6f2; --card: #ffffff; --line: #d9ded8; --line-dash: #b8bfb9;
-  --ink: #1e2b24; --ink-2: #4e5b54; --ink-3: #8a948d;
+  --ink: #1e2b24; --ink-2: #4e5b54; --ink-3: #68726b; /* ink-3: ≥ 4.5:1 on paper and card (docs/changes/008b) */
   /* owner colours (semantic, values from the handoff) */
   --seb: #2e5a9c; --seb-bg: #e4ecf7; --anna: #9a3d64; --anna-bg: #f6e4ec; --both: #2f6f4e; --both-bg: #e1efe6;
   --claude: #6b4e16; --claude-bg: #f3e9d2; --claude-past: #c9b98a;
