@@ -135,17 +135,18 @@ export function dashboardView() {
         <span class="filter-count">${list.length} in dieser Phase</span>
       </div>`
     : '';
-  // docs/changes/006: on wide screens the Akte of the open task is a side panel next to the list
+  // docs/changes/006: on wide screens the list and a side panel always sit side by side;
+  // the panel holds the Akte of the open task or a quiet placeholder, so the layout never jumps
   const panelTask = ui.wide && ui.expanded ? state.tasks.find((t) => t.id === ui.expanded) : null;
   return (
-    `<div class="board${panelTask ? ' has-panel' : ''}"><div class="col-list">` +
+    `<div class="board"><div class="col-list">` +
     headHTML() +
     kpisHTML() +
     tabsHTML() +
     filterRow +
     `<div class="list">${listHTML(list, 'Nichts in diesem Filter.')}${addBoxHTML(ui.phase)}</div>` +
     `</div>` +
-    (panelTask ? panelHTML(panelTask) : '') +
+    (ui.wide ? panelHTML(panelTask) : '') +
     `</div>` +
     (ui.changelogOpen ? changelogHTML() : '') +
     footerHTML()
@@ -153,6 +154,7 @@ export function dashboardView() {
 }
 
 function panelHTML(t) {
+  if (!t) return `<aside class="panel empty" id="panel" aria-label="Akte"><p>Aufgabe wählen</p></aside>`;
   const ph = phases().find((p) => p.id === t.phase);
   return `<aside class="panel" id="panel" data-id="${t.id}" aria-label="Akte: ${esc(t.title)}">
     <div class="panel-head"><span class="hint">Phase ${t.phase}${ph ? ' · ' + esc(ph.name) : ''}</span><span class="spacer"></span><button class="ico" data-act="panel-close" aria-label="Akte schließen">×</button></div>
@@ -170,7 +172,7 @@ function footerHTML() {
   const version = cur
     ? `<button class="link version" data-act="changelog" aria-expanded="${!!ui.changelogOpen}" title="${build() ? 'Build ' + build() : ''}">${esc(cur.version)}${unseen ? '<span class="dot" aria-label="neu">Neu</span>' : ''}</button>`
     : `<span title="${build() ? 'Build ' + build() : ''}">Version unbekannt</span>`;
-  return `<footer class="foot">${version}<button class="link" data-act="reload">Neu laden</button><button class="link" data-act="seed">Seed aktualisieren</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`;
+  return `<footer class="foot">${version}<button class="link" data-act="reload">Neu laden</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`;
 }
 
 const SECTIONS = [['new', 'Neu'], ['improved', 'Verbessert'], ['fixed', 'Behoben']];

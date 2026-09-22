@@ -18,7 +18,6 @@ import {
   deleteSubtask,
   addComment,
   setSetting,
-  runSeedMerge,
   loadLastSeenVersion,
   setLastSeenVersion,
 } from './state.js';
@@ -91,14 +90,28 @@ function render() {
   }
   renderPending = false;
   ensurePhase();
+  const focusKey = keyOf(document.activeElement);
   $('#view').innerHTML = dashboardView();
-  if (ui.confirm === 'seed') {
-    $('#view .list').insertAdjacentHTML(
-      'afterbegin',
-      `<div class="confirm block">Seed aktualisieren? Neue Stammaufgaben und Beratungstexte werden ergänzt, eure Häkchen, Kommentare und Änderungen bleiben. <button class="btn small primary" data-act="seed-yes">Ja, einspielen</button><button class="btn small" data-act="confirm-no">Nein</button></div>`,
-    );
-  }
+  restoreFocus(focusKey);
   renderStatus('idle');
+}
+
+/* ---------- keyboard (docs/changes/006 step 3): the view is re-rendered on every change,
+   so remember which control had focus and give it back afterwards ---------- */
+const FOCUS_ATTRS = ['data-act', 'data-filter', 'data-phase', 'data-field', 'data-input', 'data-brief', 'data-adv', 'data-ref', 'role'];
+function keyOf(el) {
+  if (!el || el === document.body || !$('#view')?.contains(el)) return null;
+  const scope = el.closest('[data-id]');
+  const own = FOCUS_ATTRS.filter((a) => el.hasAttribute(a)).map((a) => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('');
+  const sub = el.closest('[data-sub]');
+  const sel = (sub ? `[data-sub="${CSS.escape(sub.dataset.sub)}"] ` : '') + el.tagName.toLowerCase() + own + (el.id ? '#' + CSS.escape(el.id) : '');
+  return { scope: scope ? scope.dataset.id : null, sel };
+}
+function restoreFocus(key) {
+  if (!key) return;
+  const root = key.scope ? $(`#view [data-id="${CSS.escape(key.scope)}"]`) : $('#view');
+  const el = (root && root.querySelector(key.sel)) || $('#view').querySelector(key.sel);
+  if (el) el.focus({ preventScroll: true });
 }
 onChange(render);
 
@@ -157,36 +170,14 @@ function syncHash() {
   history.replaceState(null, '', location.pathname + location.search + want);
 }
 function setExpanded(id) {
+  const prev = ui.expanded;
   ui.expanded = id;
   ui.confirm = null;
   ui.editingAdvice = null;
   syncHash();
   render();
-}
-
-/* ---------- seed ---------- */
-async function fetchSeed() {
-  const r = await fetch('./seed.json', { cache: 'no-cache' });
-  if (!r.ok) throw new Error('seed.json nicht ladbar');
-  return r.json();
-}
-async function applySeed(reason) {
-  try {
-    const seed = await fetchSeed();
-    const s = await runSeedMerge(seed);
-    toast(`${reason}: ${s.newTasks} neue Aufgaben, ${s.updatedTasks} aktualisiert, ${s.newSubtasks} Teilschritte ergänzt`);
-  } catch (e) {
-    toast('Seed konnte nicht eingespielt werden: ' + e.message);
-  }
-}
-async function maybeAutoSeed() {
-  try {
-    const seed = await fetchSeed();
-    const current = Number(state.settings.seed_version) || 0;
-    if (seed.version > current) await applySeed('Inhalte aktualisiert');
-  } catch (e) {
-    console.warn('seed check failed', e);
-  }
+  // closing gives the keyboard focus back to the task's title in the list
+  if (!id && prev) $(`#view .task[data-id="${CSS.escape(prev)}"] .t`)?.focus({ preventScroll: true });
 }
 
 /* ---------- events ---------- */
@@ -198,7 +189,11 @@ function wireEvents() {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (ui.changelogOpen) closeChangelog();
-    else if (ui.expanded && ui.wide) setExpanded(null); // Escape empties the side panel
+    else if (ui.expanded && ui.wide) {
+      // a field still being typed in saves on blur – let that happen before the panel goes
+      if (document.activeElement?.closest?.('#panel')) document.activeElement.blur();
+      setExpanded(null); // Escape empties the side panel
+    }
   });
   // browser back/forward or a pasted link: follow the hash
   window.addEventListener('hashchange', () => {
@@ -306,16 +301,6 @@ function wireEvents() {
           return;
         case 'reload':
           location.reload();
-          return;
-        case 'seed':
-          ui.confirm = 'seed';
-          render();
-          $('#view .list')?.scrollIntoView({ block: 'start' });
-          return;
-        case 'seed-yes':
-          ui.confirm = null;
-          render();
-          await applySeed('Seed eingespielt');
           return;
         case 'open':
           setExpanded(ui.expanded === t.id ? null : t.id);
@@ -449,7 +434,6 @@ async function enter(session) {
   if (viaLink) $('.task.open')?.scrollIntoView({ block: 'start' });
   else if (hasUnread()) openChangelog(true); // once per person: after login and data, never when following a task link
   subscribeRealtime();
-  maybeAutoSeed();
 }
 
 let started = false;

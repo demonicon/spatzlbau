@@ -247,11 +247,13 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 
 @media (min-width: 900px) {
   .wrap { max-width: 1280px; }
-  .board { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; }
-  .board.has-panel { grid-template-columns: minmax(0, 1.4fr) minmax(340px, 440px); }
+  /* list left, panel right – always, so nothing jumps when the first task opens */
+  .board { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(340px, 440px); align-items: start; }
   .col-list { min-width: 0; }
   /* the Akte as a sticky side panel that scrolls on its own */
   .panel { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; min-width: 0; border-left: 1px solid var(--line); background: var(--paper); padding: 0 var(--gutter) 24px; }
+  .panel.empty { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
+  .panel.empty p { margin: 0; color: var(--ink-3); font-size: var(--fs-ui); }
   .panel-head { display: flex; align-items: center; gap: 6px; padding: 8px 0 0; min-height: 52px; }
   .panel .detail { margin: 0; }
   .task.selected { border-left: 3px solid var(--ink); margin-left: -3px; background: var(--card); }
@@ -259,9 +261,9 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
   .tabs-row { display: flex; align-items: flex-end; gap: 8px 20px; margin-top: 22px; padding: 0 var(--gutter); flex-wrap: wrap; }
   .tabs-row .tabs { flex: 1 1 520px; min-width: 0; margin: 0; padding: 0; gap: 10px; }
   .tabs-row .gate-text { flex: 0 1 280px; min-width: 0; margin: 0 0 6px; text-wrap: pretty; }
-  /* with the side panel open the list column is narrower: gate text moves under the tabs */
-  .has-panel .tabs-row .gate-text { flex: 1 0 100%; margin: 8px 0 0; }
-  /* KPI tiles as one uniform row: Offen, the three owners, then the six filters */
+  /* the list column is ~800 px wide: gate text goes under the tabs */
+  .tabs-row .gate-text { flex: 1 0 100%; margin: 8px 0 0; }
+  /* KPI tiles uniform, two rows of five: Offen, the three owners, then the six filters */
   .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .kpi-top, .owners { display: contents; }
   .kpi-open { background: var(--card); min-height: 72px; padding: 10px 10px 8px; }
@@ -275,7 +277,7 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
   .tile .l span { display: none; } /* sub-counts only in the two-column layout */
 }
 
-/* ten tiles in one row once the list column is wide enough for it */
-@media (min-width: 1100px) {
-  .board:not(.has-panel) .kpis { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+/* keyboard: the tab strip clips outlines on narrow screens (it scrolls), so keep the ring inside */
+@media (min-width: 600px) {
+  .tabs [role=tab]:focus-visible, .panel :focus-visible { outline-offset: -2px; }
 }
