@@ -180,8 +180,8 @@ grant update (last_seen_version) on table public.allowlist to authenticated;
 drop policy if exists allowlist_update_own on public.allowlist;
 create policy allowlist_update_own on public.allowlist
   for update to authenticated
-  using (lower(email) = lower(coalesce(auth.jwt() ->> 'email', '')))
-  with check (lower(email) = lower(coalesce(auth.jwt() ->> 'email', '')));
+  using (lower(email) = lower(coalesce((select auth.jwt() ->> 'email'), '')))      -- (select …): once per statement
+  with check (lower(email) = lower(coalesce((select auth.jwt() ->> 'email'), '')));
 
 -- settings: allowed users read/write everything EXCEPT the export token.
 -- The token is only reachable via SQL (service role / SQL editor) and rotate_export_token().

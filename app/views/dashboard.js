@@ -65,7 +65,7 @@ function gatesHTML() {
       const cls = ['gate', complete ? 'complete' : '', p.id === firstOpen ? 'current' : ''].join(' ');
       return `<button class="${cls}" data-phase="${p.id}" aria-pressed="${ui.phase === p.id}" title="${esc(p.name)}">
         <span class="lbl">${p.id}<span> · ${dn}/${all.length}</span></span>
-        <span class="bar"><i style="width:${pct}%"></i></span>
+        <span class="bar"><i data-pct="${pct}"></i></span>
       </button>`;
     })
     .join('')}</div>`;
