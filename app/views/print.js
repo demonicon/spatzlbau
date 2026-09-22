@@ -6,6 +6,7 @@ import { OWN } from '../ui/labels.js';
 import { state, ui, phases, einzug, subsOf } from '../state.js';
 
 const METERS = ['Strom', 'Gas', 'Wasser'];
+const METER_FIELDS = ['Zählernummer', 'Stand', 'Uhrzeit'];
 const PLACES = [
   ['S', 'Wohnung Sebastian'],
   ['A', 'Wohnung Anna'],
@@ -13,6 +14,9 @@ const PLACES = [
 ];
 const box = (on) => `<span class="pbox${on ? ' on' : ''}" aria-hidden="true">${on ? '✓' : ''}</span>`;
 const line = (label) => `<div class="pline"><span>${esc(label)}</span><span class="pfill"></span></div>`;
+// docs/changes/013 B1: one line each for the meter number, the reading and the time - one blank
+// line per meter was not enough to note down what the number actually belongs to
+const meterBlock = (m) => `<div class="pmi"><span class="pmi-l">${esc(m)}</span>${METER_FIELDS.map(line).join('')}</div>`;
 
 export function printHTML() {
   const base = einzug();
@@ -47,20 +51,20 @@ export function printHTML() {
       <h1>Umzugstag</h1>
       <p class="psub-head">${esc(day)}${ph ? ' · ' + esc(ph.gate || '') : ''}</p>
       <p class="psub-head">Stand: ${state.loadedAt ? esc(new Date(state.loadedAt).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })) : '–'}${ui.offline ? ' · ohne Netz' : ''}</p>
+      <section class="pgroup"><h3>Notfallkontakte</h3>
+        <textarea class="noprint" data-input="kontakte" rows="4" placeholder="Umzugsfirma, Hausverwaltung alt und neu, Notdienst, Nachbarn – eine Zeile pro Kontakt" aria-label="Notfallkontakte">${esc(kontakte)}</textarea>
+        <p class="onlyprint">${kontakte ? esc(kontakte) : ' '}</p>
+        <p class="hint noprint">Wird für beide gespeichert und steht auf jedem Ausdruck.</p>
+      </section>
+
       ${groups || '<p class="empty">In Phase 4 steht noch nichts.</p>'}
 
       <section class="pgroup"><h3>Zählerstände</h3>
-        ${PLACES.map(([, name]) => `<div class="pmeter"><b>${esc(name)}</b>${METERS.map((m) => line(m)).join('')}</div>`).join('')}
+        ${PLACES.map(([, name]) => `<div class="pmeter"><b>${esc(name)}</b>${METERS.map(meterBlock).join('')}</div>`).join('')}
       </section>
 
       <section class="pgroup"><h3>Schlüssel</h3>
         ${PLACES.map(([, name]) => `<div class="pmeter"><b>${esc(name)}</b>${line('Anzahl')}${line('übergeben an')}${line('am')}</div>`).join('')}
-      </section>
-
-      <section class="pgroup"><h3>Notfallkontakte</h3>
-        <textarea class="noprint" data-input="kontakte" rows="4" placeholder="Umzugsfirma, Hausverwaltung alt und neu, Notdienst, Nachbarn – eine Zeile pro Kontakt" aria-label="Notfallkontakte">${esc(kontakte)}</textarea>
-        <p class="onlyprint">${kontakte ? esc(kontakte) : ' '}</p>
-        <p class="hint noprint">Wird für beide gespeichert und steht auf jedem Ausdruck.</p>
       </section>
     </div>
   </section>`;

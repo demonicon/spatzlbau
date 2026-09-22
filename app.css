@@ -487,17 +487,24 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 .print-head h2 { margin: 0; font-size: 18px; font-weight: 600; }
 .sheet h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 14px 0 0; }
 .sheet .psub-head { margin: 2px 0 0; font-size: var(--fs-meta); color: var(--ink-2); }
-.pgroup { margin-top: 18px; page-break-inside: avoid; }
+.pgroup { margin-top: 18px; page-break-inside: avoid; break-inside: avoid; }
 .pgroup h3 { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; margin: 0 0 6px; padding-bottom: 5px; border-bottom: 1px solid var(--ink); color: var(--ink-2); }
 .pgroup h3 small { font-weight: 400; color: var(--ink-3); }
-.prow { display: grid; grid-template-columns: 26px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); page-break-inside: avoid; }
+/* docs/changes/013 B1: a task and its subtasks never split across a page break - the 8mm column
+   makes room for the 7mm box below */
+.prow { display: grid; grid-template-columns: 8mm 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); page-break-inside: avoid; break-inside: avoid; }
 .prow .pt { font-size: var(--fs-ui); line-height: 1.3; }
 .pcrit { background: var(--mark); font-size: var(--fs-micro); font-weight: 600; padding: 0 4px; }
-.psub { display: grid; grid-template-columns: 22px 1fr; gap: 6px; align-items: start; font-size: var(--fs-meta); color: var(--ink-2); margin-top: 5px; }
-.pbox { width: 16px; height: 16px; border: 1.5px solid var(--ink-2); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; margin-top: 2px; }
-.psub .pbox { width: 13px; height: 13px; font-size: 10px; }
-.pmeter { margin-top: 10px; page-break-inside: avoid; }
+.psub { display: grid; grid-template-columns: 6mm 1fr; gap: 6px; align-items: start; font-size: var(--fs-meta); color: var(--ink-2); margin-top: 5px; }
+/* 7mm as ordered (013 B1) - roughly a thumbnail-sized box, easy to hit with cold hands */
+.pbox { width: 7mm; height: 7mm; border: 1.5px solid var(--ink-2); display: inline-flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; margin-top: 2px; }
+.psub .pbox { width: 5mm; height: 5mm; font-size: 11px; }
+.pmeter { margin-top: 10px; page-break-inside: avoid; break-inside: avoid; }
 .pmeter b { font-size: var(--fs-meta); }
+/* one meter (Strom/Gas/Wasser) with its three fields (013 B1) */
+.pmi { margin-top: 8px; }
+.pmi:first-of-type { margin-top: 6px; }
+.pmi-l { display: block; font-size: var(--fs-meta); font-weight: 600; color: var(--ink); }
 .pline { display: flex; align-items: baseline; gap: var(--gap); font-size: var(--fs-meta); color: var(--ink-2); margin-top: 6px; }
 .pline .pfill { flex: 1; border-bottom: 1px solid var(--line-dash); height: 14px; }
 .printsheet textarea { width: 100%; min-height: 84px; padding: 8px 10px; border: 1px solid var(--line); background: var(--paper); font-size: var(--fs-ui); line-height: 1.4; }
