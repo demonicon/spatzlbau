@@ -270,12 +270,19 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .ico:hover { background: var(--line); color: var(--ink); }
 .sub { display: grid; grid-template-columns: var(--tap) 1fr auto; align-items: center; border-bottom: 1px solid var(--line); }
 .sub input[type=checkbox] { width: 20px; height: 20px; margin: 0 auto; accent-color: var(--ok); }
-.sub span { font-size: var(--fs-ui); padding: 10px 0; }
-.sub.done span { color: var(--ink-3); text-decoration: line-through; }
+/* docs/changes/013 B2: the text is a button that opens edit mode - no more one-tap × to delete */
+.sub-text { font-size: var(--fs-ui); padding: 10px 0; min-height: var(--tap); width: 100%; }
+.sub.done .sub-text { color: var(--ink-3); text-decoration: line-through; }
+.sub.sub-editing { display: block; padding: 8px 0; }
+.sub-edit-title { width: 100%; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
 .com { padding: 10px 12px; margin: 0 -12px; border-bottom: 1px solid var(--line); font-size: var(--fs-ui); white-space: pre-wrap; }
 .com .h { font-size: var(--fs-micro); color: var(--ink-3); white-space: normal; }
 .com .h b { color: var(--ink-2); }
 .com.C { background: var(--claude-bg); }
+.com textarea { margin-top: 6px; }
+/* docs/changes/013 B5: only the own comments carry these - delete always, edit within ten minutes */
+.com-own-actions { display: flex; gap: 14px; align-items: center; white-space: normal; }
+.com-own-actions .link { padding: 6px 0; }
 details.adv { border-bottom: 1px solid var(--line); }
 details.adv summary { cursor: pointer; padding: 12px 0; font-size: var(--fs-ui); font-weight: 600; min-height: 48px; display: flex; align-items: center; gap: 6px; list-style: none; }
 details.adv summary::-webkit-details-marker { display: none; }

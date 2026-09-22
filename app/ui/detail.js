@@ -6,7 +6,7 @@
 import { esc, fmtTime } from './dom.js';
 import { ICON } from './icons.js';
 import { OWN, TYPE, STEPS, STEP_OWNER, ADV } from './labels.js';
-import { state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, einzug } from '../state.js';
+import { state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, einzug, canEditComment } from '../state.js';
 import { isLate, isCritical } from '../filters.js';
 import { costsOf, isHistory, isCostLate, eur, num, taskAmount, COST_LABEL, COST_NEXT, KIND, APARTMENT, nextStep, prevStep } from '../costs.js';
 
@@ -17,19 +17,64 @@ export const isFull = (t) =>
   t.type === 'claude' || (t.blocked_by || []).length > 0 || ADV.some(([k]) => (t.advice || {})[k]) || costsOf(t.id).length > 0;
 export const isMoreOpen = (t) => (ui.more[t.id] === undefined ? isFull(t) : ui.more[t.id]);
 
+// docs/changes/013 B5: only the own comments carry actions - deleting always, editing only
+// inside the ten-minute window (RLS allows both for either person; the "own only" limit is
+// a rule of the interface)
+function commentHTML(c) {
+  const own = c.author === state.person;
+  const editing = own && ui.comEdit === c.id;
+  const confirming = own && ui.confirm === 'comdel:' + c.id;
+  const body = editing
+    ? `<textarea class="com-edit" aria-label="Kommentar bearbeiten">${esc(c.body)}</textarea>
+      <div class="row pad"><button class="btn small primary" data-act="com-save" data-ref="${c.id}">Speichern</button><button class="btn small" data-act="com-cancel">Abbrechen</button></div>`
+    : esc(c.body);
+  const actions =
+    own && !editing
+      ? confirming
+        ? `<div class="com-own-actions"><span class="confirm">Kommentar löschen? <button class="btn small danger" data-act="com-del-yes" data-ref="${c.id}">Ja</button><button class="btn small" data-act="confirm-no">Nein</button></span></div>`
+        : `<div class="com-own-actions">${canEditComment(c) ? `<button class="link" data-act="com-edit" data-ref="${c.id}">Bearbeiten</button>` : ''}<button class="link" data-act="com-del" data-ref="${c.id}">Löschen</button></div>`
+      : '';
+  return `<div class="com ${c.author}" data-com="${c.id}"><div class="h"><b>${OWN[c.author] || c.author}</b> · ${fmtTime(c.created_at)}</div>${body}${actions}</div>`;
+}
+
 function commentsHTML(t) {
   const coms = comsOf(t.id);
   return `<h3>Kommentare ${coms.length ? `<small>${coms.length}</small>` : ''}</h3>
-    ${coms.map((c) => `<div class="com ${c.author}"><div class="h"><b>${OWN[c.author] || c.author}</b> · ${fmtTime(c.created_at)}</div>${esc(c.body)}</div>`).join('') || '<div class="empty">Noch keine Kommentare. Kurz notieren, woran es hängt oder was der andere wissen muss.</div>'}
+    ${coms.map(commentHTML).join('') || '<div class="empty">Noch keine Kommentare. Kurz notieren, woran es hängt oder was der andere wissen muss.</div>'}
     <textarea data-input="com" placeholder="Kommentar als ${OWN[state.person]}" aria-label="Neuer Kommentar"></textarea>
     <div class="row"><button class="btn primary" data-act="com-add">Kommentar speichern</button></div>`;
+}
+
+// docs/changes/013 B2: a tap on the text (or the pencil) opens the one row for editing - no more
+// × that deletes on a single tap. Deleting sits behind its own inline confirmation there.
+function subtaskHTML(s) {
+  if (ui.subEdit === s.id) {
+    const confirming = ui.confirm === 'subdel:' + s.id;
+    return `<div class="sub sub-editing" data-sub="${s.id}">
+      <input type="text" class="sub-edit-title" data-sub-field="title" data-ref="${s.id}" value="${esc(s.title)}" aria-label="Titel des Teilschritts">
+      <div class="row pad">
+        ${
+          confirming
+            ? `<span class="confirm">Teilschritt löschen? <button class="btn small danger" data-act="sub-del-yes" data-ref="${s.id}">Ja</button><button class="btn small" data-act="confirm-no">Nein</button></span>`
+            : `<button class="btn small danger" data-act="sub-del" data-ref="${s.id}">Löschen</button>`
+        }
+        <span class="spacer"></span>
+        <button class="btn small primary" data-act="sub-edit-done">Fertig</button>
+      </div>
+    </div>`;
+  }
+  return `<div class="sub ${s.done ? 'done' : ''}" data-sub="${s.id}">
+    <input type="checkbox" ${s.done ? 'checked' : ''} ${ui.offline ? 'disabled' : ''} data-act="sub-done" aria-label="Teilschritt erledigt">
+    <button class="sub-text" data-act="sub-edit" data-ref="${s.id}" aria-label="Teilschritt bearbeiten: ${esc(s.title)}">${esc(s.title)}</button>
+    <button class="ico pencil" data-act="sub-edit" data-ref="${s.id}" aria-label="Teilschritt bearbeiten" title="Bearbeiten">${ICON.pencil}</button>
+  </div>`;
 }
 
 function subtasksHTML(t) {
   const subs = subsOf(t.id);
   const done = subs.filter((s) => s.done).length;
   return `<h3>Teilschritte ${subs.length ? `<small>${done}/${subs.length}</small>` : ''}</h3>
-    ${subs.map((s) => `<div class="sub ${s.done ? 'done' : ''}" data-sub="${s.id}"><input type="checkbox" ${s.done ? 'checked' : ''} ${ui.offline ? 'disabled' : ''} data-act="sub-done" aria-label="Teilschritt erledigt"><span>${esc(s.title)}</span><button class="ico" data-act="sub-del" aria-label="Teilschritt löschen">×</button></div>`).join('')}
+    ${subs.map(subtaskHTML).join('')}
     <div class="row"><input type="text" data-input="sub" placeholder="Neuer Teilschritt" aria-label="Neuer Teilschritt"><button class="btn small" data-act="sub-add">Hinzufügen</button></div>`;
 }
 

@@ -17,7 +17,11 @@ import {
   setSubtaskDone,
   addSubtask,
   deleteSubtask,
+  updateSubtask,
   addComment,
+  updateComment,
+  deleteComment,
+  canEditComment,
   setSetting,
   loadPersonRow,
   setLastSeenVersion,
@@ -69,6 +73,8 @@ ui.wide = false; // ≥ 900 px: the Akte is not inline any more (006)
 // in from the right over the list) and 'panel' (list and Akte side by side from 1180 px)
 ui.mode = 'phone';
 ui.titleEdit = null; // task id whose title field is open (013 A4)
+ui.subEdit = null; // subtask id whose row is in edit mode (013 B2)
+ui.comEdit = null; // comment id whose body field is open (013 B5)
 ui.costHint = null; // task id that shows the one-off line about the cost states (013 A5)
 ui.updateReady = false; // a newer build took over the service worker (003, bar since 013 A6)
 // ui.preview (docs/changes/010) is set in state.js, where the writers it stops live
@@ -255,6 +261,16 @@ function syncHash() {
   if (location.hash === want) return;
   history.replaceState(null, '', location.pathname + location.search + want);
 }
+// docs/changes/013 B3: entering Finanzen gets its own step back - Browser-Zurück leaves it
+// again and lands on the list. Opening an Akte still replaces (decision from 006), unaffected.
+function openFinanzen() {
+  const already = ui.screen === 'finanzen';
+  ui.screen = 'finanzen';
+  ui.finFilter = null;
+  if (already) return; // opened again while already there: no second entry
+  history.pushState(null, '', location.pathname + location.search + '#finanzen');
+}
+
 function setExpanded(id) {
   const prev = ui.expanded;
   if (id) markCommentsSeen(id).catch(() => {}); // opening takes the "new" dot away (009)
@@ -262,6 +278,8 @@ function setExpanded(id) {
   ui.confirm = null;
   ui.editingAdvice = null;
   ui.titleEdit = null;
+  ui.subEdit = null;
+  ui.comEdit = null;
   // the cost states are explained the first time a task with costs is opened, then never again
   ui.costHint = id && costsOf(id).length && !hints().costs ? id : null;
   syncHash();
@@ -322,6 +340,7 @@ const OFFLINE_OK = new Set([
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
   'fin-recurring', 'q-clear', 'home', 'overlay-close', 'title-edit', 'title-done',
+  'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
 ]);
 
 function wireEvents() {
@@ -451,6 +470,14 @@ function wireEvents() {
       setSubtaskDone(el.closest('.sub').dataset.sub, el.checked)
         .then((autoDone) => autoDone && toast('Alle Teilschritte erledigt – Aufgabe abgehakt'))
         .catch(fail);
+      return;
+    }
+    // renaming a subtask (013 B2): saves on blur, like the other text fields
+    if (el.dataset.subField === 'title') {
+      const s = state.subtasks.find((x) => x.id === el.dataset.ref);
+      if (!s) return;
+      const v = el.value.replace(/\s+/g, ' ').trim() || s.title; // never save an empty title
+      updateSubtask(s.id, { title: v }).catch(fail);
       return;
     }
     if (el.dataset.act === 'done' && t) {
@@ -612,8 +639,25 @@ function wireEvents() {
           await addSubtask(t.id, v);
           return;
         }
+        case 'sub-edit':
+          ui.subEdit = b.dataset.ref;
+          ui.confirm = null;
+          render();
+          $(`[data-sub="${CSS.escape(b.dataset.ref)}"] .sub-edit-title`, $('#view'))?.focus();
+          return;
+        case 'sub-edit-done':
+          ui.subEdit = null;
+          render();
+          return;
         case 'sub-del':
-          await deleteSubtask(b.closest('.sub').dataset.sub);
+          ui.confirm = 'subdel:' + b.dataset.ref;
+          render();
+          return;
+        case 'sub-del-yes':
+          ui.subEdit = null;
+          ui.confirm = null;
+          await deleteSubtask(b.dataset.ref);
+          toast('Teilschritt gelöscht');
           return;
         case 'com-add': {
           const ta = input('[data-input=com]');
@@ -622,6 +666,38 @@ function wireEvents() {
           await addComment(t.id, v);
           return;
         }
+        /* ---------- own comments (013 B5) ---------- */
+        case 'com-edit': {
+          const c = state.comments.find((x) => x.id === b.dataset.ref);
+          if (!c || !canEditComment(c)) return; // the ten minutes are over - stale button from an old render
+          ui.comEdit = c.id;
+          ui.confirm = null;
+          render();
+          $(`[data-com="${CSS.escape(c.id)}"] .com-edit`, $('#view'))?.focus();
+          return;
+        }
+        case 'com-cancel':
+          ui.comEdit = null;
+          render();
+          return;
+        case 'com-save': {
+          const ta = $(`[data-com="${CSS.escape(b.dataset.ref)}"] .com-edit`, $('#view'));
+          const v = ta.value.trim();
+          if (!v) return toast('Kommentar darf nicht leer sein');
+          ui.comEdit = null;
+          await updateComment(b.dataset.ref, { body: v });
+          return;
+        }
+        case 'com-del':
+          ui.confirm = 'comdel:' + b.dataset.ref;
+          render();
+          return;
+        case 'com-del-yes':
+          ui.comEdit = null;
+          ui.confirm = null;
+          await deleteComment(b.dataset.ref);
+          toast('Kommentar gelöscht');
+          return;
         /* ---------- navigation (013 A6) ---------- */
         case 'home': // the house: back to the plain list, no filter, all phases
           ui.screen = 'dashboard';
@@ -650,9 +726,12 @@ function wireEvents() {
 
         /* ---------- Finanzen view (007, addendum) ---------- */
         case 'screen':
-          ui.screen = b.dataset.to;
-          ui.finFilter = null;
-          syncHash();
+          if (b.dataset.to === 'finanzen') openFinanzen();
+          else {
+            ui.screen = b.dataset.to;
+            ui.finFilter = null;
+            syncHash();
+          }
           render();
           window.scrollTo({ top: 0 });
           return;
@@ -687,9 +766,7 @@ function wireEvents() {
           return;
         }
         case 'fin-recurring': // from the Akte of "Kostenmodell klären" straight to the table
-          ui.screen = 'finanzen';
-          ui.finFilter = null;
-          syncHash();
+          openFinanzen();
           render();
           $('#fin-recurring')?.scrollIntoView({ block: 'start' });
           return;
