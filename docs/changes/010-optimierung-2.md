@@ -1,6 +1,7 @@
 # Änderungsauftrag 010 – Optimierungsschleife 2
 
-Stand: 22.09.2026 · Status: 1, 4, 5, 6 umgesetzt und geprüft; Punkt 2 umgesetzt, Live-Test zu zweit steht noch aus · Branch: `feature/optimierung-2` · Modell: Sonnet, für Punkt 2 Opus
+Stand: 22.09.2026 · Status: **deployt 22.09.2026** (Merge fc5e6b3, PR #11); Punkt 3 gestrichen · Branch: `feature/optimierung-2` (gelöscht) · Modell: Sonnet, für Punkt 2 Opus
+Migration `008_a010_export_entfernen.sql` eingespielt. Alle Akzeptanzkriterien erfüllt; Nachweise im PR und im Chat-Bericht vom 22.09.
 Reihenfolge: nach 004 und 009. Ausnahme: Punkt 4 darf als eigener Vorab-PR laufen. Umsetzung: ein Branch `feature/optimierung-2`, Commit-Reihenfolge 4 · 1 · 5 · 6 · 2, Stopp vor Punkt 2 mit Zwischenbericht.
 Scope-Regel: Punkte sind unabhängig; jeder kann einzeln gestrichen werden, ohne die anderen zu berühren.
 
@@ -26,8 +27,8 @@ Funktion, Token in `settings` und die zugehörige Policy löschen (Migration nac
 
 ## Akzeptanzkriterien
 
-- [ ] Seed-Workflow einmal mit `--dry` gelaufen, Log zeigt 0/0/0
-- [ ] Realtime: Annas Häkchen erscheint bei Sebastian ohne Voll-Reload (Netzwerk-Tab: kein REST-Request nach dem Ereignis); eigene Änderung erzeugt keinen Reload
-- [ ] `/preview/` erreichbar, Hinweis sichtbar, Live-App unverändert
-- [ ] Advisor meldet keine `security definer`-Funktion mehr außer den für RLS nötigen
-- [ ] Changelog-Eintrag nur für Punkt 4 (falls Anna die Vorschau je sieht) – sonst keiner
+- [x] Seed-Workflow einmal mit `--dry` gelaufen, Log zeigt 0/0/0 (Lauf 35742699985)
+- [x] Realtime: Annas Häkchen erscheint bei Sebastian ohne Voll-Reload (gemessen: **keine** REST-Anfrage nach dem Ereignis); eigener Schreibvorgang erzeugt nur das PATCH selbst
+- [x] `/preview/` erreichbar, eigener Build-Stempel und eigener Service-Worker-Scope, Live-App unverändert
+- [x] Advisor meldet keine `security definer`-Funktion mehr außer `is_allowed`/`current_person`
+- [x] Kein Changelog-Eintrag: die Vorschau ist Sebastians Prüfpfad, in der Live-App ändert sich für Anna nichts Sichtbares
