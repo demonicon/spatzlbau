@@ -30,6 +30,12 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Commit-Messages: Präfix `feat:`, `fix:`, `content:`, `chore:`. Kleine Commits.
 - Vor dem Push: `index.html` lokal öffnen (Live-Server) und auf ~380 px prüfen.
 
+## Tests gegen die Live-Datenbank
+- Tests, die als echte Person (Sebastian oder Anna) eingeloggt laufen oder in die Live-Datenbank schreiben, werden **vorher angesagt** – nicht nebenbei erledigt. Lesende Abfragen und in Transaktionen zurückgerollte Migrationsprüfungen sind davon nicht betroffen.
+- Testdaten werden danach entfernt und der Nachweis gezeigt (Abfrage mit Ergebnis, nicht nur die Behauptung). Das gilt auch für Nebenwirkungen: `last_seen_version`, `last_visit_at`, `seen_comments`, `done_by`, `status`, Briefing-Felder, `settings`-Schlüssel.
+- Jede Änderung am Nutzerstand steht im Bericht – auch die, die bewusst stehen bleibt, mit Begründung.
+- Sicherer Weg, wo möglich: Zustände im Browser simulieren (nur `state`/`ui` setzen, nichts schreiben) statt echte Zeilen anzufassen.
+
 ## Definition of Done pro Aufgabe
 - Funktioniert eingeloggt als beide Personen (zwei Browserprofile)
 - Realtime-Update sichtbar
