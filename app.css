@@ -121,6 +121,24 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .filter-chip .x { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; font-size: 18px; }
 .filter-count { font-size: var(--fs-small); color: var(--ink-3); }
 
+/* ---------- search (docs/changes/012) ---------- */
+.search-row { position: relative; display: flex; align-items: center; margin: 14px var(--gutter) 0; }
+.search-row input { width: 100%; min-height: var(--tap); padding: 10px 48px 10px 12px; border: 1px solid var(--line-dash); border-radius: 0; background: var(--card); font-size: var(--fs-ui); color: var(--ink); appearance: none; -webkit-appearance: none; }
+.search-row input::placeholder { color: var(--ink-3); }
+/* the browser's own clear button would sit next to ours and is too small to hit */
+.search-row input::-webkit-search-cancel-button, .search-row input::-webkit-search-decoration { display: none; }
+.search-x { position: absolute; right: 0; width: var(--tap); height: var(--tap); display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--ink-2); }
+.search-x:hover { color: var(--ink); }
+/* the hit itself: bold, no colour – the row keeps its own signals (yellow = fristkritisch) */
+.hit { font-weight: 700; }
+.sub-hit { font-size: var(--fs-small); color: var(--ink-2); line-height: 1.35; padding-bottom: 6px; display: flex; flex-direction: column; gap: 2px; }
+.sub-hit .arr { color: var(--ink-3); }
+.no-hits { margin: 18px var(--gutter) 0; }
+/* jumping to a hit marks the row for a second – neutral, because yellow means "fristkritisch"
+   and red means "überfällig". Without motion the mark simply stands still for that second. */
+.task.flash { background: var(--line); box-shadow: inset 3px 0 0 var(--ink); animation: flash 1s ease-out forwards; }
+@keyframes flash { from { background: var(--line); } to { background: transparent; } }
+
 /* ---------- columns: one per person (docs/changes/009) ---------- */
 .col { margin-top: 20px; }
 .col-head { width: 100%; display: flex; align-items: baseline; gap: var(--gap); min-height: var(--tap); padding: 0 var(--gutter) 6px; border-bottom: 1.5px solid var(--line); }
@@ -391,6 +409,9 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
    the three groups sit underneath each other, the panel stays where it is. */
 @media (min-width: 1180px) {
   .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); margin-top: 20px; border-top: 1px solid var(--line); }
+  /* a search can leave fewer sections (012) – no empty cell next to them */
+  .cols[data-n="1"] { grid-template-columns: minmax(0, 1fr); }
+  .cols[data-n="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .col { background: var(--paper); margin-top: 0; padding-bottom: 12px; min-width: 0; }
   .col-head { padding: 12px 12px 8px; flex-wrap: wrap; }
   .col .note { flex-basis: 100%; margin-left: 0; text-align: left; }

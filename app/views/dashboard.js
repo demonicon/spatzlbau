@@ -10,6 +10,7 @@ import { taskHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
 import { compareVersions, hasUnread } from '../changelog.js';
 import { summary, eurShort } from '../costs.js';
+import { isHit, term } from '../search.js';
 import { printHTML } from './print.js';
 
 const DAY = 86400000;
@@ -76,6 +77,17 @@ function gatesHTML() {
       </button>`;
     })
     .join('')}</div>`;
+}
+
+/* ---------- search (docs/changes/012) ----------
+   Always visible, never folded away behind an icon: the field is the fastest way into a task
+   that is neither in "Ich" nor in the open phase. */
+function searchHTML() {
+  const q = ui.q || '';
+  return `<div class="search-row">
+    <input type="search" id="search" data-input="q" value="${esc(q)}" placeholder="Aufgabe suchen" aria-label="Aufgabe suchen" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+    ${q ? `<button class="search-x" data-act="q-clear" aria-label="Suche leeren">×</button>` : ''}
+  </div>`;
 }
 
 /* ---------- "Seit deinem letzten Besuch" (docs/changes/009) ----------
@@ -166,7 +178,8 @@ function column(key, name, cls, tasks, collapsible = false) {
 export function columns() {
   const me = state.person;
   const you = other(me);
-  const pool = state.tasks.filter((t) => (ui.phase === null || t.phase === ui.phase) && matches(t, ui.filter));
+  const q = term();
+  const pool = state.tasks.filter((t) => (ui.phase === null || t.phase === ui.phase) && matches(t, ui.filter) && (!q || isHit(t, q)));
   // "Bei Claude" is the one view that groups by state instead of by person (docs/changes/009)
   if (ui.filter === 'claude') return STEPS.map(([key, label]) => column('st-' + key, label, 'C', pool.filter((t) => claudeStep(t) === key)));
   if (ui.wide) {
@@ -200,12 +213,14 @@ function columnNote(c) {
 function columnHTML(c) {
   const has = (list) => !!ui.expanded && list.some((t) => t.id === ui.expanded);
   const total = c.open.length + c.blocked.length;
-  const collapsed = c.collapsible && !ui.openCols.has(c.key) && !has([...c.open, ...c.blocked, ...c.done]) && !ui.filter;
-  const all = ui.allCols.has(c.key) || c.open.findIndex((t) => t.id === ui.expanded) >= CAP;
+  // a search shows everything it found: nothing collapsed, no "weitere n zeigen" (012)
+  const q = term();
+  const collapsed = c.collapsible && !ui.openCols.has(c.key) && !has([...c.open, ...c.blocked, ...c.done]) && !ui.filter && !q;
+  const all = !!q || ui.allCols.has(c.key) || c.open.findIndex((t) => t.id === ui.expanded) >= CAP;
   const rows = all ? c.open : c.open.slice(0, CAP);
-  const showDone = ui.doneCols.has(c.key) || has(c.done) || !!FILTERS[ui.filter]?.done;
-  // "N warten auf einen Vorgänger": collapsed, opens with a filter or when a link leads there
-  const showBlocked = ui.blockedCols.has(c.key) || has(c.blocked) || !!ui.filter;
+  const showDone = !!q || ui.doneCols.has(c.key) || has(c.done) || !!FILTERS[ui.filter]?.done;
+  // "N warten auf einen Vorgänger": collapsed, opens with a filter, a search or a link leading there
+  const showBlocked = !!q || ui.blockedCols.has(c.key) || has(c.blocked) || !!ui.filter;
   const note = columnNote(c);
   const inner = `<span class="own ${c.cls}">${esc(c.name)}</span><span class="cnt">${total} offen</span>${note ? `<span class="note">${esc(note)}</span>` : ''}`;
   const head = c.collapsible
@@ -247,7 +262,9 @@ function addBoxHTML() {
 
 export function dashboardView() {
   const filter = ui.filter && FILTERS[ui.filter] ? ui.filter : null;
-  const cols = columns();
+  const q = term();
+  // docs/changes/012: the sections stay, the ones without a hit go
+  const cols = columns().filter((c) => !q || c.open.length + c.blocked.length + c.done.length);
   const hits = cols.reduce((n, c) => n + c.open.length + c.blocked.length + c.done.length, 0);
   const filterRow = filter
     ? `<div class="filter-row">
@@ -261,11 +278,12 @@ export function dashboardView() {
   return (
     `<div class="board"><div class="col-list">` +
     headHTML() +
+    searchHTML() +
     visitHTML() +
     kpisHTML() +
     phaseChipsHTML() +
     filterRow +
-    `<div class="cols">${cols.map(columnHTML).join('')}</div>` +
+    (q && !cols.length ? `<p class="empty no-hits">Nichts gefunden zu „${esc(q)}“.</p>` : `<div class="cols" data-n="${cols.length}">${cols.map(columnHTML).join('')}</div>`) +
     addBoxHTML() +
     `</div>` +
     (ui.wide ? panelHTML(panelTask) : '') +

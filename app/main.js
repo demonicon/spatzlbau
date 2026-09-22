@@ -35,6 +35,7 @@ import { compareVersions, newestVersion, hasUnread } from './changelog.js';
 import { dashboardView, columns } from './views/dashboard.js';
 import { finanzenView } from './views/finanzen.js';
 import { isMoreOpen } from './ui/detail.js';
+import { searching } from './search.js';
 import { parseAmount, bufferRow, bufferPct, suggestedBuffer } from './costs.js';
 
 const UI_KEY = 'spatzlbau-ui';
@@ -45,6 +46,8 @@ const PERSON_KEY = 'spatzlbau-person';
 ui.filter = null;
 ui.phase = null;
 ui.dateEdit = false;
+ui.q = ''; // search term (docs/changes/012) – on purpose only in memory: not stored, not in the hash
+ui.qPrev = null; // filter and phase the search replaced, put back when the field is emptied
 ui.openCols = new Set(); // collapsible column ("Bei Anna") that the person opened
 ui.allCols = new Set(); // columns showing more than the first eight rows
 ui.doneCols = new Set(); // columns showing their done tasks as well
@@ -141,19 +144,31 @@ function render() {
 const FOCUS_ATTRS = ['data-act', 'data-filter', 'data-phase', 'data-field', 'data-input', 'data-brief', 'data-adv', 'data-ref', 'role'];
 function keyOf(el) {
   if (!el || el === document.body || !$('#view')?.contains(el)) return null;
+  // typing in a field triggers renders (the search does it on every character), so the cursor
+  // position travels with the focus – otherwise it would jump to the end mid-word
+  let at = null;
+  try {
+    if (el.selectionStart !== null && el.selectionStart !== undefined) at = [el.selectionStart, el.selectionEnd];
+  } catch {}
   const scope = el.closest('[data-id]');
   const own = FOCUS_ATTRS.filter((a) => el.hasAttribute(a)).map((a) => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('');
   const sub = el.closest('[data-sub]');
   // the first class disambiguates controls that share an attribute (gate segment vs. phase chip)
   const cls = el.classList[0] ? '.' + CSS.escape(el.classList[0]) : '';
   const sel = (sub ? `[data-sub="${CSS.escape(sub.dataset.sub)}"] ` : '') + el.tagName.toLowerCase() + cls + own + (el.id ? '#' + CSS.escape(el.id) : '');
-  return { scope: scope ? scope.dataset.id : null, sel };
+  return { scope: scope ? scope.dataset.id : null, sel, at };
 }
 function restoreFocus(key) {
   if (!key) return;
   const root = key.scope ? $(`#view [data-id="${CSS.escape(key.scope)}"]`) : $('#view');
   const el = (root && root.querySelector(key.sel)) || $('#view').querySelector(key.sel);
-  if (el) el.focus({ preventScroll: true });
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  if (key.at) {
+    try {
+      el.setSelectionRange(key.at[0], key.at[1]);
+    } catch {}
+  }
 }
 onChange(render);
 
@@ -234,6 +249,48 @@ function setExpanded(id) {
   if (!id && prev) $(`#view .task[data-id="${CSS.escape(prev)}"] .t`)?.focus({ preventScroll: true });
 }
 
+/* ---------- search (docs/changes/012) ----------
+   Typing replaces what narrows the list (tile filter and phase), emptying the field puts both
+   back. Tapping a tile or a phase chip while searching is a decision of its own – then there is
+   nothing left to restore. */
+function setQuery(v) {
+  const had = searching();
+  ui.q = v;
+  const now = searching();
+  if (now && !had) {
+    ui.qPrev = { filter: ui.filter, phase: ui.phase };
+    ui.filter = null;
+    ui.phase = null; // the phase chip is remembered per device, so this is not saved
+  } else if (!now && had) {
+    restoreBeforeSearch();
+  }
+  render();
+}
+function restoreBeforeSearch() {
+  const p = ui.qPrev;
+  ui.qPrev = null;
+  if (!p) return;
+  ui.filter = p.filter;
+  ui.phase = p.phase;
+}
+// a hit is a way in, not a toggle: the search closes and the list comes back as it was
+function jumpTo(t) {
+  $('#search')?.blur(); // the keyboard has to go before the list scrolls
+  ui.q = '';
+  restoreBeforeSearch();
+  if (ui.filter && !FILTERS[ui.filter].test(t)) ui.filter = null;
+  if (ui.phase !== null && t.phase !== ui.phase) ui.phase = t.phase;
+  revealTask(t);
+  if (ui.wide) setExpanded(t.id); // desktop: the Akte opens in the panel as well (renders)
+  else render(); // phone: the person decides with the next tap
+  const el = $(`#view .task[data-id="${CSS.escape(t.id)}"]`);
+  if (!el) return;
+  el.scrollIntoView({ block: 'center' });
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 1000);
+}
+const isEditable = (el) => !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+
 /* ---------- events ---------- */
 const fail = (e) => e && toast('Nicht gespeichert – bitte nochmal versuchen');
 // what still works without a connection: looking, folding, filtering, printing (docs/changes/009)
@@ -242,13 +299,25 @@ const OFFLINE_OK = new Set([
   'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'more', 'advice-add',
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
-  'fin-recurring',
+  'fin-recurring', 'q-clear',
 ]);
 
 function wireEvents() {
   const view = $('#view');
   view.addEventListener('focusout', () => setTimeout(() => renderPending && !isTyping() && render(), 0));
   document.addEventListener('keydown', (e) => {
+    // docs/changes/012: Escape empties the search field and leaves it, "/" jumps into it
+    const el = document.activeElement;
+    if (e.key === 'Escape' && el?.id === 'search') {
+      el.blur(); // before the render, so the focus is not handed back to the field
+      setQuery('');
+      return;
+    }
+    if (e.key === '/' && !isEditable(el) && state.loaded && ui.screen === 'dashboard') {
+      e.preventDefault();
+      $('#search')?.focus();
+      return;
+    }
     if (e.key !== 'Escape') return;
     if (ui.changelogOpen) closeChangelog();
     else if (ui.printOpen) {
@@ -301,8 +370,14 @@ function wireEvents() {
     render();
   });
 
+  // docs/changes/012: from the first character, without a delay
+  view.addEventListener('input', (e) => {
+    if (e.target.dataset.input === 'q') setQuery(e.target.value);
+  });
+
   view.addEventListener('change', (e) => {
     const el = e.target;
+    if (el.dataset.input === 'q') return; // the search saves nothing – it reacts on 'input'
     if (ui.offline) {
       render(); // put the control back the way the cached state says
       return toast('Ohne Netz kannst du nur lesen');
@@ -390,6 +465,7 @@ function wireEvents() {
     const tile = e.target.closest('[data-filter]');
     if (tile) {
       const key = tile.dataset.filter;
+      ui.qPrev = null; // chosen by hand while searching: there is nothing to put back afterwards
       ui.filter = ui.filter === key ? null : FILTERS[key] ? key : null;
       if (!ui.wide) setExpanded(null); // inline Akte closes with the list change; the side panel stays open
       else render();
@@ -399,6 +475,7 @@ function wireEvents() {
     const ph = e.target.closest('[data-phase]');
     if (ph) {
       const want = ph.dataset.phase === 'all' ? null : parseInt(ph.dataset.phase, 10);
+      ui.qPrev = null;
       ui.phase = ui.phase === want ? null : want; // tapping the active phase again shows all phases
       saveUI();
       if (!ui.wide) setExpanded(null);
@@ -456,7 +533,12 @@ function wireEvents() {
           window.print();
           return;
         case 'open':
+          if (searching()) return jumpTo(t); // docs/changes/012
           setExpanded(ui.expanded === t.id ? null : t.id);
+          return;
+        case 'q-clear':
+          setQuery('');
+          $('#search')?.focus();
           return;
         // docs/changes/009: "blockiert: …" is a link to the blocking task
         case 'goto': {
