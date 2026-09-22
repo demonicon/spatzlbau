@@ -37,7 +37,7 @@ export function planSeedMerge(seed, tasks, subtasks) {
   const subtaskInserts = [];
   let changedFields = 0;
 
-  seed.tasks.forEach((st, index) => {
+  (seed.tasks ?? []).forEach((st, index) => {
     const sort = index;
     const snap = snapshotOf(st, sort);
     const existing = byId.get(st.id);
@@ -94,12 +94,73 @@ export function planSeedMerge(seed, tasks, subtasks) {
     taskInserts,
     taskUpdates,
     subtaskInserts,
-    settings: { phases: seed.phases, seed_version: seed.version },
+    settings: { phases: seed.phases, seed_version: seed.version }, // undefined = leave as is (partial package)
     summary: {
       newTasks: taskInserts.length,
       updatedTasks: taskUpdates.filter((u) => Object.keys(u.patch).length > 1).length,
       changedFields,
       newSubtasks: subtaskInserts.length,
     },
+  };
+}
+
+/* ---------- content packages: costs and recurring (docs/changes/004) ----------
+   Rows are matched by seed_key. Existing rows are updated field by field like tasks (only fields
+   still equal to the snapshot), but a cost row is locked as soon as it is beyond 'geschaetzt',
+   has paid_on, or its amount was changed by hand – then the package never touches it. */
+export const COST_FIELDS = ['task_id', 'label', 'kind', 'apartment', 'amount', 'due_on', 'belongs_to', 'split_s', 'tax_relevant', 'note', 'sort'];
+export const RECURRING_FIELDS = ['label', 'amount_s', 'amount_a', 'amount_n', 'note', 'sort'];
+
+function planRows(seedRows, dbRows, fields, isLocked) {
+  const byKey = new Map(dbRows.filter((r) => r.seed_key).map((r) => [r.seed_key, r]));
+  const inserts = [];
+  const updates = [];
+  let locked = 0;
+  (seedRows ?? []).forEach((sr, index) => {
+    if (!sr.seed_key) throw new Error('package row without seed_key: ' + JSON.stringify(sr).slice(0, 80));
+    const snap = {};
+    for (const f of fields) snap[f] = f === 'sort' ? (sr.sort ?? index) : (sr[f] ?? null);
+    const existing = byKey.get(sr.seed_key);
+    if (!existing) {
+      inserts.push({ ...snap, seed_key: sr.seed_key, seed_snapshot: snap, ...(sr.status ? { status: sr.status } : {}) });
+      return;
+    }
+    if (isLocked(existing)) {
+      locked++;
+      return;
+    }
+    const prev = existing.seed_snapshot ?? {};
+    const patch = {};
+    for (const f of fields) {
+      const userUntouched = same(existing[f], prev[f]);
+      if (userUntouched && !same(existing[f], snap[f])) patch[f] = snap[f];
+    }
+    if (Object.keys(patch).length || !same(prev, snap)) {
+      patch.seed_snapshot = snap;
+      updates.push({ id: existing.id, patch });
+    }
+  });
+  return { inserts, updates, locked };
+}
+
+const num = (v) => (v === null || v === undefined ? null : Number(v));
+const costLocked = (row) => row.status !== 'geschaetzt' || !!row.paid_on || !same(num(row.amount), num(row.seed_snapshot?.amount));
+
+/**
+ * @param {object} seed        package ({costs: [], recurring: []}; both optional)
+ * @param {object[]} costs     all rows of `costs`
+ * @param {object[]} recurring all rows of `recurring`
+ */
+export function planPackageMerge(seed, costs, recurring) {
+  // amounts come back from Postgres as strings; compare numerically
+  const normalise = (rows, keys) => rows.map((r) => ({ ...r, ...Object.fromEntries(keys.map((k) => [k, num(r[k])])), seed_snapshot: r.seed_snapshot && { ...r.seed_snapshot, ...Object.fromEntries(keys.filter((k) => k in r.seed_snapshot).map((k) => [k, num(r.seed_snapshot[k])])) } }));
+  const c = planRows(seed.costs, normalise(costs, ['amount', 'split_s']), COST_FIELDS, costLocked);
+  const r = planRows(seed.recurring, normalise(recurring, ['amount_s', 'amount_a', 'amount_n']), RECURRING_FIELDS, () => false);
+  return {
+    costInserts: c.inserts,
+    costUpdates: c.updates,
+    recurringInserts: r.inserts,
+    recurringUpdates: r.updates,
+    summary: { newCosts: c.inserts.length, updatedCosts: c.updates.length, lockedCosts: c.locked, newRecurring: r.inserts.length, updatedRecurring: r.updates.length },
   };
 }

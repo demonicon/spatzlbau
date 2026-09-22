@@ -71,7 +71,7 @@ for (const [name, t] of Object.entries(TABLES)) {
   console.log(`${name}: ${todo.length} Zeilen geschrieben`);
 }
 // 2. delete extras, children first (tasks cascade to subtasks/comments anyway)
-for (const name of ['comments', 'subtasks', 'tasks', 'settings']) {
+for (const name of ['comments', 'subtasks', 'costs', 'recurring', 'tasks', 'settings']) {
   const extra = plan[name].extra;
   if (!extra.length) continue;
   for (const k of extra) await db.remove(name, `${TABLES[name].key}=eq.${encodeURIComponent(k)}`);
