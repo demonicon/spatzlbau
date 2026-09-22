@@ -46,7 +46,7 @@ Angebote, die gegen eine beauftragte Zeile derselben Aufgabe verloren haben, ble
 
 | Stelle im Auftrag | Gebaut | Grund |
 |---|---|---|
-| „Fünfte Kachel … Antippen = Filter **und** Einblenden des Blocks" | Die Kachel **öffnet die Ansicht** `#finanzen` und filtert nichts mehr | Nachtrag vom 22.09.: der Block ist eine eigene Ansicht geworden |
+| „Fünfte Kachel … Antippen = Filter **und** Einblenden des Blocks" | Die Kachel **öffnet die Ansicht** `#finanzen` und filtert nichts mehr | Nachtrag vom 22.09.: der Block ist eine eigene Ansicht geworden. **Bewusste Ausnahme von „Kennzahl = Filter"** (002/009): die Ansicht *enthält* die gefilterte Liste – alle Aufgaben mit Kostenzeilen, dazu die fünf Zahlen, die ihrerseits filtern. Die Kachel führt also dorthin, statt die Aufgabenliste umzustellen (von Sebastian am 22.09. so bestätigt) |
 | Vier Kacheln in einer Reihe (009) | Am Handy jetzt **3 + 2** in zwei Reihen, ab 600 px alle fünf in einer | Fünf Kacheln nebeneinander lassen bei 380 px 68 px je Kachel – „Fristkritisch" bricht dann mitten im Wort |
 | „Jede Zahl antippbar → filtert auf bezahlt / Rückflüsse / offen" | geplant → alles Gezählte · bisher bezahlt → bezahlt · Rückflüsse → Rückflüsse · **netto → offen** | Die vierte Zahl braucht ein eigenes Ziel; „offen" ist das, was davon noch zu zahlen ist |
 | Filter wirken „auf die Liste" | Sie filtern die **Kostenzeilen in der Finanzansicht**; Aufgaben ohne passende Zeile fallen weg | Die Aufgabenliste des Dashboards ist eine andere Ansicht geworden |
@@ -75,11 +75,18 @@ Angebote, die gegen eine beauftragte Zeile derselben Aufgabe verloren haben, ble
 ## 6. Noch offen
 
 - Nichts aus dem Auftrag. Changelog-Eintrag (`2026.09.22.5`) und `BRIEFING.md` Abschnitt 5 sind mit diesem Commit nachgezogen.
-- **Nicht geprüft gegen die echte Datenbank:** alle Schreibwege (Kostenzeile anlegen/ändern/löschen, Statuswechsel, „Bezahlt am …", Puffer, laufende Kosten, Einstellungen). Dafür braucht es eine eingeloggte Sitzung mit Schreibzugriff – nach der Regel in `CLAUDE.md` vorher angesagt.
+- Nichts. Die Schreibwege sind am 22.09. gegen die Live-Datenbank geprüft (angesagt und freigegeben, 27 Prüfungen grün, alles wieder aufgeräumt).
 
-## 7. Geprüft
+## 7. Im Schreibtest gefunden und behoben (22.09.)
+
+Der angesagte Schreibtest gegen die Live-Datenbank hat zwei echte Fehler zutage gefördert:
+
+1. **Leeres Einstellungsfeld ließ sich nicht speichern.** `settings.value` ist `jsonb NOT NULL`; der neue Einstellungsbereich schickte beim Leeren eines Datums `null` und bekam einen 400er. Ein geleertes Feld speichert jetzt `''` – das liest die App überall als „nicht gesetzt".
+2. **Nach „Hinzufügen" blieb die Zeile unsichtbar.** Die App überspringt das Neuzeichnen, solange der Fokus in einem Textfeld steht (damit nichts unter den Fingern wegspringt). Am Rechner nimmt der Klick dem Feld den Fokus, am iPhone aber nicht – Anna hätte getippt und nichts gesehen. Ein Knopfdruck beendet jetzt die Eingabe (Blur), speichert dabei das Getippte und gibt das Neuzeichnen frei. Betrifft nicht nur Kosten, sondern auch Teilschritte, Kommentare und neue Aufgaben.
+
+## 8. Geprüft
 
 - `app/costs.js` gegen das echte Modul im Browser, ausgeloggt und ohne Schreibzugriff: 12 Fälle (Betragsparsen deutsch/englisch, Formatierung, Zählregel mit und ohne feste Zeile, Angebot als Historie, Puffer, Summen, Schild mit und ohne „≈", Rückflüsse nicht im Schild, Überfälligkeit, Schrittgrenzen)
 - Zählregel gegen die Datenbank-View in einer zurückgerollten Transaktion – identisch
 - Darstellung bei 380 und 1280 px: drei Zeilen in drei Zuständen, Zeile aufgeklappt, „Bezahlt am …"; Tap-Ziele ≥ 44 px, keine Konsolenfehler
-- **Nicht geprüft:** Anlegen, Bearbeiten, Statuswechsel und Löschen gegen die echte Datenbank – dafür braucht es eine eingeloggte Sitzung mit Schreibzugriff, die nach der Regel in `CLAUDE.md` vorher angesagt wird
+- **Schreibtest gegen die Live-Datenbank** (22.09., angesagt und freigegeben, 27 Prüfungen grün): anlegen mit zwei Feldern, Fälligkeit aus dem Trigger, Tausenderpunkt im Betrag, alle acht Felder feldgenau, Status vier Schritte vor und einen zurück, „Bezahlt am …" ohne Beleg abgelehnt und mit Beleg gesetzt, Rückweg aus `bezahlt` räumt Datum und Person ab, Bearbeiten in der Finanzansicht landet in der Datenbank, Puffer ändern und exakt zurücksetzen, laufende Kosten anlegen und drei Beträge einzeln speichern, Delta korrekt, Einstellungen speichern und Doppelmiete erscheint. **Die fünf Zahlen der App stimmen mit `costs_summary` überein** (8.845 / 4.660 / – / 645 / 8.845). Danach alles entfernt, Vorher/Nachher abgefragt

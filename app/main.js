@@ -319,8 +319,12 @@ function wireEvents() {
     if (el.dataset.setting) {
       const key = el.dataset.setting;
       const raw = el.value.trim();
-      const v = key.endsWith('_pct') || key.startsWith('split') ? parseAmount(raw) : raw || null;
-      if (v === null && raw) return toast('Wert nicht lesbar');
+      // settings.value is jsonb NOT NULL: an emptied field stores '', never null
+      let v = '';
+      if (raw !== '') {
+        v = key.endsWith('_pct') || key.startsWith('split') ? parseAmount(raw) : raw;
+        if (v === null) return toast('Wert nicht lesbar');
+      }
       setSetting(key, v).catch(fail);
       return;
     }
@@ -404,6 +408,11 @@ function wireEvents() {
     const b = e.target.closest('[data-act]');
     if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT') return;
     const act = b.dataset.act;
+    // Pressing a button ends typing. Without this the field keeps the focus (Safari does not
+    // focus buttons on tap), isTyping() stays true and the redraw after the write is skipped -
+    // the new row would only appear once the person taps somewhere else. The blur also saves
+    // what was typed, and the values below are read before the redraw replaces the DOM.
+    if (isTyping()) document.activeElement.blur();
     if (ui.offline && !OFFLINE_OK.has(act)) return toast('Ohne Netz kannst du nur lesen');
     const row = b.closest('[data-id]'); // task row, or the side panel
     const t = row ? byId(row.dataset.id) : null;
