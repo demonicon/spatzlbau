@@ -1,6 +1,20 @@
 {
   "entries": [
     {
+      "version": "2026.09.22.5",
+      "title": "Kosten: was der Umzug kostet, an einer Stelle",
+      "new": [
+        "Zu jeder Aufgabe kannst du jetzt Kosten eintragen – geschätzt, angeboten, beauftragt, bezahlt.",
+        "Die Kachel „Kosten“ zeigt, was der Umzug insgesamt kostet und was zurückkommt.",
+        "Unter „Finanzen“ liegt alles Geld beisammen: die Summen, wer wem was schuldet, was wann fällig wird und was die neue Wohnung monatlich kostet.",
+        "Bei „Bezahlt am …“ hältst du Datum, Person und Beleg fest. Bei steuerrelevanten Posten fragt die App den Beleg ab."
+      ],
+      "improved": [
+        "In der Aufgabenliste steht neben jeder Aufgabe, was sie kostet – mit „≈“, solange es nur geschätzt ist."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2026.09.22.4",
       "title": "Die App zeigt zuerst, was bei dir liegt",
       "new": [

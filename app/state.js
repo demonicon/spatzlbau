@@ -15,11 +15,12 @@ export const state = {
   tasks: [], // non-deleted tasks
   subtasks: [],
   comments: [],
+  costs: [], // cost rows per task (docs/changes/007)
+  recurring: [], // monthly costs old vs new, for the double rent in the cashflow (007)
   loaded: false,
 };
 
 export const ui = {
-  view: 'week',
   filter: 'all',
   expanded: null, // task id with open detail
   confirm: null, // 'del:<id>' | null
@@ -125,6 +126,8 @@ function saveSnapshot() {
         tasks: state.tasks,
         subtasks: state.subtasks,
         comments: state.comments,
+        costs: state.costs,
+        recurring: state.recurring,
       }),
     );
   } catch {} // quota or private mode: the app just has no offline copy
@@ -145,6 +148,8 @@ export function loadSnapshot() {
     state.tasks = d.tasks;
     state.subtasks = d.subtasks || [];
     state.comments = d.comments || [];
+    state.costs = d.costs || [];
+    state.recurring = d.recurring || [];
     state.loadedAt = d.saved_at || null;
     state.loaded = true;
     notify();
@@ -156,18 +161,22 @@ export function loadSnapshot() {
 
 /* ---------- loading ---------- */
 export async function loadAll() {
-  const [settings, tasks, subtasks, comments] = await Promise.all([
+  const [settings, tasks, subtasks, comments, costs, recurring] = await Promise.all([
     supabase.from('settings').select('key,value'),
     supabase.from('tasks').select('*').is('deleted_at', null),
     supabase.from('subtasks').select('*'),
     supabase.from('comments').select('*'),
+    supabase.from('costs').select('*'),
+    supabase.from('recurring').select('*'),
   ]);
-  const err = settings.error || tasks.error || subtasks.error || comments.error;
+  const err = settings.error || tasks.error || subtasks.error || comments.error || costs.error || recurring.error;
   if (err) throw err;
   state.settings = Object.fromEntries(settings.data.map((r) => [r.key, r.value]));
   state.tasks = tasks.data;
   state.subtasks = subtasks.data;
   state.comments = comments.data;
+  state.costs = costs.data;
+  state.recurring = recurring.data;
   state.loaded = true;
   state.loadedAt = new Date().toISOString();
   notify();
@@ -278,6 +287,10 @@ export function applyRealtimeEvent(table, payload) {
       return deleted ? dropRow(state.subtasks, old?.id) : upsertRow(state.subtasks, row);
     case 'comments':
       return deleted ? dropRow(state.comments, old?.id) : upsertRow(state.comments, row);
+    case 'costs':
+      return deleted ? dropRow(state.costs, old?.id) : upsertRow(state.costs, row);
+    case 'recurring':
+      return deleted ? dropRow(state.recurring, old?.id) : upsertRow(state.recurring, row);
     case 'settings': {
       const key = deleted ? old?.key : row.key;
       if (!key) return false;
@@ -313,7 +326,7 @@ export function subscribeRealtime() {
 
   let wasSubscribed = false;
   const ch = supabase.channel('spatzlbau-db');
-  for (const table of ['settings', 'tasks', 'subtasks', 'comments']) {
+  for (const table of ['settings', 'tasks', 'subtasks', 'comments', 'costs', 'recurring']) {
     ch.on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
       let changed;
       try {
@@ -445,6 +458,67 @@ export async function addComment(taskId, body) {
   state.comments.push(data);
   status('saved', 'Gespeichert');
   notify();
+}
+
+/* ---------- cost rows (docs/changes/007) ----------
+   Label and amount are enough; the trigger from 004 fills due_on from the task deadline on
+   insert and forces status 'bezahlt' as soon as paid_on is set, so the row comes back from the
+   server with those values already applied. */
+export async function addCost(taskId, fields) {
+  const row = { task_id: taskId, label: fields.label, amount: fields.amount, kind: 'einmalig', status: 'geschaetzt', belongs_to: 'B', tax_relevant: false };
+  status('saving', 'Speichern …');
+  const { data, error } = await supabase.from('costs').insert(row).select().single();
+  if (error) {
+    status('error', 'Speichern fehlgeschlagen: ' + error.message);
+    throw error;
+  }
+  state.costs.push(data);
+  status('saved', 'Gespeichert');
+  notify();
+  return data.id;
+}
+
+export async function updateCost(id, patch) {
+  const c = state.costs.find((x) => x.id === id);
+  if (!c) return;
+  Object.assign(c, patch);
+  notify();
+  return write('cost', () => supabase.from('costs').update(patch).eq('id', id));
+}
+
+export async function deleteCost(id) {
+  state.costs = state.costs.filter((c) => c.id !== id);
+  notify();
+  return write('cost', () => supabase.from('costs').delete().eq('id', id));
+}
+
+/* ---------- monthly costs (docs/changes/007 commit 3) ---------- */
+export async function addRecurring(label) {
+  const rows = state.recurring;
+  const row = { label, amount_s: null, amount_a: null, amount_n: null, sort: rows.length ? Math.max(...rows.map((r) => r.sort)) + 1 : 0 };
+  status('saving', 'Speichern …');
+  const { data, error } = await supabase.from('recurring').insert(row).select().single();
+  if (error) {
+    status('error', 'Speichern fehlgeschlagen: ' + error.message);
+    throw error;
+  }
+  state.recurring.push(data);
+  status('saved', 'Gespeichert');
+  notify();
+}
+
+export async function updateRecurring(id, patch) {
+  const r = state.recurring.find((x) => x.id === id);
+  if (!r) return;
+  Object.assign(r, patch);
+  notify();
+  return write('recurring', () => supabase.from('recurring').update(patch).eq('id', id));
+}
+
+export async function deleteRecurring(id) {
+  state.recurring = state.recurring.filter((r) => r.id !== id);
+  notify();
+  return write('recurring', () => supabase.from('recurring').delete().eq('id', id));
 }
 
 export async function setSetting(key, value) {

@@ -24,11 +24,18 @@ import {
   markVisit,
   markCommentsSeen,
   doneBy,
+  addCost,
+  updateCost,
+  deleteCost,
+  addRecurring,
+  updateRecurring,
 } from './state.js';
 import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
 import { dashboardView, columns } from './views/dashboard.js';
+import { finanzenView } from './views/finanzen.js';
 import { isMoreOpen } from './ui/detail.js';
+import { parseAmount, bufferRow, bufferPct, suggestedBuffer } from './costs.js';
 
 const UI_KEY = 'spatzlbau-ui';
 const PERSON_KEY = 'spatzlbau-person';
@@ -44,6 +51,14 @@ ui.doneCols = new Set(); // columns showing their done tasks as well
 ui.blockedCols = new Set(); // columns with "N warten auf einen Vorgänger" unfolded
 ui.more = {}; // Akte: task id -> "Mehr" open? (undefined = automatic, see isMoreOpen)
 ui.adviceAdd = new Set(); // Akte: tasks showing the empty advice fields
+ui.costEdit = null; // cost row with its fields open (007)
+ui.costPay = null; // cost row asking for date, person and receipt
+ui.costAdd = null; // task id showing the "new cost row" form
+ui.screen = 'dashboard'; // 'dashboard' | 'finanzen' (#finanzen, docs/changes/007)
+ui.finFilter = null; // which cost rows the Finanzen view shows
+ui.finSettings = false; // the small settings area (move-out dates, split, buffer)
+ui.bufferEdit = false;
+ui.recAdd = false; // the "new monthly cost" field in the Finanzen view
 ui.printOpen = false; // "Umzugstag drucken" sheet
 ui.offline = false; // no connection: the cached state is shown read-only (009)
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
@@ -114,7 +129,7 @@ function render() {
   ensurePhase();
   const focusKey = keyOf(document.activeElement);
   document.body.classList.toggle('printing', !!ui.printOpen);
-  $('#view').innerHTML = dashboardView();
+  $('#view').innerHTML = ui.screen === 'finanzen' ? finanzenView() : dashboardView();
   // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set via CSSOM
   for (const el of $('#view').querySelectorAll('.gate .bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
   restoreFocus(focusKey);
@@ -181,6 +196,7 @@ function closeChangelog() {
 }
 // opened via a task link (#task=<id>)? then the person has a goal – no automatic panel
 const openedViaTaskLink = () => /^#task=/.test(location.hash);
+const openedViaFinanzen = () => location.hash === '#finanzen';
 const hashTaskId = () => (openedViaTaskLink() ? decodeURIComponent(location.hash.slice('#task='.length)) : null);
 function openTaskFromHash() {
   const t = byId(hashTaskId());
@@ -202,7 +218,7 @@ function revealTask(t) {
 }
 // the open task lives in the URL, so a link to it can be shared (docs/changes/006)
 function syncHash() {
-  const want = ui.expanded ? '#task=' + encodeURIComponent(ui.expanded) : '';
+  const want = ui.screen === 'finanzen' ? '#finanzen' : ui.expanded ? '#task=' + encodeURIComponent(ui.expanded) : '';
   if (location.hash === want) return;
   history.replaceState(null, '', location.pathname + location.search + want);
 }
@@ -225,6 +241,8 @@ const OFFLINE_OK = new Set([
   'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
   'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'more', 'advice-add',
   'print', 'print-close', 'print-now',
+  'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
+  'fin-recurring',
 ]);
 
 function wireEvents() {
@@ -245,6 +263,12 @@ function wireEvents() {
   // browser back/forward or a pasted link: follow the hash
   window.addEventListener('hashchange', () => {
     if (!state.loaded) return;
+    if (openedViaFinanzen()) {
+      ui.screen = 'finanzen';
+      render();
+      return;
+    }
+    ui.screen = 'dashboard';
     const id = hashTaskId();
     if (id && byId(id)) openTaskFromHash();
     else if (!id) ui.expanded = null;
@@ -283,6 +307,27 @@ function wireEvents() {
       render(); // put the control back the way the cached state says
       return toast('Ohne Netz kannst du nur lesen');
     }
+    // monthly costs: three amounts per row, each written on its own (007 commit 3)
+    if (el.dataset.recField) {
+      const raw = el.value.trim();
+      const v = raw === '' ? null : parseAmount(raw);
+      if (v === null && raw !== '') return toast('Betrag nicht lesbar – z. B. 780 oder 780,50');
+      updateRecurring(el.dataset.ref, { [el.dataset.recField]: v }).catch(fail);
+      return;
+    }
+    // the small finance settings area (007): dates and percentages, one key at a time
+    if (el.dataset.setting) {
+      const key = el.dataset.setting;
+      const raw = el.value.trim();
+      // settings.value is jsonb NOT NULL: an emptied field stores '', never null
+      let v = '';
+      if (raw !== '') {
+        v = key.endsWith('_pct') || key.startsWith('split') ? parseAmount(raw) : raw;
+        if (v === null) return toast('Wert nicht lesbar');
+      }
+      setSetting(key, v).catch(fail);
+      return;
+    }
     if (el.dataset.input === 'kontakte') {
       setSetting('umzugstag_kontakte', el.value).catch(fail);
       return;
@@ -314,6 +359,18 @@ function wireEvents() {
       const patch = { [f]: v };
       if (f === 'type' && v === 'claude' && !t.status) patch.status = 'briefing';
       updateTask(t.id, patch).catch(fail);
+      return;
+    }
+    // cost fields write one column at a time, like every other field (007)
+    if (el.dataset.costField) {
+      const f = el.dataset.costField;
+      let v = el.type === 'checkbox' ? el.checked : el.value;
+      if (f === 'amount') {
+        v = parseAmount(v);
+        if (v === null) return toast('Betrag nicht lesbar – z. B. 1800 oder 1.800,50');
+      }
+      if ((f === 'apartment' || f === 'due_on' || f === 'receipt_url' || f === 'note') && v === '') v = null;
+      updateCost(el.dataset.ref, { [f]: v }).catch(fail);
       return;
     }
     if (el.dataset.brief && t) {
@@ -351,6 +408,11 @@ function wireEvents() {
     const b = e.target.closest('[data-act]');
     if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT') return;
     const act = b.dataset.act;
+    // Pressing a button ends typing. Without this the field keeps the focus (Safari does not
+    // focus buttons on tap), isTyping() stays true and the redraw after the write is skipped -
+    // the new row would only appear once the person taps somewhere else. The blur also saves
+    // what was typed, and the values below are read before the redraw replaces the DOM.
+    if (isTyping()) document.activeElement.blur();
     if (ui.offline && !OFFLINE_OK.has(act)) return toast('Ohne Netz kannst du nur lesen');
     const row = b.closest('[data-id]'); // task row, or the side panel
     const t = row ? byId(row.dataset.id) : null;
@@ -445,6 +507,147 @@ function wireEvents() {
           await addComment(t.id, v);
           return;
         }
+        /* ---------- Finanzen view (007, addendum) ---------- */
+        case 'screen':
+          ui.screen = b.dataset.to;
+          ui.finFilter = null;
+          syncHash();
+          render();
+          window.scrollTo({ top: 0 });
+          return;
+        case 'fin-open': // from the Finanzen list into the Akte of that task
+          ui.screen = 'dashboard';
+          ui.finFilter = null;
+          revealTask(byId(b.dataset.ref));
+          setExpanded(b.dataset.ref);
+          return;
+        case 'fin-filter':
+          ui.finFilter = ui.finFilter === b.dataset.to ? null : b.dataset.to;
+          render();
+          return;
+        case 'fin-filter-clear':
+          ui.finFilter = null;
+          render();
+          return;
+        case 'rec-add':
+          ui.recAdd = true;
+          render();
+          $('[data-input=rec-label]', $('#view'))?.focus();
+          return;
+        case 'rec-add-cancel':
+          ui.recAdd = false;
+          render();
+          return;
+        case 'rec-add-save': {
+          const label = $('[data-input=rec-label]', $('#view')).value.trim();
+          if (!label) return toast('Bitte einen Posten eingeben');
+          ui.recAdd = false;
+          await addRecurring(label);
+          return;
+        }
+        case 'fin-recurring': // from the Akte of "Kostenmodell klären" straight to the table
+          ui.screen = 'finanzen';
+          ui.finFilter = null;
+          syncHash();
+          render();
+          $('#fin-recurring')?.scrollIntoView({ block: 'start' });
+          return;
+        case 'fin-settings':
+          ui.finSettings = !ui.finSettings;
+          render();
+          if (ui.finSettings) $('#fin-settings')?.scrollIntoView({ block: 'start' });
+          return;
+        case 'buffer-add':
+          await addCost(null, { label: 'Puffer', amount: suggestedBuffer() });
+          return;
+        case 'buffer-edit':
+          ui.bufferEdit = !ui.bufferEdit;
+          render();
+          return;
+        case 'buffer-cancel':
+          ui.bufferEdit = false;
+          render();
+          return;
+        case 'buffer-save': {
+          const amount = parseAmount($('[data-buffer=amount]', $('#view')).value);
+          const pct = parseAmount($('[data-buffer=pct]', $('#view')).value);
+          if (amount === null) return toast('Betrag nicht lesbar');
+          ui.bufferEdit = false;
+          if (pct !== null && pct !== bufferPct()) await setSetting('buffer_pct', pct);
+          await updateCost(b.dataset.ref, { amount });
+          return;
+        }
+        case 'buffer-pct-apply': {
+          const pct = parseAmount($('[data-buffer=pct]', $('#view')).value);
+          if (pct === null) return toast('Prozentsatz nicht lesbar');
+          if (pct !== bufferPct()) await setSetting('buffer_pct', pct);
+          ui.bufferEdit = false;
+          await updateCost(b.dataset.ref, { amount: suggestedBuffer() });
+          return;
+        }
+
+        /* ---------- cost rows (007) ---------- */
+        case 'cost-add':
+          ui.costAdd = t.id;
+          render();
+          $('[data-input=cost-label]', $('#view'))?.focus();
+          return;
+        case 'cost-add-cancel':
+          ui.costAdd = null;
+          render();
+          return;
+        case 'cost-add-save': {
+          const label = input('[data-input=cost-label]').value.trim();
+          const amount = parseAmount(input('[data-input=cost-amount]').value);
+          if (!label) return toast('Bitte eine Bezeichnung eingeben');
+          if (amount === null) return toast('Betrag nicht lesbar – z. B. 1800 oder 1.800,50');
+          ui.costAdd = null;
+          await addCost(t.id, { label, amount });
+          return;
+        }
+        case 'cost-edit':
+          ui.costEdit = ui.costEdit === b.dataset.ref ? null : b.dataset.ref;
+          ui.costPay = null;
+          render();
+          return;
+        case 'cost-step':
+          // one step at a time; leaving 'bezahlt' has to clear the payment, otherwise the
+          // trigger from 004 puts the row straight back on 'bezahlt'
+          await updateCost(b.dataset.ref, b.dataset.to === 'faellig' ? { status: 'faellig', paid_on: null, paid_by: null } : { status: b.dataset.to });
+          return;
+        case 'cost-pay':
+          ui.costPay = b.dataset.ref;
+          ui.costEdit = null;
+          render();
+          return;
+        case 'cost-pay-cancel':
+          ui.costPay = null;
+          render();
+          return;
+        case 'cost-pay-save': {
+          const row = b.closest('.cost');
+          const receipt = $('[data-pay=receipt]', row).value.trim();
+          const cost = state.costs.find((c) => c.id === b.dataset.ref);
+          if (cost?.tax_relevant && !receipt) return toast('Beleg-Link fehlt – die Zeile ist steuerrelevant');
+          ui.costPay = null;
+          await updateCost(b.dataset.ref, {
+            paid_on: $('[data-pay=date]', row).value || new Date().toISOString().slice(0, 10),
+            paid_by: $('[data-pay=by]', row).value,
+            receipt_url: receipt || null,
+            status: 'bezahlt',
+          });
+          return;
+        }
+        case 'cost-del':
+          ui.confirm = 'cost-del:' + b.dataset.ref;
+          render();
+          return;
+        case 'cost-del-yes':
+          ui.confirm = null;
+          ui.costEdit = null;
+          await deleteCost(b.dataset.ref);
+          toast('Kostenzeile gelöscht');
+          return;
         case 'adv-edit':
           ui.editingAdvice = t.id + ':' + b.dataset.ref;
           render();
@@ -573,6 +776,7 @@ async function enter(session) {
   if (state.lastVisitAt === null) markVisit().catch(() => {});
   const viaLink = openedViaTaskLink();
   if (viaLink) openTaskFromHash();
+  if (openedViaFinanzen()) ui.screen = 'finanzen';
   show('app');
   render();
   if (viaLink) $('.task.open')?.scrollIntoView({ block: 'start' });
