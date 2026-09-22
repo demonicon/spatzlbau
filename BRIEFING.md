@@ -129,36 +129,6 @@ spatzlbau/
 └── .github/workflows/pages.yml
 ```
 
-## 7. Setup-Reihenfolge (was Sebastian tut, was du tust)
+## 7. Setup und erste Schritte
 
-**Sebastian, im Browser (~15 Minuten):**
-1. supabase.com → Konto → neues Projekt (Region EU, Frankfurt). Projekt-URL, Anon-Key und Service-Role-Key notieren.
-2. Authentication → Providers → Email: „Allow new users to sign up“ aus. Unter Users die zwei Konten mit Passwort anlegen (Auto Confirm).
-3. SQL Editor → Inhalt von `supabase/schema.sql` einfügen und ausführen (enthält Platzhalter für die zwei E-Mails).
-4. github.com → neues öffentliches Repo `spatzlbau` (oder du erledigst das per `gh`, wenn eingeloggt).
-
-**Du, Claude Code:**
-1. Repo-Gerüst anlegen, `schema.sql` schreiben, `SETUP.md` schreiben – **zuerst**, damit Sebastian parallel klicken kann.
-2. App bauen, Seed-Skript, Result-Skript, PWA, Pages-Workflow.
-3. Nach Push: Pages-URL an Sebastian melden (für Supabase Redirect), Seed einspielen.
-4. Smoke-Test-Checkliste ausführen (Abschnitt 8).
-
-Bevor du baust, frag Sebastian nach: Projekt-URL + Anon-Key, den zwei E-Mail-Adressen, ob `gh` und Node lokal verfügbar sind, Repo-Name.
-
-## 8. Smoke-Test (mit Anna, ~10 Minuten)
-
-1. Sebastian öffnet die URL, loggt sich mit E-Mail und Passwort ein, trägt einen Einzugstermin ein, hakt eine Aufgabe ab, schreibt einen Kommentar.
-2. Anna öffnet dieselbe URL auf dem Handy, loggt sich ein, sieht Sebastians Stand, hakt eine andere Aufgabe ab, kommentiert, fügt "Zum Home-Bildschirm" hinzu.
-3. Bei Sebastian erscheinen Annas Änderungen ohne Neuladen (Realtime).
-4. Ein drittes Konto (Testadresse, im Dashboard angelegt, nicht in der Allowlist) loggt sich ein: App zeigt „nicht freigeschaltet“, keine Daten sichtbar. Eine Adresse ohne Konto kann sich gar nicht anmelden.
-5. Sebastian fragt Claude im Chat nach dem Stand (Supabase-Connector); Claude liest ihn und nennt die beiden Kommentare korrekt.
-
-Erfolgskriterium: alle fünf Punkte grün. Erst dann beginnt die Weiterentwicklung.
-
-## 9. Mini-Roadmap
-
-1. **Setup & Smoke-Test** – dieses Briefing
-2. **Konzeptrunde 2 (Chat) + UX/UI-Runde (Claude Code):** leichte Akte für kleine Aufgaben, Review-Export für Claude (alles Kommentierte/Geänderte seit letztem Review), Onboarding-Screen für Anna, Diese-Woche-Sicht schärfen
-3. **Inhalte Phase 1 + 2:** Beratungsfelder und Teilschritte für Vertrag/Kündigung, mit Rechtslage-Check, geliefert als Seed-Update
-4. **Delegation live:** erste echte Aufgabe (z. B. Umzugsunternehmen) durch die Schleife; danach optional Scheduled Task, der über den Connector täglich prüft und bei delegierten Aufgaben proaktiv startet
-5. **Inhalte Phase 3–5** und Betrieb bis zum Einzug
+Setup-Reihenfolge, der ursprüngliche Smoke-Test und die Roadmap vom 13.09.2026 (beide erledigt) stehen in `docs/history.md`. Laufender Fahrplan seither: `docs/backlog.md` (Ideen, unsortiert) plus die Änderungsaufträge in `docs/changes/`.

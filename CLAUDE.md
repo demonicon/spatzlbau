@@ -1,6 +1,6 @@
 # CLAUDE.md – Spatzlbau (Umzugs-PWA)
 
-Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entscheidungen und die Setup-Reihenfolge. Diese Datei enthält nur Arbeitskonventionen.
+Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entscheidungen und Sichten. Diese Datei enthält nur Arbeitskonventionen. Erledigtes (Setup, ursprünglicher Smoke-Test, alte Roadmap) steht in `docs/history.md`; laufende Ideen ohne Auftrag in `docs/backlog.md`.
 
 ## Rollen
 - **Claude im Chat:** Konzept, Inhalte (Seed), Reviews, Delegations-Schleife mit den Nutzern. Änderungen kommen von dort als klarer Auftrag.
@@ -12,9 +12,16 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Umsetzung auf einem Branch `feature/<kurzname>`; nach Abnahme Merge in `main`. Beim Abschluss den Status im Auftrag auf „umgesetzt“ setzen und offene Punkte dort notieren.
 - Betrifft ein Auftrag Verhalten oder Setup, werden `SETUP.md` / `BRIEFING.md` im selben Branch nachgezogen.
 
+## Freeze und Meilensteine (seit Auftrag 015)
+- Ein Freeze ist ein **stabiler Meilenstein**, keine Pause. Nach 1.0 nur noch Nebenversionen (1.1, 1.2 …) für Bugfixes. Einen neuen Meilenstein (2.0 …) eröffnet **nur Sebastian**; bei einem Feature-Wunsch daran erinnern und explizit nachfragen, nicht einfach bauen.
+- **Bugfix:** etwas, das vorher funktioniert hat und jetzt nicht mehr – oder ein Verhalten, das Daten falsch speichert oder anzeigt. Alles andere ist ein Feature und geht in `docs/backlog.md`.
+- `CLAUDE.md` / `BRIEFING.md` nur nach ausdrücklicher Bestätigung durch Sebastian ändern; Auftragsstatus und Abweichungslisten nachführen ist davon ausgenommen.
+- Vor jedem Meilenstein: `docs/release-check.md` (Vorlage) kopiert nach `docs/release-check-<Version>.md` und ausgefüllt. Rot bei Sicherheit oder Daten blockiert den Meilenstein, Rot anderswo wird der erste Bugfix der Nebenversion. Git-Tag `vX.Y` auf den Merge-Commit.
+- Weiter erlaubt ohne Meilenstein-Eröffnung: Inhaltspakete über den Seed-Workflow, Migrationen nur für Inhalte, tägliches Backup, wöchentliche Kontrolle; keine Abhängigkeits-Updates ohne Bugfix-Grund.
+
 ## Changelog (`changelog.json`)
 - Jeder PR, der etwas Sichtbares ändert, ergänzt `changelog.json` um einen Eintrag oder erweitert den Eintrag des Tages. Ein PR mit sichtbarer Änderung ohne Changelog-Eintrag gilt als unvollständig.
-- `version` = Deploy-Datum `JJJJ.MM.TT`, zweiter Deploy am selben Tag `.2`, dritter `.3`. Der erste Eintrag ist die Version, die die App im Footer zeigt (einzige Quelle; der Commit-SHA ist nur Tooltip/Untertitel). Neueste Version zuerst.
+- `version`: bis Auftrag 015 das Deploy-Datum (`JJJJ.MM.TT`, weitere Deploys am selben Tag `.2`, `.3` …). Seit Meilenstein 1.0 eine Release-Nummer `Haupt.Neben` – ein Bugfix-PR erhöht die Nebenversion, ein neuer Meilenstein die Hauptversion (siehe oben). `compareVersions` (`app/changelog.js`) behandelt jede vierteilige, mit `20` beginnende Version als Datums-Version und jede andere als Release-Nummer; eine Release-Nummer gilt dabei immer als neuer als jede Datums-Version. Jeder Eintrag trägt zusätzlich `release` (Meilenstein-Gruppe fürs Changelog-Panel) und der neueste Eintrag `date` (für den Footer-Tooltip). Der erste Eintrag ist die Version, die die App im Footer zeigt (einzige Quelle; Datum/Commit-SHA nur Tooltip). Neueste Version zuerst.
 - Felder `title` (ein Satz, was die Version für die Nutzer bedeutet), `new` / `improved` / `fixed` (je 0–5 kurze Sätze; leere Listen bleiben leer).
 - Testfrage für jeden Satz: *Versteht Anna, was sich für sie beim Benutzen ändert?* Keine Technikbegriffe (kein „Service Worker“, „Refactoring“, „RLS“, „Branch“). Statt „Filter-State wird persistiert“ → „Die App merkt sich, welche Phase du zuletzt offen hattest.“ Rein technische Änderungen ohne sichtbare Wirkung bekommen keinen Eintrag.
 
@@ -43,6 +50,12 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Testdaten werden danach entfernt und der Nachweis gezeigt (Abfrage mit Ergebnis, nicht nur die Behauptung). Das gilt auch für Nebenwirkungen: `last_seen_version`, `last_visit_at`, `seen_comments`, `done_by`, `status`, Briefing-Felder, `settings`-Schlüssel.
 - Jede Änderung am Nutzerstand steht im Bericht – auch die, die bewusst stehen bleibt, mit Begründung.
 - Sicherer Weg, wo möglich: Zustände im Browser simulieren (nur `state`/`ui` setzen, nichts schreiben) statt echte Zeilen anzufassen.
+
+## Prüftiefe, Bericht, Modell (seit Auftrag 015)
+- **Aufwand im Auftragskopf (S/M/L) steuert die Prüftiefe:** S = Akzeptanzkriterien, eine Breite (380 px), kein Pixelvergleich, Bericht ≤ 10 Zeilen. M = zwei Breiten, Pixelvergleich nur bei Layout-Änderung, Bericht ≤ 20 Zeilen. L = volle Prüfung. Die Ansage-Pflicht für Schreibtests und die Rollback-Prüfung von Migrationen gelten immer, unabhängig vom Aufwand.
+- **Bericht = Abweichungen, Entscheidungen, was Sebastian tun muss.** Was funktioniert, steht in der Abweichungsliste im Auftrag, nicht im Chat-Bericht. Letzte Zeile jedes Berichts: die Ist-Laufzeit.
+- **Modell und Effort:** Sonnet, Effort standard als Default. Opus nur bei Aufwand L oder einem Layout-Umbau; eine höhere Reasoning-Stufe nur auf Ansage.
+- **Parallel:** Zwei Aufträge ohne gemeinsame Dateien dürfen in zwei Cloud-Sitzungen auf getrennten Branches laufen; beide mergen nach `preview`, Reihenfolge nach Fertigstellung.
 
 ## Definition of Done pro Aufgabe
 - Funktioniert eingeloggt als beide Personen (zwei Browserprofile)
