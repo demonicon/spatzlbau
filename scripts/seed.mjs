@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadEnv, restClient, ROOT } from './lib.mjs';
-import { planSeedMerge, planPackageMerge } from '../app/seed-merge.js';
+import { planSeedMerge, planPackageMerge } from './seed-merge.js';
 
 const args = process.argv.slice(2);
 const dry = args.includes('--dry');

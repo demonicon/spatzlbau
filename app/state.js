@@ -22,7 +22,7 @@ export const ui = {
   view: 'week',
   filter: 'all',
   expanded: null, // task id with open detail
-  confirm: null, // 'del:<id>' | 'seed' | null
+  confirm: null, // 'del:<id>' | null
   phaseOpen: {}, // phase id -> bool (default open)
   editingAdvice: null, // '<taskId>:<key>'
 };
