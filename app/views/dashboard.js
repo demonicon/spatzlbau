@@ -1,14 +1,14 @@
 // Dashboard (docs/changes/009 "Personen zuerst"): countdown, gate bar, four KPI filters,
 // phase chips and the task list grouped by person instead of by phase.
 // Everything on this screen is derived from state.js; filters live in filters.js.
-import { BUILD } from '../config.js';
 import { esc } from '../ui/dom.js';
 import { OWN, STEPS } from '../ui/labels.js';
-import { state, ui, byId, phases, einzug, freshComments, doneByOther, claudeStep } from '../state.js';
-import { FILTERS, matches, count, atClaude, isBlocked, isLate, isCritical, waitsOnMe, other } from '../filters.js';
+import { appHeadHTML, updateBarHTML, footHTML } from '../ui/chrome.js';
+import { state, ui, byId, phases, einzug, dueInfo, freshComments, doneByOther, claudeStep } from '../state.js';
+import { FILTERS, matches, count, isBlocked, isLate, isCritical, waitsOnMe, other } from '../filters.js';
 import { taskHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
-import { compareVersions, hasUnread } from '../changelog.js';
+import { compareVersions } from '../changelog.js';
 import { summary, eurShort } from '../costs.js';
 import { isHit, term } from '../search.js';
 import { printHTML } from './print.js';
@@ -25,14 +25,18 @@ function daysToMoveIn() {
   return Math.round((dt - today) / DAY);
 }
 
+/* docs/changes/013 A1: the head of the phone carries one line instead of a poster -
+   number, what it counts and the date, so the first task fits on the first screen. */
 function headHTML() {
   const base = einzug();
   const days = daysToMoveIn();
   const total = state.tasks.length;
   const done = state.tasks.filter((t) => t.done).length;
   const pct = total ? Math.round((done / total) * 100) : 0;
-  const dateLong = base ? new Date(base + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : '';
-  const hero = !base
+  const d = base ? new Date(base + 'T00:00:00') : null;
+  const dateLong = d ? d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const dateShort = d ? d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  const count = !base
     ? `<span class="n open">Termin offen</span><span class="t">Einzugstermin eintragen, dann zählt die App</span>`
     : days > 0
       ? `<span class="n">${days}</span><span class="t">${days === 1 ? 'Tag' : 'Tage'} bis zur Schlüsselübergabe</span>`
@@ -41,22 +45,15 @@ function headHTML() {
         : `<span class="n">${-days}</span><span class="t">${-days === 1 ? 'Tag' : 'Tage'} seit der Schlüsselübergabe</span>`;
   const showDate = ui.dateEdit || !base;
   return `<header class="dash-head">
-    <div class="eyebrow-row">
-      <button class="eyebrow btn-like" data-act="date-toggle" aria-expanded="${showDate}">Einzug · ${base ? esc(dateLong) : 'Termin eintragen'}</button>
+    ${appHeadHTML('dashboard')}
+    <div class="countdown">
+      ${count}
+      ${base ? `<button class="eyebrow btn-like" data-act="date-toggle" aria-expanded="${showDate}" aria-label="Einzugstermin ändern"><span class="long">${esc(dateLong)}</span><span class="short">${esc(dateShort)}</span></button>` : ''}
+      <span class="spacer"></span>
       <span class="pct">${pct} % erledigt</span>
     </div>
-    <div class="who-row">
-      <span class="who ${state.person}" aria-label="Angemeldet als ${OWN[state.person]}"><span class="initial" aria-hidden="true">${state.person}</span>${OWN[state.person]}</span>
-      ${ui.preview ? `<span class="preview-badge" title="Testversion unter /preview/ – gleiche Datenbank wie die echte App, aber dein Lesestand wird hier nicht gespeichert">Vorschau</span>` : ''}
-      ${ui.wide ? `<button class="link head-link" data-act="screen" data-to="finanzen">Finanzen</button>` : ''}
-      <span class="spacer"></span>
-      <span class="status" id="status" role="status"></span>
-    </div>
-    <div class="hero-row">
-    <div class="hero">${hero}</div>
     ${showDate ? `<div class="date-edit"><label class="hint" for="einzug">Schlüsselübergabe neue Wohnung</label><input type="date" id="einzug" value="${esc(base)}"></div>` : ''}
     ${gatesHTML()}
-    </div>
   </header>`;
 }
 
@@ -71,8 +68,9 @@ function gatesHTML() {
       const pct = all.length ? Math.round((dn / all.length) * 100) : 0;
       const complete = all.length > 0 && dn === all.length;
       const cls = ['gate', complete ? 'complete' : '', p.id === firstOpen ? 'current' : ''].join(' ');
-      return `<button class="${cls}" data-phase="${p.id}" aria-pressed="${ui.phase === p.id}" title="${esc(p.name)}">
-        <span class="lbl">${p.id}<span> · ${dn}/${all.length}</span></span>
+      // docs/changes/013 A1: the count moved into the label for screen readers and the tooltip
+      return `<button class="${cls}" data-phase="${p.id}" aria-pressed="${ui.phase === p.id}" aria-label="Phase ${p.id} – ${esc(p.name)}, ${dn} von ${all.length} erledigt" title="Phase ${p.id} · ${esc(p.name)} · ${dn}/${all.length}">
+        <span class="lbl" aria-hidden="true">${p.id}</span>
         <span class="bar"><i data-pct="${pct}"></i></span>
       </button>`;
     })
@@ -107,8 +105,21 @@ function visitHTML() {
   const done = state.tasks.filter(doneByOther).length;
   if (done) parts.push(['donenew', done, `${done === 1 ? 'Aufgabe' : 'Aufgaben'} erledigt`, '']);
   const waits = count('waitme');
-  if (waits) parts.push(['waitme', waits, waits === 1 ? 'wartet auf dich' : 'warten auf dich', 'urgent']);
+  // first, not last: on a 380 px screen the chip row scrolls, and this is the one to see
+  if (waits) parts.unshift(['waitme', waits, waits === 1 ? 'wartet auf dich' : 'warten auf dich', 'urgent']);
   if (!parts.length) return '';
+  // docs/changes/013 A1: one line of chips; the four full rows appear once a chip is active
+  const open = parts.some(([key]) => key === ui.filter);
+  if (!open) {
+    return `<section class="visit chips-only" aria-label="Seit deinem letzten Besuch">
+      <span class="visit-label">Seit deinem Besuch</span>
+      ${parts
+        .map(
+          ([key, n, label, cls]) => `<button class="vchip ${cls}" data-filter="${key}" aria-pressed="false" title="${esc(label)}"><b>${n}</b> ${esc(shortLabel(key, label))}</button>`,
+        )
+        .join('')}
+    </section>`;
+  }
   return `<section class="visit" aria-labelledby="visit-title">
     <h2 id="visit-title">Seit deinem letzten Besuch</h2>
     ${parts
@@ -121,6 +132,13 @@ function visitHTML() {
   </section>`;
 }
 
+// the chip says the same in two words: "1 Anna", "1 erledigt", "1 wartet auf dich"
+function shortLabel(key, label) {
+  if (key === 'waitme') return 'wartet auf dich';
+  if (key === 'donenew') return 'erledigt';
+  return label.replace(/^Kommentare? von /, '');
+}
+
 // four tiles, one row: only what triggers a decision (docs/changes/009)
 const TILES = [
   ['critical', 'Fristkritisch', ''],
@@ -130,19 +148,19 @@ const TILES = [
 ];
 function kpisHTML() {
   const net = summary().net;
-  return `<section class="kpis" aria-label="Kennzahlen">${TILES.map(([key, label, kind]) => {
+  // docs/changes/013 A1: five tiles in one row, no empty cell. Variant B keeps four tiles and
+  // puts the money on its own narrow line underneath (decision in 013-abweichungen.md).
+  const tiles = TILES.map(([key, label]) => {
     const n = count(key);
-    const sub = kind === 'claude' ? `· am Zug ${state.tasks.filter(atClaude).length}` : '';
     return `<button class="tile ${key} ${n ? '' : 'zero'}" data-filter="${key}" aria-pressed="${ui.filter === key}">
       <span class="n"><span>${n}</span></span>
-      <span class="l">${label}${sub ? `<span> ${sub}</span>` : ''}</span>
+      <span class="l">${label}</span>
     </button>`;
-  }).join('')}
-    <button class="tile money ${net ? '' : 'zero'}" data-act="screen" data-to="finanzen">
-      <span class="n"><span>${net ? eurShort(net) : '–'}</span></span>
-      <span class="l">Kosten<span> · netto</span></span>
-    </button>
-  </section>`;
+  }).join('');
+  // the four tiles filter, the money row opens the Finanzen view - two different things,
+  // so they do not look alike (decision in 013-abweichungen.md, both variants as screenshots)
+  return `<section class="kpis four" aria-label="Kennzahlen">${tiles}</section>
+    <button class="money-row" data-act="screen" data-to="finanzen">Kosten · <b>${net ? eurShort(net) : '–'}</b> netto<span class="arr" aria-hidden="true">→</span></button>`;
 }
 
 function phaseChipsHTML() {
@@ -185,7 +203,7 @@ export function columns() {
   if (ui.wide) {
     // desktop: three columns side by side, "wartet auf dich" is a mark on the row
     return [
-      column('me', `Du · ${OWN[me]}`, me, pool.filter((t) => t.owner === me)),
+      column('me', `Ich (${OWN[me]})`, me, pool.filter((t) => t.owner === me)),
       column('B', 'Gemeinsam', 'B', pool.filter((t) => t.owner === 'B')),
       column('you', OWN[you], you, pool.filter((t) => t.owner === you)),
     ];
@@ -195,7 +213,7 @@ export function columns() {
   const isWait = new Set(waiting.map((t) => t.id));
   const rest = (owner) => pool.filter((t) => t.owner === owner && !isWait.has(t.id));
   return [
-    column('me', 'Ich', me, rest(me)),
+    column('me', `Ich (${OWN[me]})`, me, rest(me)),
     column('wait', 'Wartet auf mich', 'wait', waiting),
     column('B', 'Gemeinsam', 'B', rest('B')),
     column('you', 'Bei ' + OWN[you], you, rest(you), true),
@@ -208,6 +226,17 @@ function columnNote(c) {
   if (late) return late + ' überfällig';
   const crit = all.filter(isCritical).length;
   return crit ? crit + ' fristkritisch' : '';
+}
+
+// docs/changes/013 A5: an empty list is good news, so it reads like good news
+function emptyText() {
+  if (term()) return 'Kein Treffer in diesem Bereich.';
+  if (ui.filter) return 'Nichts in dieser Auswahl.';
+  const next = state.tasks
+    .filter((t) => !t.done)
+    .map((t) => dueInfo(t))
+    .sort((a, b) => a.sort - b.sort)[0];
+  return next && einzug() ? 'Alles erledigt – nächste Fälligkeit am ' + new Date(next.sort).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Alles erledigt.';
 }
 
 function columnHTML(c) {
@@ -226,11 +255,12 @@ function columnHTML(c) {
   const head = c.collapsible
     ? `<button class="col-head" data-act="col-toggle" data-ref="${c.key}" aria-expanded="${!collapsed}" aria-controls="col-${c.key}">${inner}<span class="chev" aria-hidden="true">${collapsed ? '+' : '−'}</span></button>`
     : `<div class="col-head">${inner}</div>`;
-  // an empty column keeps its head (the count is the information) but costs no further space
+  // an empty column keeps its head (the count is the information) and says what it means (A5)
   const body =
-    collapsed || !(total + c.done.length)
+    collapsed
       ? ''
       : `<div class="col-body" id="col-${c.key}">
+        ${total ? '' : `<p class="col-empty">${esc(emptyText())}</p>`}
         ${rows.map(taskHTML).join('')}
         ${!all && c.open.length > CAP ? `<button class="col-more" data-act="col-all" data-ref="${c.key}">weitere ${c.open.length - CAP} zeigen →</button>` : ''}
         ${
@@ -272,50 +302,57 @@ export function dashboardView() {
         <span class="filter-count">${hits} ${hits === 1 ? 'Aufgabe' : 'Aufgaben'}${ui.phase ? ' in Phase ' + ui.phase : ''}</span>
       </div>`
     : '';
-  // docs/changes/006: on wide screens the list and a side panel always sit side by side;
-  // the panel holds the Akte of the open task or a quiet placeholder, so the layout never jumps
-  const panelTask = ui.wide && ui.expanded ? byId(ui.expanded) : null;
+  // docs/changes/006 + 013 A3: from 1180 px the list and a quiet side panel sit next to each
+  // other; between 900 and 1179 px the list uses the full width and the Akte is an overlay
+  const open = ui.expanded ? byId(ui.expanded) : null;
+  const panelTask = ui.mode === 'panel' ? open : null;
   return (
-    `<div class="board"><div class="col-list">` +
+    updateBarHTML() +
+    `<div class="board mode-${ui.mode}"><div class="col-list">` +
     headHTML() +
     searchHTML() +
     visitHTML() +
     kpisHTML() +
     phaseChipsHTML() +
     filterRow +
-    (q && !cols.length ? `<p class="empty no-hits">Nichts gefunden zu „${esc(q)}“.</p>` : `<div class="cols" data-n="${cols.length}">${cols.map(columnHTML).join('')}</div>`) +
+    (q && !cols.length ? `<p class="empty no-hits">Nichts gefunden zu „${esc(q)}“.</p>` : `<div class="cols">${cols.map(columnHTML).join('')}</div>`) +
     addBoxHTML() +
     `</div>` +
-    (ui.wide ? panelHTML(panelTask) : '') +
+    (ui.mode === 'panel' ? panelHTML(panelTask) : '') +
     `</div>` +
+    (ui.mode === 'overlay' ? overlayHTML(open) : '') +
     (ui.printOpen ? printHTML() : '') +
     (ui.changelogOpen ? changelogHTML() : '') +
-    footerHTML()
+    footHTML()
   );
 }
 
 function panelHTML(t) {
   if (!t) return `<aside class="panel empty" id="panel" aria-label="Akte"><p>Aufgabe wählen</p></aside>`;
-  const ph = phases().find((p) => p.id === t.phase);
   return `<aside class="panel" id="panel" data-id="${t.id}" aria-label="Akte: ${esc(t.title)}">
-    <div class="panel-head"><span class="hint">Phase ${t.phase}${ph ? ' · ' + esc(ph.name) : ''}</span><span class="spacer"></span><button class="ico" data-act="panel-close" aria-label="Akte schließen">×</button></div>
+    ${panelHeadHTML(t)}
     ${detailHTML(t)}
   </aside>`;
 }
 
-/* ---------- changelog (docs/changes/005): version in the footer, "Was ist neu?" panel ---------- */
-const current = () => ui.changelog?.entries?.[0] || null;
-const build = () => (BUILD.startsWith('__') ? '' : BUILD);
-
-function footerHTML() {
-  const cur = current();
-  const unseen = hasUnread();
-  const version = cur
-    ? `<button class="link version" data-act="changelog" aria-expanded="${!!ui.changelogOpen}" title="${build() ? 'Build ' + build() : ''}">${esc(cur.version)}${unseen ? '<span class="dot" aria-label="neu">Neu</span>' : ''}</button>`
-    : `<span title="${build() ? 'Build ' + build() : ''}">Version unbekannt</span>`;
-  return `<footer class="foot">${version}<button class="link" data-act="screen" data-to="finanzen">Finanzen</button><button class="link" data-act="reload">Neu laden</button><button class="link" data-act="print" aria-expanded="${!!ui.printOpen}">Umzugstag drucken</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`;
+function panelHeadHTML(t) {
+  const ph = phases().find((p) => p.id === t.phase);
+  return `<div class="panel-head"><span class="hint">Phase ${t.phase}${ph ? ' · ' + esc(ph.name) : ''}</span><span class="spacer"></span><button class="ico" data-act="panel-close" aria-label="Akte schließen">×</button></div>`;
 }
 
+/* docs/changes/013 A3: between 900 and 1179 px there is no room for a quiet panel next to the
+   list - the Akte comes in from the right, over a dimmed list, and closes again. */
+function overlayHTML(t) {
+  if (!t) return '';
+  return `<div class="overlay" data-act="overlay-close">
+    <aside class="sheet" id="panel" data-id="${t.id}" role="dialog" aria-modal="true" aria-label="Akte: ${esc(t.title)}">
+      ${panelHeadHTML(t)}
+      ${detailHTML(t)}
+    </aside>
+  </div>`;
+}
+
+/* ---------- changelog (docs/changes/005): opened from the info icon in the footer ---------- */
 const SECTIONS = [['new', 'Neu'], ['improved', 'Verbessert'], ['fixed', 'Behoben']];
 function changelogHTML() {
   const all = ui.changelog?.entries || [];
@@ -330,7 +367,7 @@ function changelogHTML() {
     )
     .join('');
   return `<section class="changelog" id="changelog" aria-labelledby="changelog-title">
-    <div class="changelog-head"><h2 id="changelog-title">Was ist neu?</h2>${build() ? `<span class="hint">Build ${esc(build())}</span>` : ''}<span class="spacer"></span><button class="btn small" data-act="changelog-close">Schließen</button></div>
+    <div class="changelog-head"><h2 id="changelog-title">Was ist neu?</h2><span class="spacer"></span><button class="btn small" data-act="changelog-close">Schließen</button></div>
     ${body || '<p class="empty">Noch keine Einträge.</p>'}
   </section>`;
 }

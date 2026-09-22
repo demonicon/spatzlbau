@@ -5,6 +5,7 @@ import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
 import { state, ui, phases, einzug } from '../state.js';
 import { costRowsHTML } from '../ui/detail.js';
+import { appHeadHTML, updateBarHTML } from '../ui/chrome.js';
 import {
   summary, balance, balanceText, payments, cashflow, moveOutMissing, bufferRow, bufferPct,
   suggestedBuffer, tasksWithCosts, finMatch, FIN_FILTERS, eur, eurShort, num, costsOf, taskAmount,
@@ -13,12 +14,9 @@ import {
 
 const money = (v) => (v === null || v === undefined ? '–' : eur(v));
 
+// docs/changes/013 A6: the same head as the task list, with "Finanzen" as the active place
 function headHTML() {
-  return `<header class="fin-head">
-    <button class="link back" data-act="screen" data-to="dashboard">← Aufgaben</button>
-    <span class="spacer"></span>
-    <span class="status" id="status" role="status"></span>
-  </header>
+  return `<header class="fin-head">${appHeadHTML('finanzen')}</header>
   <h1 class="fin-title">Finanzen</h1>`;
 }
 
@@ -204,6 +202,7 @@ export function finanzenView() {
       </div>`
     : '';
   return (
+    updateBarHTML() +
     `<div class="fin">` +
     headHTML() +
     numbersHTML() +

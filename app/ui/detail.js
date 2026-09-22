@@ -4,6 +4,7 @@
 // Full automatically when the task carries something: delegated to Claude, advice written,
 // or dependencies. The state is remembered per task for as long as the app is open.
 import { esc, fmtTime } from './dom.js';
+import { ICON } from './icons.js';
 import { OWN, TYPE, STEPS, STEP_OWNER, ADV } from './labels.js';
 import { state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, einzug } from '../state.js';
 import { isLate, isCritical } from '../filters.js';
@@ -178,6 +179,7 @@ export function costsHTML(t) {
   const counted = taskAmount(t.id); // the same number the task row shows, history excluded
   const n = costsOf(t.id).length;
   return `<h3>Kosten ${n ? `<small>${n} · ${counted ? (counted.estimated ? '≈ ' : '') + eur(counted.sum) : 'nichts gezählt'}</small>` : ''}</h3>
+    ${ui.costHint === t.id ? `<p class="hint-line">Geschätzt → Angebot → beauftragt → fällig → bezahlt – ein Schritt vor, einer zurück.</p>` : ''}
     ${costRowsHTML(t)}`;
 }
 
@@ -206,7 +208,17 @@ function fieldsHTML(t) {
     </div>`;
 }
 
-export function detailHTML(t) {
+/** Title as text; the pencil opens the field. Used by the panel, the overlay and the row. */
+export function titleHTML(t, cls = 'akte-title-text') {
+  if (ui.titleEdit === t.id) {
+    return `<textarea class="akte-title" data-field="title" rows="${Math.min(4, Math.ceil(t.title.length / 26))}" aria-label="Titel">${esc(t.title)}</textarea>
+      <button class="ico" data-act="title-done" aria-label="Titel fertig bearbeiten" title="Fertig">✓</button>`;
+  }
+  return `<h2 class="${cls}">${esc(t.title)}</h2>
+    <button class="ico pencil" data-act="title-edit" data-ref="${t.id}" aria-label="Titel bearbeiten" title="Titel bearbeiten">${ICON.pencil}</button>`;
+}
+
+export function detailHTML(t, withHead = true) {
   const more = isMoreOpen(t);
   const claude = t.type === 'claude';
   const dueCls = isLate(t) ? 'late' : isCritical(t) ? 'crit' : '';
@@ -215,10 +227,12 @@ export function detailHTML(t) {
       ? `<span class="confirm">Wirklich löschen? <button class="btn small danger" data-act="del-yes">Ja, löschen</button><button class="btn small" data-act="confirm-no">Nein</button></span>`
       : `<button class="btn small danger" data-act="del">Aufgabe löschen</button>`;
 
-  return `<div class="detail" data-detail="${t.id}">
-    <div class="akte-top">
+  // inline the task row above is the head: checkbox, title and meta appear exactly once (A4)
+  const head = !withHead
+    ? ''
+    : `<div class="akte-top">
       <input type="checkbox" class="check" ${t.done ? 'checked' : ''} ${ui.offline ? 'disabled' : ''} data-act="done" aria-label="Erledigt">
-      <textarea class="akte-title" data-field="title" rows="${Math.min(4, Math.ceil(t.title.length / 26))}" aria-label="Titel">${esc(t.title)}</textarea>
+      ${titleHTML(t)}
     </div>
     <div class="akte-meta">
       <span class="own ${t.owner}">${OWN[t.owner]}</span>
@@ -227,7 +241,9 @@ export function detailHTML(t) {
       ${t.type !== 'self' ? `<span class="tag ${claude ? 'claude' : ''}">${TYPE[t.type]}</span>` : ''}
       ${t.wait_on && t.wait_on !== state.person ? `<span class="tag">wartet auf ${OWN[t.wait_on]}</span>` : ''}
     </div>
-    ${t.wait_on === state.person ? `<p class="wait-banner">Diese Aufgabe wartet auf dich</p>` : ''}
+    ${t.wait_on === state.person ? `<p class="wait-banner">Diese Aufgabe wartet auf dich</p>` : ''}`;
+  return `<div class="detail ${withHead ? '' : 'nohead'}" data-detail="${t.id}">
+    ${head}
 
     ${more && claude ? delegationHTML(t) : ''}
     ${more && claude ? commentsHTML(t) : ''}

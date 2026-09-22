@@ -72,6 +72,7 @@ export const doneByOther = (t) =>
 
 const fmtDate = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtShort = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+const fmtDay = (d) => d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
 
 // deadline relative to the move-in date, without a calendar date
 export function offsetLabel(t) {
@@ -92,6 +93,8 @@ export function dueLabel(t) {
   if (d < 0) return `überfällig seit ${-d} ${-d === 1 ? 'Tag' : 'Tagen'}`;
   if (d === 0) return 'heute';
   if (d === 1) return 'morgen';
+  // docs/changes/013 A5: near dates also say how near - a date alone is hard to feel
+  if (d < 60) return `bis ${fmtDay(date)} ${fmtShort(date)} (in ${d} Tagen)`;
   return 'bis ' + fmtShort(date);
 }
 
