@@ -14,7 +14,17 @@
 export const SEED_FIELDS = ['phase', 'title', 'owner', 'offset_days', 'critical', 'type', 'blocked_by', 'sort'];
 export const ADVICE_KEYS = ['why', 'how', 'need', 'law', 'traps'];
 
-const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+// Postgres returns jsonb with its own key order, so compare canonically (sorted keys), not by
+// raw JSON text – otherwise every run would rewrite every snapshot without any field changing.
+const canon = (v) =>
+  v === null || v === undefined
+    ? null
+    : Array.isArray(v)
+      ? v.map(canon)
+      : typeof v === 'object'
+        ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])]))
+        : v;
+const same = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 
 function snapshotOf(seedTask, sort) {
   const snap = {};
@@ -110,8 +120,10 @@ export function planSeedMerge(seed, tasks, subtasks) {
    has paid_on, or its amount was changed by hand – then the package never touches it. */
 export const COST_FIELDS = ['task_id', 'label', 'kind', 'apartment', 'amount', 'due_on', 'belongs_to', 'split_s', 'tax_relevant', 'note', 'sort'];
 export const RECURRING_FIELDS = ['label', 'amount_s', 'amount_a', 'amount_n', 'note', 'sort'];
+// columns the database declares NOT NULL: a package may omit them, the snapshot must still match the row
+const COST_DEFAULTS = { kind: 'einmalig', amount: 0, belongs_to: 'B', tax_relevant: false };
 
-function planRows(seedRows, dbRows, fields, isLocked) {
+function planRows(seedRows, dbRows, fields, isLocked, defaults = {}) {
   const byKey = new Map(dbRows.filter((r) => r.seed_key).map((r) => [r.seed_key, r]));
   const inserts = [];
   const updates = [];
@@ -119,7 +131,7 @@ function planRows(seedRows, dbRows, fields, isLocked) {
   (seedRows ?? []).forEach((sr, index) => {
     if (!sr.seed_key) throw new Error('package row without seed_key: ' + JSON.stringify(sr).slice(0, 80));
     const snap = {};
-    for (const f of fields) snap[f] = f === 'sort' ? (sr.sort ?? index) : (sr[f] ?? null);
+    for (const f of fields) snap[f] = f === 'sort' ? (sr.sort ?? index) : (sr[f] ?? defaults[f] ?? null);
     const existing = byKey.get(sr.seed_key);
     if (!existing) {
       inserts.push({ ...snap, seed_key: sr.seed_key, seed_snapshot: snap, ...(sr.status ? { status: sr.status } : {}) });
@@ -154,7 +166,7 @@ const costLocked = (row) => row.status !== 'geschaetzt' || !!row.paid_on || !sam
 export function planPackageMerge(seed, costs, recurring) {
   // amounts come back from Postgres as strings; compare numerically
   const normalise = (rows, keys) => rows.map((r) => ({ ...r, ...Object.fromEntries(keys.map((k) => [k, num(r[k])])), seed_snapshot: r.seed_snapshot && { ...r.seed_snapshot, ...Object.fromEntries(keys.filter((k) => k in r.seed_snapshot).map((k) => [k, num(r.seed_snapshot[k])])) } }));
-  const c = planRows(seed.costs, normalise(costs, ['amount', 'split_s']), COST_FIELDS, costLocked);
+  const c = planRows(seed.costs, normalise(costs, ['amount', 'split_s']), COST_FIELDS, costLocked, COST_DEFAULTS);
   const r = planRows(seed.recurring, normalise(recurring, ['amount_s', 'amount_a', 'amount_n']), RECURRING_FIELDS, () => false);
   return {
     costInserts: c.inserts,

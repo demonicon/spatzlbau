@@ -1,6 +1,6 @@
 # Änderungsauftrag 004 – Kosten-Schema (Vorstufe Finanzmodul) · v2
 
-Stand: 22.09.2026 (Review-Fassung) · Status: offen · Branch: `feature/costs-schema` · Modell: Sonnet
+Stand: 22.09.2026 (Review-Fassung) · Status: umgesetzt, PR offen (Migration von Sebastian eingespielt) · Branch: `feature/costs-schema` · Modell: Sonnet (umgesetzt mit Opus)
 Betrifft: `supabase/migrations/`, `supabase/schema.sql`, `scripts/seed.mjs`, `BRIEFING.md` Abschnitt 3 · **keine UI**
 
 ## Ziel
@@ -65,3 +65,19 @@ Ohne Intervall: alles auf Monatsbasis; Jahresbeträge teilt die App durch 12 bei
 - [ ] Summenregel aus der `status`-Spalte als SQL-View `costs_summary` (geplant gesamt, bezahlt, Rückflüsse erwartet, Puffer, netto) – damit 007 und Claude im Chat dieselbe Rechnung sehen
 - [ ] `BRIEFING.md` Abschnitt 3 ergänzt; Vormerkung für 007 dort notiert: Kennzahl "Zahlungen in 7 Tagen", Sortierfunktion im Finanz-Dashboard, Beleg-Pflicht bei `tax_relevant`
 - [ ] Kein Changelog-Eintrag (nichts sichtbar)
+
+## Umsetzungsnotizen (Claude Code, 22.09.2026)
+
+- Migration `supabase/migrations/005_a004_costs.sql` nach der Namensregel aus 008b (`NNN_aXXX_<thema>`), von Sebastian per SQL-Editor eingespielt; vorher in einer zurückgerollten Transaktion gegen die Live-DB validiert. `schema.sql` als Gesamtstand nachgezogen.
+- **Entscheidungen, die der Auftrag offenließ:**
+  - `paid_on` ⇒ `status = bezahlt` als **Trigger** (nicht App-Logik), damit die Regel auch für Skripte und SQL gilt.
+  - `due_on`-Default ebenfalls im Trigger: beim Anlegen einer Zeile mit `task_id` wird `einzugstermin + offset_days` gesetzt, sofern beides bekannt ist.
+  - `split_default_s` startet mit **50** (der Auftrag nennt 55 nur als Beispiel) – über `settings` jederzeit änderbar.
+  - `costs_summary` als `security_invoker`-View: die RLS von `costs` gilt; Fremde bekommen eine Zeile mit lauter `null`, keine Zahlen.
+  - Export (`export_state`) liefert jetzt zusätzlich `costs`, `recurring`, `costs_summary` und die vier neuen `settings` – damit sieht Claude im Chat dieselbe Rechnung.
+- **Inhaltspakete:** `node scripts/seed.mjs --file <paket.json> [--dry]` mergt `costs`/`recurring` über `seed_key`; Beispiel: `docs/changes/004-beispiel-inhaltspaket.json`. Fehlende Blöcke sind erlaubt, `phases`/`seed_version` werden bei Paketen nicht angefasst.
+- **Zwei Fehler beim Testen gefunden und behoben:**
+  1. Der Planer schrieb fehlende Felder als `null`; `kind`, `amount`, `belongs_to`, `tax_relevant` sind aber `not null` → Spalten-Defaults im Planer ergänzt.
+  2. `same()` verglich Snapshots per `JSON.stringify`; Postgres gibt `jsonb` mit eigener Schlüsselreihenfolge zurück → jeder Lauf meldete Scheinänderungen. Vergleich jetzt kanonisch (sortierte Schlüssel). Das betraf auch die bestehende Aufgaben-Logik, die bei jedem Seed-Lauf still 48 Snapshots neu schrieb.
+- **Geprüft gegen die Live-DB:** Paket einspielen (3 costs, 3 recurring), zweiter Lauf 0 Änderungen; Paket v2 mit neuen Beträgen → `geschaetzt`-Zeile und `recurring` aktualisiert, `angebot`-Zeile gesperrt; Betrag von Hand geändert → Zeile ebenfalls gesperrt; `paid_on` gesetzt → Status `bezahlt`; RLS mit drittem Konto: `costs`, `recurring`, `tasks` je 0 Zeilen, `INSERT` 403, `costs_summary` nur `null`-Werte; Backup/Restore mit beiden Tabellen, `restore --dry` ohne Abweichungen. Alle Testzeilen danach entfernt (`costs` 0, `recurring` 0).
+- Backup (`scripts/backup.mjs`/`restore.mjs`) um `costs` und `recurring` erweitert – das tägliche Artefakt enthält sie ab jetzt.
