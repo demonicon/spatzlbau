@@ -34,8 +34,9 @@ export function taskHTML(t) {
   const com = coms ? `<span class="muted">${coms} ${coms === 1 ? 'Kommentar' : 'Kommentare'}</span>` : '';
   // docs/changes/009: one dot per author who wrote something since this person's last visit;
   // it goes away as soon as the task is opened
+  // docs/changes/013 B4: the initial makes the dot readable without relying on colour alone
   const dots = [...new Set(unseenComments(t).map((c) => c.author))]
-    .map((a) => `<span class="ndot ${a}" role="img" aria-label="neuer Kommentar von ${OWN[a] || a}"></span>`)
+    .map((a) => `<span class="ndot ${a}" role="img" aria-label="neuer Kommentar von ${OWN[a] || a}">${a}</span>`)
     .join('');
   // docs/changes/012: while searching, the hit is bold and a matching subtask becomes a second line
   const subHits = q ? hitSubs(t, q) : [];

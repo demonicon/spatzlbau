@@ -212,11 +212,14 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .tag.block { border: 0; padding: 0; color: var(--ink-3); text-decoration: underline dotted; text-underline-offset: 2px; font-size: var(--fs-micro); }
 .tag.block:hover { color: var(--ink); }
 .muted { color: var(--ink-3); }
-/* new comment since the last visit, in the colour of whoever wrote it (docs/changes/009) */
-.ndot { width: 9px; height: 9px; border-radius: var(--r-pill); display: inline-block; margin-left: -4px; }
-.ndot.S { background: var(--seb); }
-.ndot.A { background: var(--anna); }
-.ndot.C { background: var(--claude); }
+/* new comment since the last visit, in the colour of whoever wrote it, with an initial so it
+   reads without colour too (docs/changes/009, letter added in 013 B4).
+   Scoped to .meta: the footer's plain "new" dot (.foot .ico.info .ndot below) is a separate rule
+   on purpose, it stays a plain dot without a letter. */
+.meta .ndot { width: 15px; height: 15px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; margin-left: -4px; color: #fff; font-size: var(--fs-nano); font-weight: 700; line-height: 1; }
+.meta .ndot.S { background: var(--seb); }
+.meta .ndot.A { background: var(--anna); }
+.meta .ndot.C { background: var(--claude); }
 
 /* ---------- detail panel ("Akte"), two weight classes since 009 ---------- */
 .detail { grid-column: 1 / -1; background: var(--card); border: 1px solid var(--line); padding: 12px 14px; margin: 6px 0 8px; }
@@ -378,7 +381,7 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 .foot .version { color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .foot .ico.info { position: relative; min-width: 40px; min-height: 40px; color: var(--ink-2); }
 .foot .ico.info:hover { background: none; color: var(--ink); }
-.foot .ico.info .ndot { position: absolute; top: 3px; right: 3px; margin: 0; background: var(--seb); }
+.foot .ico.info .ndot { position: absolute; top: 3px; right: 3px; width: 9px; height: 9px; border-radius: var(--r-pill); background: var(--seb); }
 
 /* ---------- "Was ist neu?" panel ---------- */
 .changelog { margin: 8px var(--gutter) 16px; background: var(--card); border: 1px solid var(--line); padding: 12px 14px 4px; }
