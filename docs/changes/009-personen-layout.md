@@ -1,7 +1,8 @@
 # Änderungsauftrag 009 – Konzepterweiterung: Personen-Layout
 
-Stand: 22.09.2026 · Status: umgesetzt, PR offen (vier Commits, Review-Stopp nach Commit 2 erledigt) · Branch: `feature/personen-layout` · Modell: Opus, Effort extra
-Abweichungen und Prüfungen: `docs/changes/009-abweichungen.md`. Migrationen: `006_a009_letzter_besuch.sql` (eingespielt), `007_a009_delegation.sql` (vor dem Merge einspielen).
+Stand: 22.09.2026 · Status: **deployt 22.09.2026** (Merge 8e3a9f1, PR #10, Pages-Lauf 35733821771, Version 2026.09.22.4) · Branch: `feature/personen-layout` (gelöscht) · Modell: Opus, Effort extra
+Abweichungen und Prüfungen: `docs/changes/009-abweichungen.md`. Migrationen `006_a009_letzter_besuch.sql` und `007_a009_delegation.sql` sind eingespielt.
+Offen: Flugmodus-Test auf dem Gerät (App vom Home-Bildschirm ohne Netz öffnen), siehe Abweichungsliste Abschnitt 5.
 Betrifft: Dashboard, Akte, Delegation, Service Worker, `allowlist`, `app.css`; **nicht** `costs`/`recurring` (007)
 Quelle: `design/handoff/2026-09-22-b/` – Variante B "Personen zuerst" aus dem Design Review (011). Es gilt nur diese Variante, auch wenn der Export mehrere enthält. Design-Spezifikation, keine Codebasis: Vanilla JS, Datenschicht bleibt, Tokens aus dem Snapshot (`--ink-3 = #68726b`).
 
