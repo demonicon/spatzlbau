@@ -40,7 +40,9 @@ export function footHTML() {
   const cur = ui.changelog?.entries?.[0] || null;
   const unseen = hasUnread();
   const info = `<button class="ico info ${unseen ? 'new' : ''}" data-act="changelog" aria-expanded="${!!ui.changelogOpen}" aria-label="Was ist neu?${unseen ? ' – neue Einträge' : ''}" title="Was ist neu?">${ICON.info}${unseen ? '<span class="ndot" aria-hidden="true"></span>' : ''}</button>`;
-  // plain text on purpose (013 A6): the version is information, not a button
-  const version = `<span class="version"${build() ? ` title="Build ${esc(build())}"` : ''}>${cur ? esc(cur.version) : 'Version unbekannt'}</span>`;
+  // plain text on purpose (013 A6): the version is information, not a button.
+  // Since 015 (freeze) the footer shows the release number (e.g. "1.0"); date and build stay in the tooltip.
+  const tip = [cur?.date, build() ? `Build ${build()}` : ''].filter(Boolean).join(' · ');
+  const version = `<span class="version"${tip ? ` title="${esc(tip)}"` : ''}>${cur ? esc(cur.release || cur.version) : 'Version unbekannt'}</span>`;
   return `<footer class="foot">${info}${version}<button class="link" data-act="print" aria-expanded="${!!ui.printOpen}">Umzugstag drucken</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`;
 }

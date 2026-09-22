@@ -360,19 +360,29 @@ function overlayHTML(t) {
   </div>`;
 }
 
-/* ---------- changelog (docs/changes/005): opened from the info icon in the footer ---------- */
+/* ---------- changelog (docs/changes/005, grouped by release since 015): opened from the info icon in the footer ---------- */
 const SECTIONS = [['new', 'Neu'], ['improved', 'Verbessert'], ['fixed', 'Behoben']];
 function changelogHTML() {
   const all = ui.changelog?.entries || [];
   // auto-opened: every version this person has not closed yet; opened from the footer: everything
   const entries = ui.changelogUnreadOnly ? all.filter((e) => compareVersions(e.version, state.lastSeenVersion) > 0) : all;
-  const body = entries
-    .map(
-      (e) => `<article class="release">
+  // group by release (docs/changes/015): newest release open, older releases collapsed; entries stay in file order within a group
+  const groups = [];
+  for (const e of entries) {
+    const key = e.release || e.version;
+    let g = groups[groups.length - 1];
+    if (!g || g.key !== key) { g = { key, entries: [] }; groups.push(g); }
+    g.entries.push(e);
+  }
+  const article = (e) => `<article class="release">
       <h3><span class="v">${esc(e.version)}</span>${esc(e.title || '')}</h3>
       ${SECTIONS.map(([k, label]) => (Array.isArray(e[k]) && e[k].length ? `<h4>${label}</h4><ul>${e[k].map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '')).join('')}
-    </article>`,
-    )
+    </article>`;
+  const body = groups
+    .map((g, i) => `<details class="adv" ${i === 0 ? 'open' : ''}>
+      <summary>Version ${esc(g.key)}${ui.changelog?.releases?.[g.key] ? ' · ' + esc(ui.changelog.releases[g.key]) : ''}</summary>
+      ${g.entries.map(article).join('')}
+    </details>`)
     .join('');
   return `<section class="changelog" id="changelog" aria-labelledby="changelog-title">
     <div class="changelog-head"><h2 id="changelog-title">Was ist neu?</h2><span class="spacer"></span><button class="btn small" data-act="changelog-close">Schließen</button></div>

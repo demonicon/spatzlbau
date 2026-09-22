@@ -1,7 +1,20 @@
 {
   "entries": [
     {
+      "version": "1.0",
+      "release": "1.0",
+      "date": "22.09.2026",
+      "title": "Version 1.0 – die App, mit der ihr umzieht",
+      "new": [],
+      "improved": [
+        "Die App hat jetzt eine Versionsnummer statt eines Datums – unten in der Fußzeile steht ab jetzt z. B. „1.0“.",
+        "Die Liste „Was ist neu?“ ist jetzt nach Version gruppiert; die neueste ist aufgeklappt, ältere kannst du bei Bedarf aufklappen."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2026.09.22.7",
+      "release": "1.0",
       "title": "Kürzer am Handy, breiter am Rechner",
       "new": [
         "Oben rechts findest du jetzt Aufgaben und Finanzen als Symbole.",
@@ -23,6 +36,7 @@
     },
     {
       "version": "2026.09.22.6",
+      "release": "0.7",
       "title": "Suchen: tippen, finden, dort sein",
       "new": [
         "Oben gibt es jetzt ein Suchfeld – tippe ein Wort, finde die Aufgabe, tippe drauf und du bist dort.",
@@ -38,21 +52,8 @@
       ]
     },
     {
-      "version": "2026.09.22.5",
-      "title": "Kosten: was der Umzug kostet, an einer Stelle",
-      "new": [
-        "Zu jeder Aufgabe kannst du jetzt Kosten eintragen – geschätzt, angeboten, beauftragt, bezahlt.",
-        "Die Kachel „Kosten“ zeigt, was der Umzug insgesamt kostet und was zurückkommt.",
-        "Unter „Finanzen“ liegt alles Geld beisammen: die Summen, wer wem was schuldet, was wann fällig wird und was die neue Wohnung monatlich kostet.",
-        "Bei „Bezahlt am …“ hältst du Datum, Person und Beleg fest. Bei steuerrelevanten Posten fragt die App den Beleg ab."
-      ],
-      "improved": [
-        "In der Aufgabenliste steht neben jeder Aufgabe, was sie kostet – mit „≈“, solange es nur geschätzt ist."
-      ],
-      "fixed": []
-    },
-    {
       "version": "2026.09.22.4",
+      "release": "0.6",
       "title": "Die App zeigt zuerst, was bei dir liegt",
       "new": [
         "Du siehst jetzt zuerst, was bei dir liegt – und was Anna oder Claude seit deinem letzten Besuch geschrieben haben.",
@@ -68,7 +69,35 @@
       "fixed": []
     },
     {
+      "version": "2026.09.22.5",
+      "release": "0.5",
+      "title": "Kosten: was der Umzug kostet, an einer Stelle",
+      "new": [
+        "Zu jeder Aufgabe kannst du jetzt Kosten eintragen – geschätzt, angeboten, beauftragt, bezahlt.",
+        "Die Kachel „Kosten“ zeigt, was der Umzug insgesamt kostet und was zurückkommt.",
+        "Unter „Finanzen“ liegt alles Geld beisammen: die Summen, wer wem was schuldet, was wann fällig wird und was die neue Wohnung monatlich kostet.",
+        "Bei „Bezahlt am …“ hältst du Datum, Person und Beleg fest. Bei steuerrelevanten Posten fragt die App den Beleg ab."
+      ],
+      "improved": [
+        "In der Aufgabenliste steht neben jeder Aufgabe, was sie kostet – mit „≈“, solange es nur geschätzt ist."
+      ],
+      "fixed": []
+    },
+    {
+      "version": "0.4",
+      "release": "0.4",
+      "title": "Sicherer und mit täglicher Sicherung",
+      "new": [
+        "Eure Daten werden jetzt jede Nacht gesichert – verschlüsselt, und die Sicherung wird wöchentlich geprüft."
+      ],
+      "improved": [
+        "Die Anmeldung und der Zugriff auf die Daten sind strenger abgesichert. Fremde kommen nicht an eure Liste."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2026.09.22.3",
+      "release": "0.3",
       "title": "Am Computer: Liste und Aufgabe nebeneinander",
       "new": [
         "Am Computer siehst du Liste und Aufgabe jetzt nebeneinander. Die Aufgabe bleibt rechts offen, während du links weiterklickst.",
@@ -82,6 +111,7 @@
     },
     {
       "version": "2026.09.22.2",
+      "release": "0.2",
       "title": "Neuigkeiten kommen von selbst",
       "new": [
         "Neuigkeiten zeigen sich jetzt von selbst, wenn du die App öffnest – einmal, danach findest du sie unten über die Versionsnummer."
@@ -93,6 +123,7 @@
     },
     {
       "version": "2026.09.22",
+      "release": "0.1",
       "title": "Spatzlbau hat ein neues Gesicht – und sagt jetzt Bescheid, wenn es Neues gibt",
       "new": [
         "Anmelden mit E-Mail und Passwort. Kein Warten auf eine Login-Mail mehr.",
@@ -110,5 +141,15 @@
         "Nach einem Update musste die App manchmal von Hand neu geladen werden. Das ist behoben."
       ]
     }
-  ]
+  ],
+  "releases": {
+    "1.0": "Version 1.0 – die App, mit der ihr umzieht",
+    "0.7": "Vorschau, schnellere Live-Updates, Suche",
+    "0.6": "Zuerst siehst du, was bei dir liegt; Umzugstag ohne Netz",
+    "0.5": "Kosten an jeder Aufgabe, Finanzansicht",
+    "0.4": "Sicherer und mit täglicher Sicherung",
+    "0.3": "Am Computer nebeneinander",
+    "0.2": "Updates und „Was ist neu?\"",
+    "0.1": "Die App gibt es: Login, Dashboard, gemeinsame Liste"
+  }
 }
