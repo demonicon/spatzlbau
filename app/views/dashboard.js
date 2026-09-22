@@ -1,6 +1,6 @@
 // Dashboard (docs/changes/002): countdown, gate bar, KPI tiles as filters, phase tabs, task list.
 // Everything on this screen is derived from state.js; filters live in filters.js.
-import { APP_VERSION } from '../config.js';
+import { APP_VERSION, BUILD } from '../config.js';
 import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
 import { state, ui, phases, einzug } from '../state.js';
@@ -137,6 +137,6 @@ export function dashboardView() {
     tabsHTML() +
     filterRow +
     `<div class="list">${listHTML(list, 'Nichts in diesem Filter.')}${addBoxHTML(ui.phase)}</div>
-    <footer class="foot"><span>v${APP_VERSION}</span><button class="link" data-act="reload">Neu laden</button><button class="link" data-act="seed">Seed aktualisieren</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`
+    <footer class="foot"><span>v${APP_VERSION}${BUILD.startsWith('__') ? '' : ' · Build ' + BUILD}</span><button class="link" data-act="reload">Neu laden</button><button class="link" data-act="seed">Seed aktualisieren</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`
   );
 }

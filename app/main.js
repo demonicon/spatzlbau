@@ -40,6 +40,7 @@ function show(screen) {
 let lastSaved = '';
 let live = false;
 let lastError = '';
+let updateReady = false; // a newer build took over the service worker (docs/changes/003)
 function renderStatus(kind, msg) {
   if (kind === 'saved') lastSaved = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   if (kind === 'live') live = true;
@@ -55,6 +56,9 @@ function renderStatus(kind, msg) {
   const parts = [kind === 'saving' ? msg : lastSaved ? 'gespeichert ' + lastSaved : '', live ? 'Live' : 'verbinde …'];
   el.textContent = parts.filter(Boolean).join(' · ');
   el.className = 'status';
+  if (updateReady) {
+    el.insertAdjacentHTML('beforeend', ' · <button class="link up" data-act="reload">Neue Version – neu laden</button>');
+  }
 }
 onStatus(renderStatus);
 
@@ -380,8 +384,31 @@ async function main() {
     enter(session);
   }
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('SW registration failed', e));
+  registerServiceWorker();
+}
+
+/* ---------- service worker: install, look for new builds, announce them ---------- */
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    // updateViaCache: 'none' -> sw.js itself is always fetched from the network on update checks
+    const reg = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+    reg.addEventListener('updatefound', () => {
+      const sw = reg.installing;
+      const isUpdate = !!navigator.serviceWorker.controller; // no controller yet = first install, nothing to announce
+      if (!sw || !isUpdate) return;
+      // the new build calls skipWaiting + clients.claim, so 'activated' means it now serves this page
+      sw.addEventListener('statechange', () => {
+        if (sw.state !== 'activated') return;
+        updateReady = true;
+        renderStatus('idle');
+      });
+    });
+    const check = () => reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && check());
+    setInterval(check, 30 * 60 * 1000);
+  } catch (e) {
+    console.warn('SW registration failed', e);
   }
 }
 
