@@ -1,6 +1,26 @@
 {
   "entries": [
     {
+      "version": "2026.09.22.7",
+      "title": "Kürzer am Handy, breiter am Rechner",
+      "new": [
+        "Oben rechts findest du jetzt Aufgaben und Finanzen als Symbole.",
+        "Bei einem Kommentar steht jetzt der Buchstabe der Person im Punkt – du siehst ohne Farbe, von wem er ist."
+      ],
+      "improved": [
+        "Die Startseite ist am Handy deutlich kürzer – die erste Aufgabe steht jetzt gleich oben.",
+        "Am großen Bildschirm nutzt die App die ganze Breite.",
+        "Das Umzugstag-Blatt hat jetzt alle Teilschritte und größere Kästchen, dazu Felder für Zählernummer, Stand und Uhrzeit.",
+        "Eine geöffnete Aufgabe zeigt Titel und Häkchen nur noch einmal; den Titel änderst du über den Stift.",
+        "Bei einer Frist steht jetzt auch, wie weit sie weg ist: „bis Do 15.10. (in 23 Tagen)\"."
+      ],
+      "fixed": [
+        "Ein Teilschritt lässt sich nicht mehr mit einem einzigen Tipp löschen – erst bearbeiten, dann bestätigen.",
+        "Eigene Kommentare kannst du löschen und zehn Minuten lang noch ändern.",
+        "Der Zurück-Knopf führt aus den Finanzen wieder auf die Aufgabenliste."
+      ]
+    },
+    {
       "version": "2026.09.22.6",
       "title": "Suchen: tippen, finden, dort sein",
       "new": [

@@ -42,7 +42,7 @@ Im Auftragskopf steht „Modell: Sonnet". Die Sitzung lief auf Opus 5; das Ergeb
 
 Geprüft im Kopflosen Chrome (380 px und 1280 px), **ohne Login und ohne eine einzige Datenbank-Abfrage**: jeder Supabase-Aufruf war für die Dauer des Laufs durch einen Rekorder ersetzt, der Lauf endet mit dem Nachweis, dass der Rekorder leer geblieben ist. Die Suche schreibt nichts und liest nichts nach – ein Test am echten Nutzerkonto war dafür nicht nötig (Regel in `CLAUDE.md`).
 
-30 von 30 Prüfungen grün, keine Konsolenfehler. Enthalten: alle acht Akzeptanzkriterien, dazu Feldbreite und Tap-Ziel bei 380 px, das automatische Aufklappen des blockierten Teils, das Verschwinden leerer Bereiche, „Nichts gefunden zu …", kein Feld in `#finanzen`, und dass die Markierung nach einer Sekunde wieder weg ist.
+30 von 30 Prüfungen grün, keine Konsolenfehler. Enthalten: alle acht Akzeptanzkriterien, dazu Feldbreite und Tap-Ziel bei 380 px, das automatische Aufklappen des blockierten Teils, das Verschwinden leerer Bereiche, die Zeile ohne Treffer (seit 013 A5: „Kein Treffer für … – auch nicht in den Teilschritten."), kein Feld in `#finanzen`, und dass die Markierung nach einer Sekunde wieder weg ist.
 
 **Nicht geprüft:** das echte Gerät. Ob die Bildschirmtastatur von iOS-Safari beim Scrollen wirklich nichts verdeckt, sieht nur Sebastian am Handy – die Seite hat außer der Hinweiszeile („Toast") nichts fest Positioniertes, damit gibt es nichts, was mitscrollen und etwas verdecken könnte.
 
