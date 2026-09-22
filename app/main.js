@@ -24,11 +24,15 @@ import {
   markVisit,
   markCommentsSeen,
   doneBy,
+  addCost,
+  updateCost,
+  deleteCost,
 } from './state.js';
 import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
 import { dashboardView, columns } from './views/dashboard.js';
 import { isMoreOpen } from './ui/detail.js';
+import { parseAmount } from './costs.js';
 
 const UI_KEY = 'spatzlbau-ui';
 const PERSON_KEY = 'spatzlbau-person';
@@ -44,6 +48,9 @@ ui.doneCols = new Set(); // columns showing their done tasks as well
 ui.blockedCols = new Set(); // columns with "N warten auf einen Vorgänger" unfolded
 ui.more = {}; // Akte: task id -> "Mehr" open? (undefined = automatic, see isMoreOpen)
 ui.adviceAdd = new Set(); // Akte: tasks showing the empty advice fields
+ui.costEdit = null; // cost row with its fields open (007)
+ui.costPay = null; // cost row asking for date, person and receipt
+ui.costAdd = null; // task id showing the "new cost row" form
 ui.printOpen = false; // "Umzugstag drucken" sheet
 ui.offline = false; // no connection: the cached state is shown read-only (009)
 ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
@@ -316,6 +323,18 @@ function wireEvents() {
       updateTask(t.id, patch).catch(fail);
       return;
     }
+    // cost fields write one column at a time, like every other field (007)
+    if (el.dataset.costField) {
+      const f = el.dataset.costField;
+      let v = el.type === 'checkbox' ? el.checked : el.value;
+      if (f === 'amount') {
+        v = parseAmount(v);
+        if (v === null) return toast('Betrag nicht lesbar – z. B. 1800 oder 1.800,50');
+      }
+      if ((f === 'apartment' || f === 'due_on' || f === 'receipt_url' || f === 'note') && v === '') v = null;
+      updateCost(el.dataset.ref, { [f]: v }).catch(fail);
+      return;
+    }
     if (el.dataset.brief && t) {
       const brief = { ...(t.brief || {}), [el.dataset.brief]: el.value };
       updateTask(t.id, { brief }).catch(fail);
@@ -445,6 +464,68 @@ function wireEvents() {
           await addComment(t.id, v);
           return;
         }
+        /* ---------- cost rows (007) ---------- */
+        case 'cost-add':
+          ui.costAdd = t.id;
+          render();
+          $('[data-input=cost-label]', $('#view'))?.focus();
+          return;
+        case 'cost-add-cancel':
+          ui.costAdd = null;
+          render();
+          return;
+        case 'cost-add-save': {
+          const label = input('[data-input=cost-label]').value.trim();
+          const amount = parseAmount(input('[data-input=cost-amount]').value);
+          if (!label) return toast('Bitte eine Bezeichnung eingeben');
+          if (amount === null) return toast('Betrag nicht lesbar – z. B. 1800 oder 1.800,50');
+          ui.costAdd = null;
+          await addCost(t.id, { label, amount });
+          return;
+        }
+        case 'cost-edit':
+          ui.costEdit = ui.costEdit === b.dataset.ref ? null : b.dataset.ref;
+          ui.costPay = null;
+          render();
+          return;
+        case 'cost-step':
+          // one step at a time; leaving 'bezahlt' has to clear the payment, otherwise the
+          // trigger from 004 puts the row straight back on 'bezahlt'
+          await updateCost(b.dataset.ref, b.dataset.to === 'faellig' ? { status: 'faellig', paid_on: null, paid_by: null } : { status: b.dataset.to });
+          return;
+        case 'cost-pay':
+          ui.costPay = b.dataset.ref;
+          ui.costEdit = null;
+          render();
+          return;
+        case 'cost-pay-cancel':
+          ui.costPay = null;
+          render();
+          return;
+        case 'cost-pay-save': {
+          const row = b.closest('.cost');
+          const receipt = $('[data-pay=receipt]', row).value.trim();
+          const cost = state.costs.find((c) => c.id === b.dataset.ref);
+          if (cost?.tax_relevant && !receipt) return toast('Beleg-Link fehlt – die Zeile ist steuerrelevant');
+          ui.costPay = null;
+          await updateCost(b.dataset.ref, {
+            paid_on: $('[data-pay=date]', row).value || new Date().toISOString().slice(0, 10),
+            paid_by: $('[data-pay=by]', row).value,
+            receipt_url: receipt || null,
+            status: 'bezahlt',
+          });
+          return;
+        }
+        case 'cost-del':
+          ui.confirm = 'cost-del:' + b.dataset.ref;
+          render();
+          return;
+        case 'cost-del-yes':
+          ui.confirm = null;
+          ui.costEdit = null;
+          await deleteCost(b.dataset.ref);
+          toast('Kostenzeile gelöscht');
+          return;
         case 'adv-edit':
           ui.editingAdvice = t.id + ':' + b.dataset.ref;
           render();

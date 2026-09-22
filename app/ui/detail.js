@@ -7,12 +7,13 @@ import { esc, fmtTime } from './dom.js';
 import { OWN, TYPE, STEPS, STEP_OWNER, ADV } from './labels.js';
 import { state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, einzug } from '../state.js';
 import { isLate, isCritical } from '../filters.js';
+import { costsOf, isHistory, isCostLate, eur, num, taskAmount, COST_LABEL, COST_NEXT, KIND, APARTMENT, nextStep, prevStep } from '../costs.js';
 
 const opts = (sel, arr) => arr.map(([v, l]) => `<option value="${v}" ${sel === v ? 'selected' : ''}>${l}</option>`).join('');
 
 // does this task carry more than a checkbox?
 export const isFull = (t) =>
-  t.type === 'claude' || (t.blocked_by || []).length > 0 || ADV.some(([k]) => (t.advice || {})[k]);
+  t.type === 'claude' || (t.blocked_by || []).length > 0 || ADV.some(([k]) => (t.advice || {})[k]) || costsOf(t.id).length > 0;
 export const isMoreOpen = (t) => (ui.more[t.id] === undefined ? isFull(t) : ui.more[t.id]);
 
 function commentsHTML(t) {
@@ -81,6 +82,99 @@ function adviceHTML(t) {
     }`;
 }
 
+/* ---------- Kosten (docs/changes/007 point 1) ----------
+   One row per amount. Tapping a row opens its fields inline - no overlay, no dialog. The status
+   moves one step at a time and can go back exactly one step. Estimates that lost against a firm
+   row of the same task stay visible as history, greyed out. */
+
+const fmtDay = (iso) => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '');
+const today = () => new Date().toISOString().slice(0, 10);
+
+function costFormHTML(c) {
+  return `<div class="cost-form">
+    <div class="row"><label class="lbl">Bezeichnung<input type="text" data-cost-field="label" data-ref="${c.id}" value="${esc(c.label)}"></label></div>
+    <div class="row">
+      <label class="lbl">Betrag<input type="text" inputmode="decimal" data-cost-field="amount" data-ref="${c.id}" value="${esc(String(num(c.amount)).replace('.', ','))}" aria-label="Betrag in Euro"></label>
+      <label class="lbl">Art<select data-cost-field="kind" data-ref="${c.id}">${opts(c.kind, Object.entries(KIND))}</select></label>
+    </div>
+    <div class="row">
+      <label class="lbl">Wohnung<select data-cost-field="apartment" data-ref="${c.id}"><option value="">keine</option>${opts(c.apartment || '', Object.entries(APARTMENT))}</select></label>
+      <label class="lbl">Fällig<input type="date" data-cost-field="due_on" data-ref="${c.id}" value="${esc(c.due_on || '')}"></label>
+    </div>
+    <label class="check-label"><input type="checkbox" data-cost-field="tax_relevant" data-ref="${c.id}" ${c.tax_relevant ? 'checked' : ''}> steuerrelevant</label>
+    <div class="row"><label class="lbl">Beleg (Link)<input type="text" inputmode="url" data-cost-field="receipt_url" data-ref="${c.id}" value="${esc(c.receipt_url || '')}" placeholder="optional"></label></div>
+    <div class="row"><label class="lbl">Notiz<input type="text" data-cost-field="note" data-ref="${c.id}" value="${esc(c.note || '')}"></label></div>
+    <div class="row">${
+      ui.confirm === 'cost-del:' + c.id
+        ? `<span class="confirm">Zeile löschen? <button class="btn small danger" data-act="cost-del-yes" data-ref="${c.id}">Ja</button><button class="btn small" data-act="confirm-no">Nein</button></span>`
+        : `<button class="btn small danger" data-act="cost-del" data-ref="${c.id}">Zeile löschen</button>`
+    }</div>
+  </div>`;
+}
+
+function costPayHTML(c) {
+  return `<div class="cost-form cost-pay">
+    <div class="row">
+      <label class="lbl">Bezahlt am<input type="date" data-pay="date" value="${esc(c.paid_on || today())}"></label>
+      <label class="lbl">von<select data-pay="by">${opts(c.paid_by || state.person, [['S', 'Sebastian'], ['A', 'Anna']])}</select></label>
+    </div>
+    <div class="row"><label class="lbl">Beleg (Link)${c.tax_relevant ? ' – Pflicht, weil steuerrelevant' : ''}<input type="text" inputmode="url" data-pay="receipt" value="${esc(c.receipt_url || '')}" placeholder="${c.tax_relevant ? 'https://…' : 'optional'}"></label></div>
+    <div class="row"><button class="btn small primary" data-act="cost-pay-save" data-ref="${c.id}">Speichern</button><button class="btn small" data-act="cost-pay-cancel">Abbrechen</button></div>
+  </div>`;
+}
+
+function costHTML(c) {
+  const open = ui.costEdit === c.id;
+  const paying = ui.costPay === c.id;
+  const next = nextStep(c);
+  const back = prevStep(c);
+  const late = isCostLate(c);
+  return `<div class="cost ${isHistory(c) ? 'history' : ''} ${open ? 'open' : ''}" data-cost="${c.id}">
+    <button class="cost-head" data-act="cost-edit" data-ref="${c.id}" aria-expanded="${open}">
+      <span class="cost-label">${esc(c.label)}</span>
+      <span class="cost-amount">${c.kind === 'rueckfluss' ? '+ ' : ''}${eur(c.amount)}</span>
+      <span class="cost-meta">
+        <span class="tag">${COST_LABEL[c.status] || c.status}</span>
+        ${c.status === 'bezahlt' && c.paid_on ? `<span class="due">bezahlt ${fmtDay(c.paid_on)}</span>` : ''}
+        ${c.due_on && c.status !== 'bezahlt' ? `<span class="due ${late ? 'late' : ''}">${late ? 'überfällig seit ' : 'bis '}${fmtDay(c.due_on)}</span>` : ''}
+        ${c.kind === 'rueckfluss' ? `<span class="tag">Rückfluss</span>` : ''}
+        ${c.apartment ? `<span class="tag">${APARTMENT[c.apartment]}</span>` : ''}
+        ${c.tax_relevant ? `<span class="tag">steuerrelevant</span>` : ''}
+        ${c.paid_by && c.status === 'bezahlt' ? `<span class="own ${c.paid_by}">${OWN[c.paid_by]}</span>` : ''}
+      </span>
+    </button>
+    ${open ? costFormHTML(c) : ''}
+    ${paying ? costPayHTML(c) : ''}
+    ${
+      paying
+        ? ''
+        : `<div class="cost-actions">
+      ${next ? `<button class="btn small" data-act="${next === 'bezahlt' ? 'cost-pay' : 'cost-step'}" data-ref="${c.id}" data-to="${next}">${COST_NEXT[c.status]}</button>` : ''}
+      ${back ? `<button class="link back" data-act="cost-step" data-ref="${c.id}" data-to="${back}">zurück auf ${COST_LABEL[back]}</button>` : ''}
+    </div>`
+    }
+  </div>`;
+}
+
+export function costsHTML(t) {
+  const rows = costsOf(t.id);
+  const adding = ui.costAdd === t.id;
+  const counted = taskAmount(t.id); // what the task row shows, history excluded
+  return `<h3>Kosten ${rows.length ? `<small>${rows.length} · ${counted ? (counted.estimated ? '≈ ' : '') + eur(counted.sum) : 'nichts gezählt'}</small>` : ''}</h3>
+    ${rows.map(costHTML).join('')}
+    ${
+      adding
+        ? `<div class="cost-form cost-new">
+            <div class="row">
+              <label class="lbl">Bezeichnung<input type="text" data-input="cost-label" placeholder="z. B. Umzugsunternehmen"></label>
+              <label class="lbl">Betrag<input type="text" inputmode="decimal" data-input="cost-amount" placeholder="1800" aria-label="Betrag in Euro"></label>
+            </div>
+            <div class="row"><button class="btn small primary" data-act="cost-add-save">Hinzufügen</button><button class="btn small" data-act="cost-add-cancel">Abbrechen</button></div>
+          </div>`
+        : `<button class="col-more" data-act="cost-add">${rows.length ? '+ Kostenzeile' : 'Kosten erfassen'}</button>`
+    }`;
+}
+
 function fieldsHTML(t) {
   const others = state.tasks.filter((x) => x.id !== t.id && !(t.blocked_by || []).includes(x.id)).sort((a, b) => a.phase - b.phase || a.sort - b.sort);
   return `<h3>Hängt ab von</h3>
@@ -132,6 +226,7 @@ export function detailHTML(t) {
     ${more && claude ? delegationHTML(t) : ''}
     ${more && claude ? commentsHTML(t) : ''}
     ${subtasksHTML(t)}
+    ${more || costsOf(t.id).length ? costsHTML(t) : ''}
     ${more ? adviceHTML(t) : ''}
     ${more && claude ? '' : commentsHTML(t)}
 

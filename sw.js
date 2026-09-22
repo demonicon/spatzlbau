@@ -26,6 +26,7 @@ const SHELL = [
   './app/ui/task.js',
   './app/ui/detail.js',
   './app/filters.js',
+  './app/costs.js',
   './app/changelog.js',
   './app/views/dashboard.js',
   './app/views/print.js',
