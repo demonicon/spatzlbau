@@ -1,7 +1,7 @@
 # Änderungsauftrag 010 – Optimierungsschleife 2
 
 Stand: 22.09.2026 · Status: vorgemerkt (Entwurf) · Branch: `feature/optimierung-2` · Modell: Sonnet, für Punkt 2 Opus
-Reihenfolge: nach 004 und 009. Ausnahme: Punkt 4 darf als eigener Vorab-PR laufen.
+Reihenfolge: nach 004 und 009. Ausnahme: Punkt 4 darf als eigener Vorab-PR laufen. Umsetzung: ein Branch `feature/optimierung-2`, Commit-Reihenfolge 4 · 1 · 5 · 6 · 2, Stopp vor Punkt 2 mit Zwischenbericht.
 Scope-Regel: Punkte sind unabhängig; jeder kann einzeln gestrichen werden, ohne die anderen zu berühren.
 
 ## 1. Seed via GitHub Action
@@ -10,11 +10,7 @@ Scope-Regel: Punkte sind unabhängig; jeder kann einzeln gestrichen werden, ohne
 
 ## 2. Realtime inkrementell
 
-Statt Voll-Reload aller Tabellen bei jedem Ereignis: das Ereignis (`INSERT`/`UPDATE`/`DELETE` mit Zeile) in den lokalen State einarbeiten, Neu-Rendern wie bisher. Eigene Schreibvorgänge lösen keinen Reload aus. Fallback auf Voll-Reload bei Verbindungsabbruch und nach Wiederverbinden. Vorbedingung für Punkt 3.
-
-## 3. Delegations-Schleife als Skript (Vorbereitung, kein Scheduled Task)
-
-`scripts/claude-loop.mjs`: liest Aufgaben mit `type = claude` und `status in (go, arbeit)`, gibt sie als JSON aus (Format wie der frühere Handover), nimmt ein Ergebnis-JSON entgegen und schreibt Status, Ergebnis, Kommentar (`author = C`) und neue Teilschritte. Kein Aufruf von Claude im Skript – das bleibt vorerst die Chat-Session. Der Scheduled Task, der das automatisiert, wird erst nach der ersten manuell durchlaufenen Delegation angelegt.
+Statt Voll-Reload aller Tabellen bei jedem Ereignis: das Ereignis (`INSERT`/`UPDATE`/`DELETE` mit Zeile) in den lokalen State einarbeiten, Neu-Rendern wie bisher. Eigene Schreibvorgänge lösen keinen Reload aus. Fallback auf Voll-Reload bei Verbindungsabbruch und nach Wiederverbinden.
 
 ## 4. Preview-Deploy
 
@@ -32,7 +28,6 @@ Funktion, Token in `settings` und die zugehörige Policy löschen (Migration nac
 
 - [ ] Seed-Workflow einmal mit `--dry` gelaufen, Log zeigt 0/0/0
 - [ ] Realtime: Annas Häkchen erscheint bei Sebastian ohne Voll-Reload (Netzwerk-Tab: kein REST-Request nach dem Ereignis); eigene Änderung erzeugt keinen Reload
-- [ ] `claude-loop.mjs` Roundtrip an einer Testaufgabe: Ausgabe → Ergebnis einspielen → Kommentar als Claude sichtbar
 - [ ] `/preview/` erreichbar, Hinweis sichtbar, Live-App unverändert
 - [ ] Advisor meldet keine `security definer`-Funktion mehr außer den für RLS nötigen
 - [ ] Changelog-Eintrag nur für Punkt 4 (falls Anna die Vorschau je sieht) – sonst keiner
