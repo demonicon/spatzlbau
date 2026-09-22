@@ -1,6 +1,6 @@
 # Änderungsauftrag 011 – Design Review mit Varianten
 
-Stand: 22.09.2026 · Status: Teil A umgesetzt (PR offen), Teil B und C offen · Zwei Teile: Teil A Claude Code (Snapshot), Teil B Claude Design (Varianten), Teil C Review-Entscheidung (Sebastian + Anna + Claude Chat)
+Stand: 22.09.2026 · Status: Teil A deployt 22.09.2026 (Merge ac8313f, Pages-Lauf 26), Teil B und C offen · Zwei Teile: Teil A Claude Code (Snapshot), Teil B Claude Design (Varianten), Teil C Review-Entscheidung (Sebastian + Anna + Claude Chat)
 
 ## Ziel
 
