@@ -1,6 +1,6 @@
 # Änderungsauftrag 003 – Service Worker mit Versionierung über Commit-SHA
 
-Stand: 22.09.2026 · Status: umgesetzt, PR offen · Branch: `feature/sw-versionierung`
+Stand: 22.09.2026 · Status: deployt 22.09.2026 (Merge d45b10a, Pages-Lauf 11, Build d45b10a live) · Branch: `feature/sw-versionierung`
 Betrifft: `sw.js`, `app/main.js`, `app/config.js`, `.github/workflows/pages.yml`, `app/views/dashboard.js`, BRIEFING §2
 
 ## Warum
