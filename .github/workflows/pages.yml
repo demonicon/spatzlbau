@@ -64,6 +64,19 @@ jobs:
           SHA=$(git rev-parse HEAD)
           sed -i "s/__BUILD__/${SHA:0:7}/g" sw.js app/config.js
 
+      # Pages deduplicates deployments by pages_build_version, which defaults to the pushed
+      # commit. That is wrong here: the site is main + preview combined, so the version has to
+      # cover both. Without this, syncing preview onto main's commit (or any other way the two
+      # branches end up at the same SHA) makes the next deploy a silent no-op - it reports
+      # success in seconds and keeps serving the old content. Cost us an afternoon once.
+      - name: Build version from both branches
+        id: version
+        run: |
+          MAIN_SHA=$(git -C site rev-parse HEAD)
+          if [ -d site/preview/.git ]; then PREVIEW_SHA=$(git -C site/preview rev-parse HEAD); else PREVIEW_SHA=none; fi
+          echo "main $MAIN_SHA / preview $PREVIEW_SHA"
+          echo "value=$(printf '%s-%s' "$MAIN_SHA" "$PREVIEW_SHA" | sha1sum | cut -c1-40)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -71,5 +84,7 @@ jobs:
           name: github-pages-${{ github.run_id }}-${{ github.run_attempt }} # unique per (re-)run, see docs/changes/008b
       - id: deployment
         uses: actions/deploy-pages@v4
+        env:
+          GITHUB_SHA: ${{ steps.version.outputs.value }} # the action reads pages_build_version from here
         with:
           artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
