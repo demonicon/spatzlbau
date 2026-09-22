@@ -105,7 +105,10 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* gate bar */
 .gates { display: flex; gap: 4px; margin-top: 8px; }
 /* docs/changes/013 A1: number and bar, the count lives in the tooltip and the aria label */
-.gate { flex: 1; min-height: 30px; display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; padding: 0 0 4px; border-bottom: 2px solid transparent; }
+/* what you see is the same as before - number, 6 px bar, 24 px of ink at the bottom of the box.
+   The box itself is a full 44 px tap target again: the air sits above the number, where nothing
+   else lives, instead of an invisible overlay that would fight with the field below. */
+.gate { flex: 1; min-height: var(--tap); display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; padding: 0 0 4px; border-bottom: 2px solid transparent; }
 .gate[aria-pressed=true] { border-bottom-color: var(--ink); }
 .gate .lbl { font-size: var(--fs-nano); font-weight: 600; color: var(--ink-3); }
 .gate.current .lbl, .gate[aria-pressed=true] .lbl { color: var(--ink); }
@@ -175,12 +178,12 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 
 /* ---------- search (docs/changes/012) ---------- */
 .search-row { position: relative; display: flex; align-items: center; margin: 10px var(--gutter) 0; }
-.search-row input { width: 100%; min-height: 40px; padding: 8px 44px 8px 2px; border: 0; border-bottom: 1px solid var(--line-dash); border-radius: 0; background: transparent; font-size: var(--fs-ui); color: var(--ink); appearance: none; -webkit-appearance: none; }
+.search-row input { width: 100%; min-height: var(--tap); padding: 8px 44px 8px 2px; border: 0; border-bottom: 1px solid var(--line-dash); border-radius: 0; background: transparent; font-size: var(--fs-ui); color: var(--ink); appearance: none; -webkit-appearance: none; }
 .search-row input:focus { border-bottom-color: var(--ink); }
 .search-row input::placeholder { color: var(--ink-3); }
 /* the browser's own clear button would sit next to ours and is too small to hit */
 .search-row input::-webkit-search-cancel-button, .search-row input::-webkit-search-decoration { display: none; }
-.search-x { position: absolute; right: 0; width: var(--tap); height: var(--tap); display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--ink-2); }
+.search-x { position: absolute; right: 0; width: var(--tap); height: var(--tap); top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--ink-2); }
 .search-x:hover { color: var(--ink); }
 /* the hit itself: bold, no colour – the row keeps its own signals (yellow = fristkritisch) */
 .hit { font-weight: 700; }
