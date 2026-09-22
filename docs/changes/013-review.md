@@ -68,7 +68,7 @@ Quelle: `docs/audit/2026-09-22/findings.md`. Status: **behoben** · **teilweise*
 | 3 | Fußzeile überladen | behoben | `a1-380-falz-nachher.png` | statt fünf Bedienelementen jetzt drei plus die Version als Text |
 | 4 | Titel als Dauerfeld | behoben | `a4-akte-inline-380-nachher.png` | Titel ist Überschrift, der Stift öffnet das Feld |
 | 5 | Kosten-Zustände ohne Erklärung | behoben | `a4-akte-inline-380-nachher.png` | einzeiliger Hinweis beim ersten Öffnen, danach nie wieder (Gerätespeicher) |
-| 6 | Gate-Leiste ohne Legende, nicht antippbar | **teilweise** | `a1-380-falz-nachher.png` | antippbar ist erledigt: 44 px Trefferfläche, ein Tipp filtert die Phase und zeigt den Gate-Text darunter. Eine **sichtbare Legende** gibt es weiterhin nicht – Zähler und Phasenname stecken in `title`/`aria-label`, und ein Tooltip erscheint am Handy nicht. Eine dauerhafte Legende würde genau die Kopfhöhe zurückholen, die #2 gerade gespart hat |
+| 6 | Gate-Leiste ohne Legende, nicht antippbar | behoben (entschieden) | `a1-380-falz-nachher.png` | Sebastian hat am 22.09. entschieden: **keine Legende.** Antippen zeigt den Gate-Text der Phase und filtert sie – das ist die Erklärung, und sie kostet keine Kopfhöhe. Zähler und Phasenname bleiben zusätzlich in `title`/`aria-label` |
 | 7 | Eigene Kommentare nicht editier-/löschbar | behoben | `b5-comments-380.png` | löschen immer, ändern zehn Minuten lang, beides nur die eigenen |
 | 8 | Suchfeld kostet Kopfhöhe | **nicht in 013** | `a1-380-falz-nachher.png` | laut Audit Backlog nach zwei Wochen Nutzung. 013 hat es kompakter gemacht (kein Kasten, eine Linie), sichtbar bleibt es |
 | 9 | Leere Zustände negativ | behoben | `rot-regel-wartet-380.png` | „Alles erledigt – nächste Fälligkeit am …"; bei aktivem Filter „Nichts in dieser Auswahl." |
@@ -92,11 +92,10 @@ Dazu die zwei Nachträge aus dem Audit-Text:
 | 1024 × 768 zeigte ein leeres Panel über 43 % der Breite | behoben | `a3-1024x768-overlay-zu.png`, `-offen.png` |
 | Tap-Ziele Suchfeld und Gate-Segmente unter 44 px | behoben | `a1-380-falz-nachher.png` (beide 44 px, sichtbar unverändert) |
 
-**Bilanz:** 21 Findings – 17 behoben, 1 teilweise (#6), 1 offen (#10), 2 bewusst nicht in 013 (#8 Backlog, #16 in 015). Dazu beide Nachträge behoben.
+**Bilanz:** 21 Findings – 18 behoben (#6 durch Sebastians Entscheidung vom 22.09.: keine Legende, Antippen zeigt den Gate-Text), 1 offen (#10 Tablet), 2 bewusst nicht in 013 (#8 Backlog, #16 in 015). Dazu beide Nachträge behoben.
 
 ## Teil 3 – Was aus 013 heraus offen bleibt
 
-- **#6 Legende der Gate-Leiste** – bräuchte entweder eine Zeile Platz oder eine andere Idee (etwa: der Gate-Text steht dauerhaft unter der Leiste statt nur bei gewählter Phase).
 - **#10 Tablet 600–899 px** – die Stufe ist unverändert und ungeprüft; der Audit setzt den Test auf den 27.09.
 - **#8 Suchfeld** – erst nach zwei Wochen Nutzung entscheiden, ob es Platz kostet oder Platz spart.
 - **#16 Changelog** – gehört zur Versionierung in 015.

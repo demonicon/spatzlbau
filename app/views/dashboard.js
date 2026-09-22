@@ -380,7 +380,7 @@ function changelogHTML() {
     </article>`;
   const body = groups
     .map((g, i) => `<details class="adv" ${i === 0 ? 'open' : ''}>
-      <summary>Version ${esc(g.key)}</summary>
+      <summary>Version ${esc(g.key)}${ui.changelog?.releases?.[g.key] ? ' · ' + esc(ui.changelog.releases[g.key]) : ''}</summary>
       ${g.entries.map(article).join('')}
     </details>`)
     .join('');
