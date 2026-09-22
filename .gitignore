@@ -6,3 +6,9 @@ node_modules/
 .DS_Store
 Thumbs.db
 .claude/
+
+# Design-Snapshots: Textdokumente ja, Aufnahmen mit echten Daten nein (öffentliches Repo, Auftrag 011)
+design/handoff/
+design/snapshot/**/screens/
+design/snapshot/**/index.html
+design/snapshot/*.zip
