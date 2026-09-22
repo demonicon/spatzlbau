@@ -28,6 +28,15 @@ Reihenfolge: nach 010. Drei Commits mit Stopp nach dem ersten (Akte), damit die 
 - **Puffer:** Zeile "Puffer (20 %)" im Block, Betrag aus `costs` (Zeile mit `task_id = null`); antippen erlaubt Betrag oder Prozentsatz zu ändern. Fehlt die Zeile: Block bietet "Puffer anlegen" an.
 - Keine Grafik. Tabellen und Zahlen.
 
+### Nachtrag vom 22.09.2026 (nach Freigabe von Commit 1)
+
+Der Kosten-Block wird **eine eigene Ansicht „Finanzen"** statt eines Einschubs über der Liste:
+
+- URL `#finanzen`, erreichbar über die Fußzeile, am Desktop zusätzlich im Kopf, und über die Kachel „Kosten" (die Kachel filtert also nicht mehr, sie öffnet die Ansicht).
+- Inhalt: der Block oben, darunter **alle Aufgaben mit Kostenzeilen, nach Phase gruppiert**. Die Kostenzeilen sind dort aufklappbar und bearbeitbar – **dieselbe Komponente wie in der Akte**, nicht dupliziert. Antippen der Aufgabe öffnet ihre Akte.
+- Der Offline-Lesestand deckt die Ansicht mit ab.
+- Zusätzliches Akzeptanzkriterium: `#finanzen` funktioniert am Handy und am Desktop; eine Zeile in der Finanzansicht bearbeiten → die Änderung ist in der Akte sichtbar, ohne Reload.
+
 ## 3. Laufende Kosten (Commit 3)
 
 - Am Ende des Kosten-Blocks: Abschnitt "Laufende Kosten pro Monat", Tabelle Posten | alt Sebastian | alt Anna | neu | Delta, plus Summenzeile; Delta = neu − (alt S + alt A). Beträge inline editierbar, Zeilen kommen aus dem Inhaltspaket (`recurring` mit `seed_key`), neue Zeile möglich.
@@ -49,6 +58,7 @@ Reihenfolge: nach 010. Drei Commits mit Stopp nach dem ersten (Akte), damit die 
 - [ ] Status nur schrittweise vorwärts, ein Schritt zurück; "Bezahlt am …" setzt Datum, Person, Beleg; Beleg-Pflicht greift nur bei steuerrelevant
 - [ ] Akte wird "voll", sobald eine Kostenzeile existiert
 - [ ] Kachel "Kosten" zeigt netto; die fünf Zahlen im Block stimmen mit `select * from costs_summary` überein (Claude im Chat prüft über den Connector)
+- [ ] `#finanzen` funktioniert am Handy und am Desktop; eine Zeile dort bearbeiten → Änderung in der Akte sichtbar ohne Reload
 - [ ] Cashflow: Doppelmiete erscheint berechnet, sobald Auszugstermine gesetzt sind; vorher Hinweis mit Link
 - [ ] Laufende Kosten: Delta und Summe korrekt, Eingabe am Handy bedienbar (numerische Tastatur)
 - [ ] Realtime: Annas Kostenänderung erscheint bei Sebastian ohne Reload
