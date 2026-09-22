@@ -6,19 +6,23 @@ import { fileURLToPath } from 'node:url';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+const KEYS = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'EXPORT_TOKEN', 'BACKUP_KEY'];
+
+// Process environment wins (GitHub Actions secrets); the local .env fills in the rest.
 export function loadEnv() {
-  let text;
-  try {
-    text = readFileSync(resolve(ROOT, '.env'), 'utf8');
-  } catch {
-    throw new Error('.env not found – see SETUP.md step 6');
-  }
   const env = {};
-  for (const line of text.split(/\r?\n/)) {
-    const m = line.match(/^\s*([A-Z_]+)\s*=\s*(.*)\s*$/);
-    if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+  try {
+    for (const line of readFileSync(resolve(ROOT, '.env'), 'utf8').split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Z_]+)\s*=\s*(.*)\s*$/);
+      if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+    }
+  } catch {
+    /* no .env – fine when the variables come from the environment */
   }
-  for (const k of ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']) if (!env[k]) throw new Error(`.env: ${k} missing`);
+  for (const k of KEYS) if (process.env[k]) env[k] = process.env[k];
+  for (const k of ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']) {
+    if (!env[k]) throw new Error(`${k} missing – set it in .env (SETUP.md step 6) or in the environment`);
+  }
   return env;
 }
 
@@ -29,10 +33,10 @@ export function restClient(env) {
     Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
     'Content-Type': 'application/json',
   };
-  async function call(method, path, body, prefer) {
+  async function call(method, path, body, prefer, extra = {}) {
     const res = await fetch(base + path, {
       method,
-      headers: { ...headers, ...(prefer ? { Prefer: prefer } : {}) },
+      headers: { ...headers, ...(prefer ? { Prefer: prefer } : {}), ...extra },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const text = await res.text();
@@ -47,5 +51,15 @@ export function restClient(env) {
     upsertMerge: (table, rows, onConflict) =>
       call('POST', `${table}?on_conflict=${onConflict}`, rows, 'resolution=merge-duplicates,return=minimal'),
     update: (table, filter, patch) => call('PATCH', `${table}?${filter}`, patch, 'return=minimal'),
+    remove: (table, filter) => call('DELETE', `${table}?${filter}`, undefined, 'return=minimal'),
+    // every row of a table, in pages (PostgREST caps a single response at 1000 rows)
+    all: async (table, query = 'select=*') => {
+      const rows = [];
+      for (let from = 0; ; from += 1000) {
+        const page = (await call('GET', `${table}?${query}`, undefined, undefined, { Range: `${from}-${from + 999}` })) || [];
+        rows.push(...page);
+        if (page.length < 1000) return rows;
+      }
+    },
   };
 }

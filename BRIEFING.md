@@ -29,6 +29,7 @@ Dazu die drei nicht verhandelbaren Rahmenbedingungen:
 | Claude-Lesezugriff | Postgres-Funktion `export_state(token text)` als RPC, `security definer`, gibt den Gesamtstand als JSON; Token in Tabelle `settings`, per SQL rotierbar | im Chat kann Claude nur GET-URLs abrufen, keine Header setzen → Token als Query-Parameter, `apikey` ebenfalls als Query-Parameter |
 | Claude-Schreibzugriff | Nur über Claude Code mit Service-Role-Key aus lokaler `.env` – niemals im Repo | |
 | PWA | `manifest.json`, minimaler Service Worker (App-Shell cachen, network-first); Cache-Version = Commit-SHA, vom Pages-Workflow in `sw.js`/`app/config.js` gestempelt; neue Builds übernehmen sofort (`skipWaiting`/`clients.claim`) und melden sich in der Statuszeile mit „Neue Version – neu laden“ (Auftrag 003) | Offline-Bearbeitung ist bewusst **nicht** im Scope |
+| Backup | GitHub-Workflow „Backup“ täglich 03:00 UTC: `scripts/backup.mjs` sichert alle Tabellen (ohne E-Mails, ohne Export-Token) AES-verschlüsselt als Artefakt, 30 Tage; `scripts/restore.mjs` vergleicht (`--dry`) oder stellt wieder her (Auftrag 008b) | Supabase Free hat keine automatischen Backups |
 | Sprache | UI komplett Deutsch, Code/Kommentare Englisch | |
 
 Anon-Key und Projekt-URL dürfen im Repo stehen (per Design öffentlich, RLS schützt). Service-Role-Key und Export-Token niemals committen.

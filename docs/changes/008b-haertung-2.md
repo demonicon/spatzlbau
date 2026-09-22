@@ -1,6 +1,6 @@
 # Änderungsauftrag 008b – Härtung, Teil 2: Kontrast, Backup, Aufräumen
 
-Stand: 22.09.2026 · Status: offen · Branch: `feature/haertung-2` · Modell: Sonnet
+Stand: 22.09.2026 · Status: umgesetzt, PR offen – Backup-Workflow erst nach Setzen der Secrets manuell starten · Branch: `feature/haertung-2` · Modell: Sonnet (umgesetzt mit Opus)
 Nach Merge von 008 (Pinnen, RLS, CSP) starten. Ein PR, keine sichtbare Änderung außer der Farbe, kein Changelog-Eintrag.
 
 ## 1. Kontrast
@@ -33,3 +33,18 @@ Tote Exporte in `state.js` entfernen (`runSeedMerge`, `bySort`, `forPerson`).
 - [ ] `restore.mjs backup-<datum>.json --dry` gegen die Live-Datenbank: 0 Abweichungen direkt nach dem Backup
 - [ ] `CLAUDE.md` (Token-Regel) und `SETUP.md` (Backup) ergänzt
 - [ ] Keine Konsolenfehler, Realtime unverändert
+
+## Ergänzungen (Sebastian, 22.09.)
+
+- (a) Pages-Workflow: Artefaktname `github-pages-<run_id>-<run_attempt>` in Upload und Deploy – `run_attempt` ist nötig, weil ein Re-Run dieselbe `run_id` behält und genau daran Lauf 19 scheiterte.
+- (b) `CLAUDE.md`: Migrationsdateien heißen `NNN_aXXX_<thema>.sql` (XXX = Auftragsnummer); 001–004 behalten ihre Namen.
+
+## Umsetzungsnotizen (Claude Code, 22.09.2026)
+
+- **Kontrast:** `#6b756e` erreicht auf `--paper` (#f4f6f2) nur 4,39:1 (auf Weiß 4,78:1) – unter dem Akzeptanzkriterium. Gewählt: **`#68726b`** (4,59:1 auf Papier, 4,99:1 auf Weiß), die nächstliegende Stufe, die auf beiden Hintergründen ≥ 4,5:1 liegt. 380-px-Vergleich: mit altem Token pixelidentisch zum Stand davor, mit neuem Token nur die Farbpixel verschieden. Auf dem Seitenhintergrund `--bg` (#e9ebe6, nur außerhalb der Spalte) 4,16:1 – dort steht kein Text.
+- **Backup-Datei ist verschlüsselt (AES-256-GCM, Schlüssel aus `BACKUP_KEY` per scrypt):** Artefakte eines öffentlichen Repos kann jeder mit GitHub-Konto herunterladen; ein Klartext-Dump mit Aufgaben, Briefings und Kommentaren wäre öffentlich. Ohne `BACKUP_KEY`-Secret bricht der Workflow ab, statt unverschlüsselt hochzuladen. Lokal ohne Key: Klartext-JSON (nicht ins Repo).
+- Keine Abhängigkeit installiert: die Skripte nutzen die bestehende PostgREST-Hilfe (`scripts/lib.mjs`, jetzt mit Umgebungs-Fallback für Secrets, Paginierung und Delete); `@supabase/supabase-js` ist damit im Workflow nicht nötig.
+- `restore.mjs`: Vergleich ignoriert `updated_at` (Trigger-Zeitstempel); Wiederherstellung = Upsert fehlender/geänderter Zeilen, Löschen der nur-in-DB-Zeilen (Kommentare, Teilschritte, Aufgaben, Settings), Allowlist nur `last_seen_version`, Export-Token unberührt.
+- Geprüft lokal: Backup 5 Tabellen (2/3/49/19/4), keine E-Mails, kein Token im Dump; `restore --dry` direkt danach: keine Abweichungen; verschlüsselt + richtiger Key: lesbar, falscher Key: Abbruch, fehlender Key: Abbruch; eine absichtliche Änderung wird als „geändert 1“ gemeldet (zurückgesetzt). App: keine Konsolenfehler, Realtime „Live“.
+- Aufräumen: `runSeedMerge`, `bySort`, `forPerson` und der `seed-merge`-Import aus `state.js` entfernt; `app/seed-merge.js` bleibt für `scripts/seed.mjs`, ist aus dem App-Shell-Cache raus.
+- Nicht ausgeführt: der manuelle Backup-Lauf (wartet auf die drei Secrets), Akzeptanzkriterium 2 damit offen.

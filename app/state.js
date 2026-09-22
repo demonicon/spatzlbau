@@ -2,7 +2,6 @@
 // Every write is field-precise (update of single columns on single rows) and optimistic:
 // the local state changes first, the server call follows, errors reload from the server.
 import { supabase } from './supabase.js';
-import { planSeedMerge } from './seed-merge.js';
 
 export const state = {
   person: null, // 'S' | 'A'
@@ -50,7 +49,6 @@ export function subProgress(t) {
   const subs = subsOf(t.id);
   return subs.length ? [subs.filter((s) => s.done).length, subs.length] : null;
 }
-export const forPerson = (t, p) => t.owner === p || t.owner === 'B';
 
 const fmtDate = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 export function dueInfo(t) {
@@ -70,7 +68,6 @@ export function dueInfo(t) {
     d === 0 ? 'am Umzugstag' : Math.abs(d) < 7 ? Math.abs(d) + (d < 0 ? ' Tage vorher' : ' Tage danach') : '≈ ' + w + (d < 0 ? ' Wochen vorher' : ' Wochen danach');
   return { label, cls: '', sort: d, diff: null };
 }
-export const bySort = (a, b) => dueInfo(a).sort - dueInfo(b).sort;
 
 /* ---------- loading ---------- */
 export async function loadAll() {
@@ -229,34 +226,4 @@ export async function setSetting(key, value) {
   state.settings[key] = value;
   notify();
   return write('setting', () => supabase.from('settings').upsert({ key, value }, { onConflict: 'key' }));
-}
-
-/* ---------- seed merge (browser side executor) ---------- */
-export async function runSeedMerge(seed) {
-  const [tasks, subtasks] = await Promise.all([
-    supabase.from('tasks').select('id,deleted_at,seed_snapshot,advice,phase,title,owner,offset_days,critical,type,blocked_by,sort'),
-    supabase.from('subtasks').select('task_id,seed_key'),
-  ]);
-  if (tasks.error || subtasks.error) throw tasks.error || subtasks.error;
-  const plan = planSeedMerge(seed, tasks.data, subtasks.data);
-  status('saving', 'Seed wird eingespielt …');
-  if (plan.taskInserts.length) {
-    const { error } = await supabase.from('tasks').upsert(plan.taskInserts, { onConflict: 'id', ignoreDuplicates: true });
-    if (error) throw error;
-  }
-  for (const u of plan.taskUpdates) {
-    const { error } = await supabase.from('tasks').update(u.patch).eq('id', u.id);
-    if (error) throw error;
-  }
-  if (plan.subtaskInserts.length) {
-    const { error } = await supabase.from('subtasks').upsert(plan.subtaskInserts, { onConflict: 'task_id,seed_key', ignoreDuplicates: true });
-    if (error) throw error;
-  }
-  const { error } = await supabase
-    .from('settings')
-    .upsert([{ key: 'phases', value: plan.settings.phases }, { key: 'seed_version', value: plan.settings.seed_version }], { onConflict: 'key' });
-  if (error) throw error;
-  status('saved', 'Seed eingespielt');
-  await loadAll();
-  return plan.summary;
 }
