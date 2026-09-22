@@ -1,6 +1,6 @@
 # Änderungsauftrag 004 – Kosten-Schema (Vorstufe Finanzmodul) · v2
 
-Stand: 22.09.2026 (Review-Fassung) · Status: umgesetzt, PR offen (Migration von Sebastian eingespielt) · Branch: `feature/costs-schema` · Modell: Sonnet (umgesetzt mit Opus)
+Stand: 22.09.2026 (Review-Fassung) · Status: deployt 22.09.2026 (Merge b815103, Pages-Lauf 24; Migration von Sebastian eingespielt) · Branch: `feature/costs-schema` · Modell: Sonnet (umgesetzt mit Opus)
 Betrifft: `supabase/migrations/`, `supabase/schema.sql`, `scripts/seed.mjs`, `BRIEFING.md` Abschnitt 3 · **keine UI**
 
 ## Ziel
