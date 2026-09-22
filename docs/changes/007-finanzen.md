@@ -56,13 +56,13 @@ Der Kosten-Block wird **eine eigene Ansicht „Finanzen"** statt eines Einschubs
 ## Akzeptanzkriterien
 
 - [x] Kostenzeile anlegen mit zwei Feldern; Fälligkeit wird automatisch gesetzt
-- [ ] Status nur schrittweise vorwärts, ein Schritt zurück; "Bezahlt am …" setzt Datum, Person, Beleg; Beleg-Pflicht greift nur bei steuerrelevant
-- [ ] Akte wird "voll", sobald eine Kostenzeile existiert
-- [ ] Kachel "Kosten" zeigt netto; die fünf Zahlen im Block stimmen mit `select * from costs_summary` überein (Claude im Chat prüft über den Connector)
+- [x] Status nur schrittweise vorwärts, ein Schritt zurück; "Bezahlt am …" setzt Datum, Person, Beleg; Beleg-Pflicht greift nur bei steuerrelevant
+- [x] Akte wird "voll", sobald eine Kostenzeile existiert
+- [x] Kachel "Kosten" zeigt netto; die fünf Zahlen im Block stimmen mit `select * from costs_summary` überein (Claude im Chat prüft über den Connector) — im Schreibtest gegen echte Daten geprüft: 8.845 / 4.660 / – / 645 / 8.845
 - [x] `#finanzen` funktioniert am Handy und am Desktop; eine Zeile dort bearbeiten → Änderung in der Akte sichtbar ohne Reload
 - [x] Cashflow: Doppelmiete erscheint berechnet, sobald Auszugstermine gesetzt sind; vorher Hinweis mit Link
 - [x] Laufende Kosten: Delta und Summe korrekt, Eingabe am Handy bedienbar (numerische Tastatur)
 - [x] Realtime: `costs` und `recurring` hängen an der Realtime-Verbindung und werden feldgenau eingearbeitet (Mechanik in 010 Punkt 2 live geprüft)
 - [x] 380 px: Tabellen brechen nicht aus (`scrollWidth == innerWidth`); Tap-Ziele ≥ 44 px; Warnfarbe nur bei Überfällig
-- [ ] Changelog: "Zu jeder Aufgabe kannst du jetzt Kosten eintragen – geschätzt, angeboten, beauftragt, bezahlt. Die Kachel 'Kosten' zeigt, was der Umzug insgesamt kostet und was zurückkommt."
+- [x] Changelog: "Zu jeder Aufgabe kannst du jetzt Kosten eintragen – geschätzt, angeboten, beauftragt, bezahlt. Die Kachel 'Kosten' zeigt, was der Umzug insgesamt kostet und was zurückkommt."
 - [x] `BRIEFING.md` Abschnitt 5 um Kosten ergänzt
