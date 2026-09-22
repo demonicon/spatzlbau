@@ -46,7 +46,7 @@ create extension if not exists pgcrypto with schema extensions;
 
 -- allowlist: exactly two rows, created in the block at the top of this file.
 
--- Key/value store: einzugstermin, export_token, seed_version, phases.
+-- Key/value store: einzugstermin, seed_version, phases, umzugstag_kontakte.
 create table if not exists public.settings (
   key        text primary key,
   value      jsonb not null default 'null'::jsonb,
@@ -247,7 +247,6 @@ grant  execute on function public.current_person() to authenticated;
 -- ---------------------------------------------------------------------
 --  Row Level Security
 --  Rule of thumb: only allowlisted, logged-in users see or change anything.
---  Anonymous requests get nothing (except the export_state RPC below).
 -- ---------------------------------------------------------------------
 alter table public.allowlist enable row level security;
 alter table public.settings  enable row level security;
@@ -271,21 +270,20 @@ create policy allowlist_update_own on public.allowlist
   using (lower(email) = lower(coalesce((select auth.jwt() ->> 'email'), '')))      -- (select …): once per statement
   with check (lower(email) = lower(coalesce((select auth.jwt() ->> 'email'), '')));
 
--- settings: allowed users read/write everything EXCEPT the export token.
--- The token is only reachable via SQL (service role / SQL editor) and rotate_export_token().
+-- settings: allowed users read/write everything.
 drop policy if exists settings_select on public.settings;
 create policy settings_select on public.settings
-  for select to authenticated using (public.is_allowed() and key <> 'export_token');
+  for select to authenticated using (public.is_allowed());
 
 drop policy if exists settings_insert on public.settings;
 create policy settings_insert on public.settings
-  for insert to authenticated with check (public.is_allowed() and key <> 'export_token');
+  for insert to authenticated with check (public.is_allowed());
 
 drop policy if exists settings_update on public.settings;
 create policy settings_update on public.settings
   for update to authenticated
-  using (public.is_allowed() and key <> 'export_token')
-  with check (public.is_allowed() and key <> 'export_token');
+  using (public.is_allowed())
+  with check (public.is_allowed());
 
 -- tasks: read/insert/update for allowed users. No hard delete from the app (soft delete via deleted_at).
 drop policy if exists tasks_select on public.tasks;
@@ -382,91 +380,6 @@ select
     - coalesce((select sum(amount) from counted where kind = 'rueckfluss'), 0)       as net;
 
 -- ---------------------------------------------------------------------
---  Export for Claude (read-only, token in query string)
---  GET https://<ref>.supabase.co/rest/v1/rpc/export_state?token=<TOKEN>&apikey=<ANON_KEY>
---  (`apikey` is accepted as an optional, ignored parameter in case the API
---   gateway forwards the query string as-is.)
--- ---------------------------------------------------------------------
-drop function if exists public.export_state(text);  -- older single-argument signature
-create or replace function public.export_state(token text, apikey text default null)
-returns jsonb
-language plpgsql
-stable
-security definer
-set search_path = public
-as $$
-declare
-  expected text;
-begin
-  select value #>> '{}' into expected from public.settings where key = 'export_token';
-  if expected is null or token is null or token <> expected then
-    raise exception 'invalid export token' using errcode = '42501';  -- -> HTTP 403
-  end if;
-
-  return jsonb_build_object(
-    'exported_at',   now(),
-    'einzugstermin', (select value from public.settings where key = 'einzugstermin'),
-    'seed_version',  (select value from public.settings where key = 'seed_version'),
-    'phases',        coalesce((select value from public.settings where key = 'phases'), '[]'::jsonb),
-    'settings',      (select jsonb_object_agg(key, value) from public.settings
-                      where key in ('move_out_s', 'move_out_a', 'split_default_s', 'buffer_pct')),
-    'tasks', coalesce((
-      select jsonb_agg(
-        (to_jsonb(t) - 'seed_snapshot' - 'deleted_at')
-        || jsonb_build_object(
-          'subtasks', coalesce((
-            select jsonb_agg(jsonb_build_object('id', s.id, 'title', s.title, 'done', s.done, 'sort', s.sort)
-                             order by s.sort, s.created_at)
-            from public.subtasks s where s.task_id = t.id
-          ), '[]'::jsonb),
-          'comments', coalesce((
-            select jsonb_agg(jsonb_build_object('id', c.id, 'author', c.author, 'body', c.body, 'created_at', c.created_at)
-                             order by c.created_at)
-            from public.comments c where c.task_id = t.id
-          ), '[]'::jsonb)
-        )
-        order by t.phase, t.sort, t.offset_days, t.id
-      )
-      from public.tasks t
-      where t.deleted_at is null
-    ), '[]'::jsonb),
-    'costs', coalesce((
-      select jsonb_agg(to_jsonb(c) - 'seed_snapshot' order by c.sort, c.due_on nulls last, c.created_at)
-      from public.costs c
-    ), '[]'::jsonb),
-    'recurring', coalesce((
-      select jsonb_agg(to_jsonb(r) - 'seed_snapshot' order by r.sort, r.created_at)
-      from public.recurring r
-    ), '[]'::jsonb),
-    'costs_summary', (select to_jsonb(s) from public.costs_summary s)
-  );
-end;
-$$;
-
-revoke execute on function public.export_state(text, text) from public;
-grant  execute on function public.export_state(text, text) to anon, authenticated;
-
--- Rotate the export token. Only callable from SQL (service role / SQL editor):
---   select rotate_export_token();
-create or replace function public.rotate_export_token()
-returns text
-language plpgsql
-volatile
-security definer
-set search_path = public, extensions
-as $$
-declare
-  t text := encode(gen_random_bytes(24), 'hex');
-begin
-  insert into public.settings (key, value) values ('export_token', to_jsonb(t))
-  on conflict (key) do update set value = excluded.value;
-  return t;
-end;
-$$;
-
-revoke execute on function public.rotate_export_token() from public, anon, authenticated;
-
--- ---------------------------------------------------------------------
 --  Realtime: broadcast changes of these tables to logged-in clients
 --  (RLS is applied to the change events, so only allowed users receive them)
 -- ---------------------------------------------------------------------
@@ -503,16 +416,6 @@ insert into public.settings (key, value) values
   ('buffer_pct',      '20'::jsonb)      -- Puffersatz in %
 on conflict (key) do nothing;
 
--- Create the export token once; re-running the script keeps the existing one.
-do $$
-begin
-  if not exists (select 1 from public.settings where key = 'export_token') then
-    perform public.rotate_export_token();
-  end if;
-end;
-$$;
-
 -- Show the result of this run.
 select 'ok' as status,
-       (select count(*) from public.allowlist) as allowlisted_people,
-       (select value #>> '{}' from public.settings where key = 'export_token') as export_token;
+       (select count(*) from public.allowlist) as allowlisted_people;

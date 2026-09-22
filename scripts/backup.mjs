@@ -2,7 +2,7 @@
 // Daily backup (docs/changes/008b): dumps every table into one JSON file.
 //   node scripts/backup.mjs [outDir]          -> backup-<JJJJ-MM-TT>.json  (or .json.enc, see below)
 // Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (environment or .env).
-// Never contains e-mail addresses (allowlist -> person + last_seen_version only) or the export token.
+// Never contains e-mail addresses (allowlist -> person + last_seen_version only).
 // If BACKUP_KEY is set the file is encrypted (AES-256-GCM): the workflow artefact of a public
 // repository can be downloaded by anyone with a GitHub account, so it must not be readable.
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -13,7 +13,7 @@ import { encrypt } from './backup-crypto.mjs';
 // tables in dependency order (docs/changes/004 added costs and recurring)
 export const TABLES = {
   allowlist: { key: 'person', select: 'person,last_seen_version' },
-  settings: { key: 'key', select: 'key,value,updated_at', filter: 'key=neq.export_token' },
+  settings: { key: 'key', select: 'key,value,updated_at' },
   tasks: { key: 'id', select: '*' },
   subtasks: { key: 'id', select: '*' },
   comments: { key: 'id', select: '*' },

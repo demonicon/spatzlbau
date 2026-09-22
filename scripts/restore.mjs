@@ -5,7 +5,6 @@
 // Encrypted files (.json.enc) need BACKUP_KEY (environment or .env).
 // Restoring makes each table equal to the dump: rows are upserted, rows missing in the dump are
 // deleted (tasks last, so subtasks/comments go with them). allowlist: only last_seen_version per person.
-// settings: export_token is neither in the dump nor touched.
 import { readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
 import { loadEnv, restClient } from './lib.mjs';
