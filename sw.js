@@ -11,6 +11,7 @@ const SHELL = [
   './app.css',
   './manifest.json',
   './seed.json',
+  './changelog.json',
   './app/main.js',
   './app/config.js',
   './app/supabase.js',

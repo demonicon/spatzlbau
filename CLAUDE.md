@@ -12,6 +12,12 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Umsetzung auf einem Branch `feature/<kurzname>`; nach Abnahme Merge in `main`. Beim Abschluss den Status im Auftrag auf „umgesetzt“ setzen und offene Punkte dort notieren.
 - Betrifft ein Auftrag Verhalten oder Setup, werden `SETUP.md` / `BRIEFING.md` im selben Branch nachgezogen.
 
+## Changelog (`changelog.json`)
+- Jeder PR, der etwas Sichtbares ändert, ergänzt `changelog.json` um einen Eintrag oder erweitert den Eintrag des Tages. Ein PR mit sichtbarer Änderung ohne Changelog-Eintrag gilt als unvollständig.
+- `version` = Deploy-Datum `JJJJ.MM.TT`, zweiter Deploy am selben Tag `.2`, dritter `.3`. Der erste Eintrag ist die Version, die die App im Footer zeigt (einzige Quelle; der Commit-SHA ist nur Tooltip/Untertitel). Neueste Version zuerst.
+- Felder `title` (ein Satz, was die Version für die Nutzer bedeutet), `new` / `improved` / `fixed` (je 0–5 kurze Sätze; leere Listen bleiben leer).
+- Testfrage für jeden Satz: *Versteht Anna, was sich für sie beim Benutzen ändert?* Keine Technikbegriffe (kein „Service Worker“, „Refactoring“, „RLS“, „Branch“). Statt „Filter-State wird persistiert“ → „Die App merkt sich, welche Phase du zuletzt offen hattest.“ Rein technische Änderungen ohne sichtbare Wirkung bekommen keinen Eintrag.
+
 ## Konventionen
 - Vanilla JS, ES-Module, kein Build-Step, kein Framework. Keine neuen Abhängigkeiten ohne Rückfrage; Supabase-JS per CDN-ESM-Import.
 - UI-Texte Deutsch, Code und Kommentare Englisch. Kein Denglisch in Buttons.

@@ -1,0 +1,23 @@
+{
+  "entries": [
+    {
+      "version": "2026.09.22",
+      "title": "Spatzlbau hat ein neues Gesicht – und sagt jetzt Bescheid, wenn es Neues gibt",
+      "new": [
+        "Anmelden mit E-Mail und Passwort. Kein Warten auf eine Login-Mail mehr.",
+        "Das Dashboard zeigt oben den Countdown bis zur Schlüsselübergabe und je Phase, wie weit ihr seid.",
+        "Kennzahlen zum Antippen: Diese Woche, Bei Claude, Wartet auf jemanden, Blockiert, Fristkritisch, Überfällig – jede filtert die Liste.",
+        "Ein Hinweis erscheint, wenn eine neue Version bereitsteht – einmal tippen, fertig.",
+        "Diese Liste hier: Antippen der Versionsnummer zeigt, was sich geändert hat."
+      ],
+      "improved": [
+        "Die App heißt jetzt Spatzlbau – auch auf dem Home-Bildschirm.",
+        "Die App merkt sich, welche Phase du zuletzt offen hattest.",
+        "Der Login-Screen zeigt nur noch das Nötigste."
+      ],
+      "fixed": [
+        "Nach einem Update musste die App manchmal von Hand neu geladen werden. Das ist behoben."
+      ]
+    }
+  ]
+}

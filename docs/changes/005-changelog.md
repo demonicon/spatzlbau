@@ -1,6 +1,6 @@
 # Änderungsauftrag 005 – Changelog in der App
 
-Stand: 22.09.2026 · Status: offen · Branch: `feature/changelog` · Modell: Sonnet
+Stand: 22.09.2026 · Status: umgesetzt, PR offen · Branch: `feature/changelog` · Modell: Sonnet (umgesetzt mit Opus)
 Betrifft: Footer, neue Datei `changelog.json`, `CLAUDE.md`, Pages-Workflow
 
 ## Ziel
@@ -47,3 +47,12 @@ Anna und Sebastian sehen in der App, was sich seit dem letzten Mal geändert hat
 - [ ] Erster Eintrag beschreibt die Änderungen seit 13.09. in Alltagssprache
 - [ ] `CLAUDE.md` enthält die Pflegeregel und die Testfrage
 - [ ] Bei 380 px lesbar, keine Konsolenfehler
+
+## Umsetzungsnotizen (Claude Code, 22.09.2026)
+
+- `changelog.json` mit einem Eintrag `2026.09.22`, der rückwirkend alles seit dem 13.09. zusammenfasst (Passwort-Login, Dashboard, Umbenennung, Update-Hinweis, Changelog selbst).
+- Footer: Versionsnummer als Button (44 px) mit blauem „Neu“-Punkt, bis das Panel einmal geöffnet wurde (localStorage pro Gerät, Schlüssel = Version). Tooltip zeigt den Build-SHA aus 003.
+- Panel „Was ist neu?“ als Abschnitt oberhalb des Footers (kein Overlay), neueste Version zuerst, Abschnitte Neu/Verbessert/Behoben, Schließen-Button. Lädt `changelog.json` beim Start (`cache: 'no-cache'`), Datei ist Teil des App-Shell-Caches.
+- `APP_VERSION` aus `app/config.js` entfernt – die Version hat nur noch eine Quelle.
+- Pages-Workflow prüft `changelog.json` vor dem Upload (gültiges JSON, erster Eintrag mit `version` und `title`).
+- Headless bei 380 px geprüft: Punkt sichtbar → Öffnen → Punkt weg, Version gemerkt, nach Neuladen weiterhin weg; keine Konsolenfehler.
