@@ -66,7 +66,7 @@ export function detailHTML(t) {
     <h3>Beratung <small>– klappbar, editierbar</small></h3>
     ${ADV.map(([k, l]) => {
       const editing = ui.editingAdvice === t.id + ':' + k;
-      return `<details class="adv" ${editing ? 'open' : ''}><summary>${l}${adv[k] ? '' : ' <span class="hint">(leer)</span>'}</summary>
+      return `<details class="adv" ${editing || ui.wide ? 'open' : ''}><summary>${l}${adv[k] ? '' : ' <span class="hint">(leer)</span>'}</summary>
       ${
         editing
           ? `<textarea data-adv="${k}" aria-label="${l}">${esc(adv[k])}</textarea>

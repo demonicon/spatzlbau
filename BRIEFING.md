@@ -45,7 +45,7 @@ Tabellen (alle mit `updated_at`, RLS aktiv):
 
 Alle Tabellen haben `updated_at` (Trigger). Vollständiger Stand: `supabase/schema.sql`.
 
-Seed: `seed.json` in diesem Ordner enthält Phasen und 48 Aufgaben inkl. Abhängigkeiten, Teilschritten und zwei ausgefüllten Beispielen. Beim ersten Start (oder per Admin-Knopf "Seed aktualisieren") werden Seed-Einträge **gemergt**: neue Tasks anlegen, bei bestehenden nur Felder überschreiben, die im Seed gesetzt sind und die Nutzer nicht geändert haben (`advice`, `subtasks` nur ergänzen). Häkchen, Kommentare, Briefings, eigene Tasks bleiben immer erhalten. Das ist der Migrationsmechanismus für spätere Inhaltslieferungen.
+Seed: `seed.json` in diesem Ordner enthält Phasen und 48 Aufgaben inkl. Abhängigkeiten, Teilschritten und zwei ausgefüllten Beispielen. Über `scripts/seed.mjs` (nur Claude Code, Service-Role-Key; seit 006 kein Knopf in der App mehr) werden Seed-Einträge **gemergt**: neue Tasks anlegen, bei bestehenden nur Felder überschreiben, die im Seed gesetzt sind und die Nutzer nicht geändert haben (`advice`, `subtasks` nur ergänzen). Häkchen, Kommentare, Briefings, eigene Tasks bleiben immer erhalten. Das ist der Migrationsmechanismus für spätere Inhaltslieferungen.
 
 Merge-Mechanik: Ein Feld gilt als "vom Nutzer geändert", wenn sein aktueller Wert vom `seed_snapshot` abweicht. Nur Felder, die noch dem Snapshot entsprechen, werden auf den neuen Seed-Wert gesetzt; danach wird der Snapshot aktualisiert. Teilschritte werden über `seed_key` (= Seed-Titel) abgeglichen und nur ergänzt, nie gelöscht oder umbenannt.
 
@@ -78,6 +78,8 @@ Ein Dashboard-Screen statt vier Sichten (`docs/changes/002-dashboard.md`):
 2. **Kennzahlen als Filter** – Offen (alle) + Offen Sebastian / Anna / gemeinsam, dann Diese Woche, Bei Claude, Wartet auf jemanden, Blockiert, Fristkritisch, Überfällig. Jede Kachel ist ein Button (`aria-pressed`), genau ein Filter aktiv, erneutes Tippen hebt ihn auf; Warnfarbe nur bei Fristkritisch (Gelb) und Überfällig (Rot). Zahl auf der Kachel = Treffer über alle Phasen. Aktiver Filter erscheint als schließbarer Chip über der Liste und bleibt beim Phasenwechsel.
 3. **Phasen-Tabs** – fünf Tabs (Nummer, Kurzname, Zähler: offen bzw. Treffer im Filter), darunter der Gate-Text. Der zuletzt aktive Tab wird pro Gerät gemerkt; beim Öffnen ist der Filter „Diese Woche“ aktiv (eigene und gemeinsame Aufgaben, offen, nicht blockiert, nicht gerade bei Claude, plus alles, was auf mich wartet).
 4. **Aufgabenliste** der gewählten Phase nach Fälligkeit, Zeile: Häkchen, Titel, Owner-Chip, Fälligkeit („überfällig seit n Tagen“ rot, fristkritisch gelb, sonst „bis dd.mm.“), Teilschritte, Kommentare, Claude-Zustand, wartet-auf, blockiert-durch. Darunter „Neue Aufgabe in Phase n“ (bei Filter „Bei Claude“ als Claude-Aufgabe vorbelegt). Fußzeile: Version, Neu laden, Seed aktualisieren, Abmelden.
+
+Breiten (Auftrag 006): bis 599 px Handy (Akte inline unter der Aufgabe), 600–899 px Tablet (eine Spalte bis 760 px, breitere Kacheln, Tabs ohne Scrollen), ab 900 px Desktop (bis 1280 px zentriert; Liste links, Akte rechts als Seitenpanel, das beim Klicken in der Liste offen bleibt; Escape/× schließt). Die offene Aufgabe steht in der URL (`#task=<id>`) und lässt sich als Link teilen – auf allen Breiten.
 
 Die früheren Sichten „Diese Woche“, „Im Blick“, „Bei Claude“ sind vollständig in den Filtern aufgegangen. Abweichungen vom Design und selbst entschiedene Zustände: `docs/changes/002-abweichungen.md`.
 

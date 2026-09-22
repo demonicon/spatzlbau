@@ -1,6 +1,19 @@
 {
   "entries": [
     {
+      "version": "2026.09.22.3",
+      "title": "Am Computer: Liste und Aufgabe nebeneinander",
+      "new": [
+        "Am Computer siehst du Liste und Aufgabe jetzt nebeneinander. Die Aufgabe bleibt rechts offen, während du links weiterklickst.",
+        "Jede offene Aufgabe hat eine eigene Adresse in der Browserzeile – kopieren, schicken, fertig. Funktioniert am Handy genauso."
+      ],
+      "improved": [
+        "Auf dem Tablet werden Kacheln und Reiter breiter, nichts muss mehr seitlich gescrollt werden.",
+        "Am Computer sind die Beratungstexte in der Aufgabe gleich aufgeklappt."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2026.09.22.2",
       "title": "Neuigkeiten kommen von selbst",
       "new": [

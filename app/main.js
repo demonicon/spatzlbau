@@ -18,7 +18,6 @@ import {
   deleteSubtask,
   addComment,
   setSetting,
-  runSeedMerge,
   loadLastSeenVersion,
   setLastSeenVersion,
 } from './state.js';
@@ -32,6 +31,7 @@ const UI_KEY = 'spatzlbau-ui';
 ui.filter = 'week';
 ui.phase = null;
 ui.dateEdit = false;
+ui.wide = false; // docs/changes/006: ≥ 900 px -> Akte as side panel instead of inline
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
 ui.changelogUnreadOnly = false; // auto-opened panel shows only the versions newer than last_seen_version
@@ -90,14 +90,28 @@ function render() {
   }
   renderPending = false;
   ensurePhase();
+  const focusKey = keyOf(document.activeElement);
   $('#view').innerHTML = dashboardView();
-  if (ui.confirm === 'seed') {
-    $('#view .list').insertAdjacentHTML(
-      'afterbegin',
-      `<div class="confirm block">Seed aktualisieren? Neue Stammaufgaben und Beratungstexte werden ergänzt, eure Häkchen, Kommentare und Änderungen bleiben. <button class="btn small primary" data-act="seed-yes">Ja, einspielen</button><button class="btn small" data-act="confirm-no">Nein</button></div>`,
-    );
-  }
+  restoreFocus(focusKey);
   renderStatus('idle');
+}
+
+/* ---------- keyboard (docs/changes/006 step 3): the view is re-rendered on every change,
+   so remember which control had focus and give it back afterwards ---------- */
+const FOCUS_ATTRS = ['data-act', 'data-filter', 'data-phase', 'data-field', 'data-input', 'data-brief', 'data-adv', 'data-ref', 'role'];
+function keyOf(el) {
+  if (!el || el === document.body || !$('#view')?.contains(el)) return null;
+  const scope = el.closest('[data-id]');
+  const own = FOCUS_ATTRS.filter((a) => el.hasAttribute(a)).map((a) => `[${a}="${CSS.escape(el.getAttribute(a))}"]`).join('');
+  const sub = el.closest('[data-sub]');
+  const sel = (sub ? `[data-sub="${CSS.escape(sub.dataset.sub)}"] ` : '') + el.tagName.toLowerCase() + own + (el.id ? '#' + CSS.escape(el.id) : '');
+  return { scope: scope ? scope.dataset.id : null, sel };
+}
+function restoreFocus(key) {
+  if (!key) return;
+  const root = key.scope ? $(`#view [data-id="${CSS.escape(key.scope)}"]`) : $('#view');
+  const el = (root && root.querySelector(key.sel)) || $('#view').querySelector(key.sel);
+  if (el) el.focus({ preventScroll: true });
 }
 onChange(render);
 
@@ -140,38 +154,30 @@ function closeChangelog() {
 }
 // opened via a task link (#task=<id>)? then the person has a goal – no automatic panel
 const openedViaTaskLink = () => /^#task=/.test(location.hash);
+const hashTaskId = () => (openedViaTaskLink() ? decodeURIComponent(location.hash.slice('#task='.length)) : null);
 function openTaskFromHash() {
-  const id = decodeURIComponent(location.hash.slice('#task='.length));
-  const t = byId(id);
-  if (!t) return;
+  const t = byId(hashTaskId());
+  if (!t) return false;
   ui.phase = t.phase;
-  ui.filter = null;
+  if (ui.filter && !FILTERS[ui.filter].test(t)) ui.filter = null;
+  ui.expanded = t.id;
+  return true;
+}
+// the open task lives in the URL, so a link to it can be shared (docs/changes/006)
+function syncHash() {
+  const want = ui.expanded ? '#task=' + encodeURIComponent(ui.expanded) : '';
+  if (location.hash === want) return;
+  history.replaceState(null, '', location.pathname + location.search + want);
+}
+function setExpanded(id) {
+  const prev = ui.expanded;
   ui.expanded = id;
-}
-
-/* ---------- seed ---------- */
-async function fetchSeed() {
-  const r = await fetch('./seed.json', { cache: 'no-cache' });
-  if (!r.ok) throw new Error('seed.json nicht ladbar');
-  return r.json();
-}
-async function applySeed(reason) {
-  try {
-    const seed = await fetchSeed();
-    const s = await runSeedMerge(seed);
-    toast(`${reason}: ${s.newTasks} neue Aufgaben, ${s.updatedTasks} aktualisiert, ${s.newSubtasks} Teilschritte ergänzt`);
-  } catch (e) {
-    toast('Seed konnte nicht eingespielt werden: ' + e.message);
-  }
-}
-async function maybeAutoSeed() {
-  try {
-    const seed = await fetchSeed();
-    const current = Number(state.settings.seed_version) || 0;
-    if (seed.version > current) await applySeed('Inhalte aktualisiert');
-  } catch (e) {
-    console.warn('seed check failed', e);
-  }
+  ui.confirm = null;
+  ui.editingAdvice = null;
+  syncHash();
+  render();
+  // closing gives the keyboard focus back to the task's title in the list
+  if (!id && prev) $(`#view .task[data-id="${CSS.escape(prev)}"] .t`)?.focus({ preventScroll: true });
 }
 
 /* ---------- events ---------- */
@@ -181,7 +187,28 @@ function wireEvents() {
   const view = $('#view');
   view.addEventListener('focusout', () => setTimeout(() => renderPending && !isTyping() && render(), 0));
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && ui.changelogOpen) closeChangelog();
+    if (e.key !== 'Escape') return;
+    if (ui.changelogOpen) closeChangelog();
+    else if (ui.expanded && ui.wide) {
+      // a field still being typed in saves on blur – let that happen before the panel goes
+      if (document.activeElement?.closest?.('#panel')) document.activeElement.blur();
+      setExpanded(null); // Escape empties the side panel
+    }
+  });
+  // browser back/forward or a pasted link: follow the hash
+  window.addEventListener('hashchange', () => {
+    if (!state.loaded) return;
+    const id = hashTaskId();
+    if (id && byId(id)) openTaskFromHash();
+    else if (!id) ui.expanded = null;
+    render();
+  });
+  // layout mode: the Akte moves between inline (narrow) and side panel (wide) – same behaviour, other place
+  const mq = matchMedia('(min-width: 900px)');
+  ui.wide = mq.matches;
+  mq.addEventListener('change', () => {
+    ui.wide = mq.matches;
+    render();
   });
 
   view.addEventListener('change', (e) => {
@@ -191,7 +218,7 @@ function wireEvents() {
       setSetting('einzugstermin', el.value || '').catch(fail);
       return;
     }
-    const row = el.closest('.task');
+    const row = el.closest('[data-id]'); // task row, or the side panel
     const t = row ? byId(row.dataset.id) : null;
     if (el.dataset.act === 'sub-done') {
       setSubtaskDone(el.closest('.sub').dataset.sub, el.checked)
@@ -231,23 +258,23 @@ function wireEvents() {
     if (tile) {
       const key = tile.dataset.filter;
       ui.filter = ui.filter === key ? null : FILTERS[key] ? key : null;
-      ui.expanded = null;
-      render();
+      if (!ui.wide) setExpanded(null); // inline Akte closes with the list change; the side panel stays open
+      else render();
       return;
     }
     // gate bar and phase tabs select the phase; the filter stays
     const ph = e.target.closest('[data-phase]');
     if (ph) {
       ui.phase = parseInt(ph.dataset.phase, 10);
-      ui.expanded = null;
       saveUI();
-      render();
+      if (!ui.wide) setExpanded(null);
+      else render();
       return;
     }
     const b = e.target.closest('[data-act]');
     if (!b || b.tagName === 'INPUT' || b.tagName === 'SELECT') return;
     const act = b.dataset.act;
-    const row = b.closest('.task');
+    const row = b.closest('[data-id]'); // task row, or the side panel
     const t = row ? byId(row.dataset.id) : null;
     const input = (sel, root = row) => $(sel, root);
     try {
@@ -275,21 +302,11 @@ function wireEvents() {
         case 'reload':
           location.reload();
           return;
-        case 'seed':
-          ui.confirm = 'seed';
-          render();
-          $('#view .list')?.scrollIntoView({ block: 'start' });
-          return;
-        case 'seed-yes':
-          ui.confirm = null;
-          render();
-          await applySeed('Seed eingespielt');
-          return;
         case 'open':
-          ui.expanded = ui.expanded === t.id ? null : t.id;
-          ui.confirm = null;
-          ui.editingAdvice = null;
-          render();
+          setExpanded(ui.expanded === t.id ? null : t.id);
+          return;
+        case 'panel-close':
+          setExpanded(null);
           return;
         case 'unblock':
           await updateTask(t.id, { blocked_by: (t.blocked_by || []).filter((id) => id !== b.dataset.ref) });
@@ -346,6 +363,7 @@ function wireEvents() {
         case 'del-yes':
           ui.expanded = null;
           ui.confirm = null;
+          syncHash();
           await deleteTask(t.id);
           toast('Aufgabe gelöscht');
           return;
@@ -370,8 +388,7 @@ function wireEvents() {
           const nt = byId(id);
           // keep the new task visible: drop the filter if it would hide it
           if (nt && ui.filter && !FILTERS[ui.filter].test(nt)) ui.filter = null;
-          ui.expanded = id;
-          render();
+          setExpanded(id);
           toast('Aufgabe hinzugefügt');
           return;
         }
@@ -417,7 +434,6 @@ async function enter(session) {
   if (viaLink) $('.task.open')?.scrollIntoView({ block: 'start' });
   else if (hasUnread()) openChangelog(true); // once per person: after login and data, never when following a task link
   subscribeRealtime();
-  maybeAutoSeed();
 }
 
 let started = false;

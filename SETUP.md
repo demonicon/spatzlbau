@@ -115,7 +115,7 @@ Danach: Claude Code baut, pusht, meldet die Pages-URL, spielt den Seed ein (`nod
 ```bash
 node scripts/seed.mjs --dry
 ```
-zeigt, was ein Seed-Merge ändern würde; ohne `--dry` wird geschrieben (nie destruktiv). Dasselbe macht der Knopf „Seed aktualisieren“ in der App; beim ersten Öffnen bzw. wenn `seed.json` eine höhere `version` hat als die Datenbank, läuft der Merge automatisch.
+zeigt, was ein Seed-Merge ändern würde; ohne `--dry` wird geschrieben (nie destruktiv). Das ist der einzige Weg, den Seed einzuspielen – die App hat seit 006 keinen Seed-Knopf mehr.
 
 ```bash
 node scripts/claude-result.mjs ergebnis.json
