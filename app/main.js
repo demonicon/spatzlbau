@@ -92,6 +92,8 @@ function render() {
   ensurePhase();
   const focusKey = keyOf(document.activeElement);
   $('#view').innerHTML = dashboardView();
+  // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set via CSSOM
+  for (const el of $('#view').querySelectorAll('.gate .bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
   restoreFocus(focusKey);
   renderStatus('idle');
 }
