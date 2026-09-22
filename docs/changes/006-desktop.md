@@ -1,6 +1,6 @@
 # Änderungsauftrag 006 – Desktop-Layout
 
-Stand: 22.09.2026 · Status: umgesetzt (Schritte 1–3, Review-Änderungen 1–4 eingearbeitet), PR offen · Branch: `feature/desktop` · Modell: Opus (Layout-Umbau), Effort standard
+Stand: 22.09.2026 · Status: deployt 22.09.2026 (Merge dad0b49, Pages-Lauf 17) · Branch: `feature/desktop` · Modell: Opus (Layout-Umbau), Effort standard
 Betrifft: `app.css`, `index.html`, `app/views/*`; **nicht** Datenschicht, **nicht** Verhalten
 
 ## Ausgangslage
