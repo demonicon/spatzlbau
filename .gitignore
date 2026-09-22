@@ -12,3 +12,11 @@ design/handoff/
 design/snapshot/**/screens/
 design/snapshot/**/index.html
 design/snapshot/*.zip
+
+# Audit-Aufnahmen: wie die Design-Snapshots - der Begleittext (README.md) bleibt im Repo,
+# die Bilder, das PDF und das ZIP nicht (öffentliches Repo)
+docs/audit/**/*.png
+docs/audit/**/*.jpg
+docs/audit/**/*.pdf
+docs/audit/*.zip
+docs/audit/**/*.zip
