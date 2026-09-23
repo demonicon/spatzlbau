@@ -10,7 +10,7 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 | 020 Tweaks | `95f6f72` | fertig | – |
 | 016 Finanzen | `eb3e340` | fertig | `010_a016_finanzen.sql` – ohne sie wird „Überweisung erfassen“ abgelehnt (mit Hinweis), der Rest läuft |
 | 017 Akte | `54cc36d` | fertig | keine |
-| 018 Dashboard | – | offen | – |
+| 018 Dashboard | `bcaaffb` | fertig | `011_a018_task_changes.sql` – ohne sie fehlen in „Seit du zuletzt da warst“ die verschobenen Fristen |
 | 022 Kalender-Abo | – | offen | – |
 | 019 Timeline | – | offen | – |
 | 021 Phasen/Gates | – | offen | – |
