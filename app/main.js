@@ -29,6 +29,9 @@ import {
   setLastSeenVersion,
   markVisit,
   markCommentsSeen,
+  markGateSeen,
+  phaseDone,
+  unseenGate,
   doneBy,
   addCost,
   updateCost,
@@ -79,8 +82,8 @@ ui.wide = false; // ≥ 900 px: the Akte is not inline any more (006)
 // docs/changes/013 A3: three steps instead of two - 'phone' (Akte inline), 'overlay' (Akte comes
 // in from the right over the list) and 'panel' (list and Akte side by side from 1180 px)
 ui.mode = 'phone';
+ui.gate = null; // phase id whose gate moment is on screen (021)
 ui.view = 'personen'; // 'personen' | 'phasen' | 'timeline' (019), kept per device
-ui.tlPhase = null; // timeline: one phase alone, null = all (019)
 ui.tlOwner = 'all'; // timeline: 'all' | 'me' | 'B' | 'you' (019)
 ui.tlDone = false; // timeline: the ticked-off tasks unfolded at the end (019)
 ui.icsShow = null; // 'S' | 'A': the calendar address shown as text when copying failed (022)
@@ -161,7 +164,9 @@ function render() {
   document.body.classList.toggle('printing', !!ui.printOpen);
   $('#view').innerHTML = ui.screen === 'finanzen' ? finanzenView() : dashboardView();
   // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set via CSSOM
-  for (const el of $('#view').querySelectorAll('.gate .bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
+  for (const el of $('#view').querySelectorAll('.bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
+  // docs/changes/021: a segment is as wide as its share of all tasks, at least 44 px
+  for (const el of $('#view').querySelectorAll('.pstrip [data-share]')) el.style.flexGrow = el.dataset.share;
   restoreFocus(focusKey);
   renderStatus('idle');
 }
@@ -405,6 +410,15 @@ const isEditable = (el) => !!el && (el.tagName === 'INPUT' || el.tagName === 'TE
 /* ---------- events ---------- */
 const fail = (e) => e && toast('Nicht gespeichert – bitte nochmal versuchen');
 
+/** After my own tick: did that finish the phase? Then the moment belongs to me now (021). */
+function checkGate(phase) {
+  if (ui.gate !== null) return;
+  if (!phaseDone(phase) || state.seenGates.has(phase)) return;
+  ui.gate = phase;
+  render();
+  window.scrollTo({ top: 0 });
+}
+
 /** Put the today marker of the timeline in view (docs/changes/019). */
 function jumpToToday() {
   requestAnimationFrame(() => $('#tl-today')?.scrollIntoView({ block: 'center' }));
@@ -421,7 +435,7 @@ async function newIcsToken() {
 const OFFLINE_OK = new Set([
   'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
   'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'col-person', 'visit-toggle', 'group-open',
-  'view-switch', 'tl-phase', 'tl-owner', 'tl-done', 'tl-today',
+  'view-switch', 'tl-owner', 'tl-done', 'tl-today',
   'brief-read', 'adv-open', 'akte-cancel', 'akte-discard',
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
@@ -575,7 +589,9 @@ function wireEvents() {
         return toast('Wartet noch auf eine andere Aufgabe');
       }
       // done_by: who ticked it off – "Seit deinem letzten Besuch" must not count my own work (009)
-      updateTask(t.id, { done: el.checked, ...doneBy(el.checked) }).catch(fail);
+      updateTask(t.id, { done: el.checked, ...doneBy(el.checked) })
+        .then(() => checkGate(t.phase))
+        .catch(fail);
       return;
     }
     // docs/changes/017: in Bearbeiten nothing is written until "Fertig" - the field lands in
@@ -731,6 +747,13 @@ function wireEvents() {
           ui.blockedCols.has(b.dataset.ref) ? ui.blockedCols.delete(b.dataset.ref) : ui.blockedCols.add(b.dataset.ref);
           render();
           return;
+        /* ---------- Gate-Moment 021 ---------- */
+        case 'gate-next':
+          await markGateSeen(parseInt(b.dataset.ref, 10)).catch(() => {});
+          ui.gate = null;
+          render();
+          window.scrollTo({ top: 0 });
+          return;
         /* ---------- Timeline 019 ---------- */
         case 'view-switch': {
           const to = b.dataset.to;
@@ -745,10 +768,6 @@ function wireEvents() {
           else window.scrollTo({ top: 0 });
           return;
         }
-        case 'tl-phase':
-          ui.tlPhase = b.dataset.to === 'all' ? null : parseInt(b.dataset.to, 10);
-          render();
-          return;
         case 'tl-owner':
           ui.tlOwner = b.dataset.to;
           render();
@@ -1268,6 +1287,9 @@ async function enter(session) {
   const viaLink = openedViaTaskLink();
   if (viaLink) openTaskFromHash();
   if (openedViaFinanzen()) ui.screen = 'finanzen';
+  // docs/changes/021: a phase the other person finished while I was away - the moment is mine
+  // too, once, and it waits for the next opening instead of interrupting anything
+  if (!viaLink) ui.gate = unseenGate();
   show('app');
   render();
   if (viaLink) $('.task.open')?.scrollIntoView({ block: 'start' });

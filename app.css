@@ -148,18 +148,6 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .date-edit input[type=date] { flex: 1; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: 17px; min-width: 0; }
 
 /* gate bar */
-.gates { display: flex; gap: 4px; margin-top: 8px; }
-/* docs/changes/013 A1: number and bar, the count lives in the tooltip and the aria label */
-/* what you see is the same as before - number, 6 px bar, 24 px of ink at the bottom of the box.
-   The box itself is a full 44 px tap target again: the air sits above the number, where nothing
-   else lives, instead of an invisible overlay that would fight with the field below. */
-.gate { flex: 1; min-height: var(--tap); display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; padding: 0 0 4px; border-bottom: 2px solid transparent; }
-.gate[aria-pressed=true] { border-bottom-color: var(--ink); }
-.gate .lbl { font-size: var(--fs-nano); font-weight: 600; color: var(--ink-3); }
-.gate.current .lbl, .gate[aria-pressed=true] .lbl { color: var(--ink); }
-.gate .bar { display: block; height: 6px; background: var(--line); position: relative; }
-.gate .bar i { position: absolute; inset: 0 auto 0 0; background: var(--ink); }
-.gate.complete .bar i { background: var(--ok); }
 
 /* ---------- "Seit du zuletzt da warst" (docs/changes/018 §6) ----------
    One line while folded; it only exists when something actually happened. */
@@ -732,3 +720,40 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .tl-gate .d { color: var(--ink); }
 .tl-done { margin-top: 8px; }
 .timeline .empty { margin: 16px var(--gutter); }
+
+/* ---------- phase strip (docs/changes/021, idea 4o): five labelled segments in the head ---------- */
+.pstrip { display: flex; gap: 4px; margin: 10px 0 0; }
+.pseg-ph { flex: 1 1 0; min-width: 44px; min-height: var(--tap); padding: 4px 6px 6px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; text-align: left; position: relative; }
+.pseg-ph .lbl { display: flex; align-items: baseline; gap: 4px; min-width: 0; font-size: var(--fs-micro); color: var(--ink-2); line-height: 1.1; }
+.pseg-ph .lbl .n { font-weight: 600; color: var(--ink); }
+.pseg-ph .lbl .s { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pseg-ph .bar { display: block; height: 6px; background: var(--line); position: relative; }
+.pseg-ph .bar i { position: absolute; inset: 0 auto 0 0; background: var(--ink); }
+.pseg-ph.complete .bar i { background: var(--ok); }
+.pseg-ph.current { box-shadow: inset 0 0 0 1px var(--ink); }
+.pseg-ph.current .lbl { color: var(--ink); font-weight: 600; }
+.pseg-ph[aria-pressed=true] { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.pseg-ph .gate-mark { position: absolute; right: 3px; top: 2px; font-size: 10px; line-height: 1; color: var(--ok); }
+/* a narrow segment shortens its name with an ellipsis; from 600 px on it never has to (021) */
+@media (max-width: 479px) {
+  .pseg-ph .lbl .s { font-size: var(--fs-nano); }
+}
+@media (min-width: 600px) {
+  .pseg-ph { min-width: min-content; }
+}
+
+/* ---------- the gate moment (docs/changes/021, idea 4p): one page, one button ---------- */
+.gate-moment { position: fixed; inset: 0; z-index: 60; background: var(--paper); display: flex; align-items: center; justify-content: center; padding: var(--gutter); overflow-y: auto; }
+.gm-card { width: 100%; max-width: 480px; }
+.gm-eyebrow { margin: 0; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+.gm-card h2 { margin: 6px 0 0; font-size: 30px; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
+.gm-gate { margin: 10px 0 0; font-size: var(--fs-ui); line-height: 1.5; color: var(--ink-2); }
+.gm-numbers { display: flex; gap: 1px; background: var(--line); border: 1px solid var(--line); margin: 18px 0 0; }
+.gm-numbers > div { flex: 1 1 0; background: var(--card); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.gm-numbers b { font-size: 24px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.gm-numbers span { font-size: var(--fs-micro); color: var(--ink-2); }
+.gm-next { margin: 18px 0 0; font-size: var(--fs-ui); line-height: 1.45; }
+.gm-next .l { display: block; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+.gm-next .s { display: block; margin-top: 4px; font-size: var(--fs-small); color: var(--ink-2); }
+.gm-foot { margin: 14px 0 0; font-size: var(--fs-small); color: var(--ink-3); }
+.gm-card .row { margin-top: 22px; }

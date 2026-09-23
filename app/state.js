@@ -9,6 +9,8 @@ export const state = {
   lastSeenVersion: undefined, // allowlist.last_seen_version of this person; undefined = could not be read (005b)
   lastVisitAt: undefined, // allowlist.last_visit_at: when this person last left; null = never here, undefined = unknown (009)
   seenComments: new Set(), // ids of new comments this person already opened (009)
+  seenGates: new Set(), // phase ids whose gate moment this person has already seen (021)
+  gatesReady: false, // true once migration 013 is applied: allowlist.seen_gates exists (021)
   visitReady: false, // true once migration 006 is applied: last_visit_at / seen_comments / done_by exist (009)
   loadedAt: null, // when the data last came from the server (009, offline notice)
   settings: {}, // key -> value (jsonb)
@@ -232,6 +234,32 @@ export async function loadPersonRow() {
   state.visitReady = 'last_visit_at' in data; // migration 006 applied?
   state.lastVisitAt = state.visitReady ? data.last_visit_at : undefined;
   state.seenComments = new Set(Array.isArray(data.seen_comments) ? data.seen_comments : []);
+  // docs/changes/021: without migration 013 the column is missing - the moment is then shown
+  // once per session and nothing is written
+  state.gatesReady = 'seen_gates' in data;
+  state.seenGates = new Set(Array.isArray(data.seen_gates) ? data.seen_gates : []);
+}
+
+/** Remember that this person has seen the gate of a phase (021). */
+export async function markGateSeen(phase) {
+  if (state.seenGates.has(phase)) return;
+  state.seenGates.add(phase);
+  notify();
+  // the preview never writes the reading state (010), and without migration 013 there is no column
+  if (ui.preview || !state.gatesReady) return;
+  await supabase.from('allowlist').update({ seen_gates: [...state.seenGates] }).eq('person', state.person);
+}
+
+/** A phase is done when it has tasks and every one of them is ticked off (021). */
+export function phaseDone(id) {
+  const all = state.tasks.filter((t) => t.phase === id);
+  return all.length > 0 && all.every((t) => t.done);
+}
+
+/** The first finished phase whose moment this person has not had yet, or null. */
+export function unseenGate() {
+  for (const p of phases()) if (phaseDone(p.id) && !state.seenGates.has(p.id)) return p.id;
+  return null;
 }
 
 // leaving the app ends the visit; the block on the next open is measured from here.

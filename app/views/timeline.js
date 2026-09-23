@@ -34,7 +34,7 @@ export function rows() {
   const q = term();
   return state.tasks
     .filter((t) => !t.done && anchorDate(t))
-    .filter((t) => (ui.tlPhase === null || t.phase === ui.tlPhase) && (!q || isHit(t, q)))
+    .filter((t) => (ui.phase === null || t.phase === ui.phase) && (!q || isHit(t, q)))
     .filter((t) => ui.tlOwner === 'all' || (ui.tlOwner === 'me' ? t.owner === state.person : ui.tlOwner === 'B' ? t.owner === 'B' : t.owner !== state.person && t.owner !== 'B'))
     .map((t) => ({ t, at: new Date(dueInfo(t).sort) }))
     .sort((a, b) => a.at - b.at || a.t.sort - b.t.sort);
@@ -139,10 +139,6 @@ export function timelineHTML() {
 
   return `<section class="timeline" aria-label="Timeline">
     <div class="tl-filters">
-      <div class="pchips" role="group" aria-label="Phase">
-        ${chip('all', 'alle Phasen', ui.tlPhase === null, 'tl-phase')}
-        ${ps.map((p) => chip(p.id, p.id + ' ' + (p.short || p.name), ui.tlPhase === p.id, 'tl-phase')).join('')}
-      </div>
       <div class="pchips" role="group" aria-label="Wessen Aufgaben">
         ${chip('all', 'alle', ui.tlOwner === 'all', 'tl-owner')}
         ${chip('me', 'Du', ui.tlOwner === 'me', 'tl-owner')}

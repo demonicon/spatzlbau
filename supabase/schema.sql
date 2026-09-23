@@ -30,6 +30,7 @@ create table if not exists public.allowlist (
 alter table public.allowlist add column if not exists last_seen_version text;
 alter table public.allowlist add column if not exists last_visit_at timestamptz;
 alter table public.allowlist add column if not exists seen_comments jsonb not null default '[]'::jsonb;
+alter table public.allowlist add column if not exists seen_gates jsonb not null default '[]'::jsonb;   -- a021
 alter table public.allowlist enable row level security;
 
 insert into public.allowlist (email, person) values
@@ -330,7 +331,7 @@ revoke insert, update, delete on table public.task_changes from authenticated;
 grant select on table public.task_changes to authenticated;
 
 revoke update on table public.allowlist from authenticated;
-grant update (last_seen_version, last_visit_at, seen_comments) on table public.allowlist to authenticated;
+grant update (last_seen_version, last_visit_at, seen_comments, seen_gates) on table public.allowlist to authenticated;
 
 drop policy if exists allowlist_update_own on public.allowlist;
 create policy allowlist_update_own on public.allowlist
