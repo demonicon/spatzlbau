@@ -104,6 +104,21 @@ export function dueLabel(t) {
   return 'bis ' + fmtShort(date);
 }
 
+/** The deadline as the row shows it since 020: a date, right-aligned, short enough to sit
+    next to the title. "heute"/"morgen" stay words, an overdue row counts days, and the chip
+    next to it already says "überfällig" - so the date itself does not repeat it. */
+export function dueShort(t) {
+  const du = dueInfo(t);
+  if (!anchorDate(t)) return du.label; // no date set at all: the offset text from dueInfo
+  const date = new Date(du.sort);
+  if (t.done) return fmtShort(date);
+  const d = du.diff;
+  if (d < 0) return `seit ${-d} T.`;
+  if (d === 0) return 'heute';
+  if (d === 1) return 'morgen';
+  return fmtShort(date);
+}
+
 // docs/changes/009: three delegation states. Tasks written before migration 007 can still
 // carry go/recherche/rueckfragen/arbeit – they all read as "bei Claude".
 export const claudeStep = (t) => (t.status === 'ergebnis' ? 'ergebnis' : t.status && t.status !== 'briefing' ? 'claude' : 'briefing');

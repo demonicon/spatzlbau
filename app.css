@@ -15,6 +15,8 @@
   --fs-meta: 14px; --fs-small: 13px; --fs-micro: 12px; --fs-nano: 11px;
   /* spacing & shape */
   --gutter: 16px; --gap: 8px; --tap: 44px;
+  /* button system (docs/changes/020): one height everywhere, four kinds, nothing ad hoc */
+  --btn-h: 40px; --btn-h-desktop: 32px;
   --r-tag: 4px; --r-pill: 999px;
   --col-max: 440px;
   --font: "Instrument Sans", "Avenir Next", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -23,6 +25,51 @@
 html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: var(--fs-body); line-height: 1.45; -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; background: none; border: 0; padding: 0; text-align: left; }
+
+/* =====================================================================
+   Button system (docs/changes/020). Four kinds, one height, no exceptions:
+   .btn-primary   the step that finishes something - at most one per screen
+   .btn-secondary an action on a row or a change of mode
+   .btn-text      section heads, cancel, look-ups; red only for deleting
+   .pill          selection and navigation only (filter, screen, topic) - never an action
+   Everything is 14 px / 600, square except pills. 40 px tall on a phone, 32 px from 900 px on;
+   the tap area stays at 44 px through the row height or the padding around it.
+   Row surfaces (a task title, a subtask line, a column head) and icon-only buttons are not
+   buttons in this sense and keep their own class - see docs/changes/020-abweichungen.md.
+   ===================================================================== */
+.btn-primary, .btn-secondary, .btn-text, .pill {
+  font-size: var(--fs-meta); font-weight: 600; line-height: 1.2;
+  min-height: var(--btn-h); display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; white-space: nowrap; border: 1px solid transparent; border-radius: var(--r-tag);
+}
+.btn-primary { padding: 0 16px; background: var(--ink); border-color: var(--ink); color: #fff; }
+.btn-primary:hover { background: #16211b; }
+/* on a dark ground the primary inverts ("Fertig" in the edit bar) */
+.on-ink .btn-primary { background: var(--card); border-color: var(--card); color: var(--ink); }
+.on-ink .btn-secondary { border-color: var(--card); color: var(--card); }
+.on-ink .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
+.btn-secondary { padding: 0 14px; background: transparent; border-color: var(--ink); color: var(--ink); }
+.btn-secondary:hover { background: var(--line); }
+.btn-text { padding: 0 4px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.btn-text:hover { color: var(--ink-2); }
+.btn-text.danger { color: var(--danger); }
+.btn-text.quiet { color: var(--ink-2); font-weight: 400; }
+/* "Mehr zeigen" is a full row, not a button in the middle of nowhere */
+.btn-text.row { width: 100%; justify-content: flex-start; padding: 0; }
+@media (max-width: 899px) { .btn-text.row { min-height: var(--tap); } }
+.pill { padding: 0 14px; border-radius: var(--r-pill); border-color: var(--line); background: var(--card); color: var(--ink-2); }
+.pill:hover { border-color: var(--line-dash); color: var(--ink); }
+.pill.on, .pill[aria-pressed=true], .pill[aria-current=page] { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+.pill .n { color: inherit; }
+.btn-primary:disabled, .btn-secondary:disabled, .btn-text:disabled, .pill:disabled { opacity: 0.6; cursor: default; }
+.btn-wide { width: 100%; }
+/* The drawn box stays 40 px on a phone. The audit rule (44 px) is kept the way the order puts it -
+   "über Zeilenhöhe oder Padding": every button row keeps at least 4 px of empty space above and
+   below, so nothing else is within reach of a finger that lands 2 px off. Text buttons that ARE a
+   row (.btn-text.row) are 44 px tall to begin with. */
+@media (min-width: 900px) {
+  .btn-primary, .btn-secondary, .btn-text, .pill { min-height: var(--btn-h-desktop); }
+}
 [hidden] { display: none !important; }
 :focus-visible { outline: 2px solid var(--seb); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
@@ -33,7 +80,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .hint { font-size: var(--fs-small); color: var(--ink-2); }
 .spacer { flex: 1; }
-.link { min-height: var(--tap); padding: 10px 0; font-size: var(--fs-meta); color: var(--ink-2); text-decoration: underline; }
+/* .link/.btn/.col-more/.pchip and friends are gone since 020 - the four system classes above
+   own height, colour and shape. What is left below are layout jobs only. */
 
 /* screens: loading / login / denied */
 .screen { padding: 24px var(--gutter); color: var(--ink-2); }
@@ -59,10 +107,10 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .card h2 { margin: 0 0 6px; font-size: 20px; }
 .card label { display: block; font-size: var(--fs-meta); color: var(--ink-2); margin: 12px 0 6px; }
 .card input { display: block; width: 100%; margin-top: 4px; min-height: var(--tap); padding: 8px 12px; border: 1px solid var(--line); background: var(--paper); font-size: 17px; }
-.card .btn.wide { margin-top: 14px; }
+.card .btn-primary { margin-top: 14px; }
 .card .pw { display: flex; gap: var(--gap); align-items: stretch; }
 .card .pw input { flex: 1; margin: 0; }
-.card .pw .btn { flex: 0 0 auto; }
+.card .pw .btn-secondary { flex: 0 0 auto; }
 .msg { font-size: var(--fs-meta); color: var(--ink-2); min-height: 20px; margin: 12px 0 0; }
 .msg.err { color: var(--danger); }
 
@@ -74,19 +122,15 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .avatar.S { --who-fg: var(--seb); }
 .avatar.A { --who-fg: var(--anna); }
 .mainnav { display: flex; gap: 4px; }
-.navbtn { min-height: var(--tap); min-width: var(--tap); padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--card); color: var(--ink-2); }
+.navbtn { min-width: var(--tap); padding: 0 10px; }
 .navbtn .nl { display: none; font-size: var(--fs-small); font-weight: 600; }
-.navbtn:hover { color: var(--ink); border-color: var(--line-dash); }
-.navbtn.on { background: var(--ink); border-color: var(--ink); color: #fff; }
-.navbtn.on:hover { color: #fff; }
 /* docs/changes/013 A1: the countdown is one line, not a poster */
 .countdown { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; margin-top: 4px; }
 .countdown .n { font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
 .countdown .n.open { font-size: 20px; }
 .countdown .t { font-size: var(--fs-ui); color: var(--ink-2); }
-.eyebrow { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); min-height: var(--tap); display: inline-flex; align-items: center; }
-.eyebrow.btn-like { text-decoration: underline dotted; text-underline-offset: 3px; }
-.eyebrow .long { display: none; }
+/* the date in the countdown is a plain text button since 020 - no separate eyebrow type */
+.countdown .btn-text .long { display: none; }
 .pct { font-size: var(--fs-micro); color: var(--ink-3); }
 /* docs/changes/010: only visible on the /preview/ deploy of the app */
 .preview-badge { min-height: 26px; padding: 0 10px; display: inline-flex; align-items: center; background: var(--ink); color: #fff; border-radius: var(--r-pill); font-size: var(--fs-micro); font-weight: 700; letter-spacing: 0.02em; }
@@ -98,7 +142,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .status.err { color: var(--danger); }
 /* docs/changes/013 A6: a waiting update is a bar, not a button that is always there */
 .updatebar { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; padding: 10px var(--gutter); background: var(--ink); color: #fff; font-size: var(--fs-meta); }
-.updatebar .btn { background: var(--card); color: var(--ink); border-color: var(--card); }
+
 .date-edit { display: flex; gap: var(--gap); align-items: center; margin-top: 10px; }
 .date-edit input[type=date] { flex: 1; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: 17px; min-width: 0; }
 
@@ -118,14 +162,14 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 
 /* ---------- "Seit deinem letzten Besuch" (docs/changes/009) ---------- */
 /* docs/changes/013 A1: one line of chips; the four rows only while one of them is active */
-.visit.chips-only { margin: 10px var(--gutter) 0; padding: 0; border: 0; background: none; display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.visit.chips-only { margin: 10px var(--gutter) 0; padding: 2px 0; border: 0; background: none; display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; }
 .visit.chips-only::-webkit-scrollbar { display: none; }
 .visit-label { flex: none; font-size: var(--fs-micro); color: var(--ink-3); }
-.vchip { flex: none; min-height: var(--tap); padding: 0 12px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--card); font-size: var(--fs-small); color: var(--ink-2); white-space: nowrap; }
+.vchip { flex: none; padding: 0 12px; }
 .vchip b { color: var(--ink); font-size: var(--fs-meta); }
 /* docs/changes/013b N2: what waits for me is heavier and outlined, not red - red stays with
    "überfällig", so the two cannot be confused at a glance */
-.vchip.urgent { border-color: var(--ink); color: var(--ink); font-weight: 600; }
+.vchip.urgent { border-color: var(--ink); color: var(--ink); font-weight: 600; background: var(--card); }
 .vchip .ndot { width: 16px; height: 16px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: var(--fs-nano); font-weight: 700; line-height: 1; margin-left: -3px; }
 .vchip .ndot.S, .visit-part .ndot.S { background: var(--seb); }
 .vchip .ndot.A, .visit-part .ndot.A { background: var(--anna); }
@@ -164,15 +208,14 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* ---------- phase chips (docs/changes/009: phases filter, they no longer navigate) ---------- */
 .chips-row { display: flex; align-items: center; gap: var(--gap); margin: 18px 0 0; padding: 0 var(--gutter); }
 .chips-label { font-size: var(--fs-micro); color: var(--ink-2); flex: none; }
-.pchips { display: flex; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.pchips { display: flex; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; padding-block: 2px; }
 .pchips::-webkit-scrollbar { display: none; }
-.pchip { flex: none; min-height: var(--tap); padding: 0 12px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: var(--r-pill); font-size: var(--fs-small); color: var(--ink-2); white-space: nowrap; }
-.pchip[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+.pchips .pill { flex: none; }
 .gate-text { margin: 8px var(--gutter) 0; font-size: var(--fs-small); color: var(--ink-2); }
 
 /* active filter chip */
 .filter-row { margin: 10px var(--gutter) 0; display: flex; gap: var(--gap); align-items: center; }
-.filter-chip { min-height: var(--tap); display: inline-flex; align-items: center; gap: var(--gap); padding: 0 4px 0 12px; background: var(--ink); color: #fff; border-radius: var(--r-pill); font-size: var(--fs-small); }
+.filter-chip { gap: var(--gap); padding: 0 4px 0 12px; }
 .filter-chip .x { display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; font-size: 18px; }
 .filter-count { font-size: var(--fs-small); color: var(--ink-3); }
 
@@ -207,8 +250,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .col .note { font-size: var(--fs-micro); color: var(--ink-3); margin-left: auto; text-align: right; }
 .col .chev { font-size: 18px; color: var(--ink-3); width: 24px; text-align: center; margin-left: 4px; }
 .col-body { padding: 0 var(--gutter); }
-.col-more { min-height: 48px; padding: 10px 0; font-size: var(--fs-meta); color: var(--ink-2); text-decoration: underline; display: block; }
-.col-sub { width: 100%; min-height: 48px; padding: 10px 0; font-size: var(--fs-meta); color: var(--ink-3); display: flex; align-items: center; gap: var(--gap); border-bottom: 1px solid var(--line); }
+.col-sub { gap: var(--gap); border-bottom: 1px solid var(--line); }
 .col-sub .chev { margin-left: auto; font-size: 18px; width: 24px; text-align: center; }
 .empty { color: var(--ink-3); font-size: var(--fs-ui); padding: 14px 0; margin: 0; }
 .col-empty { margin: 0; padding: 12px 0; font-size: var(--fs-ui); color: var(--ink-3); }
@@ -216,14 +258,29 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .task { display: grid; grid-template-columns: var(--tap) 1fr; align-items: start; border-bottom: 1px solid var(--line); padding: 4px 0; }
 .check { width: var(--tap); height: var(--tap); margin: 0; appearance: none; -webkit-appearance: none; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
 .check::before { content: ''; width: 22px; height: 22px; border: 1.5px solid var(--ink-2); background: var(--card); display: block; }
-.task.blocked .check::before { border-color: var(--line); }
+.task.blocked .check::before { border-color: var(--line-dash); border-style: dashed; background: transparent; }
+.task.blocked .check { cursor: default; }
 .check:checked::before { background: var(--ok); border-color: var(--ok); }
 .check:checked::after { content: '✓'; position: absolute; color: #fff; font-size: 15px; line-height: 1; }
 .task .body { min-width: 0; }
-.task .t { width: 100%; min-height: var(--tap); padding: 9px 0 4px; font-size: var(--fs-body); line-height: 1.35; color: var(--ink); overflow-wrap: anywhere; }
+/* docs/changes/020: title left, deadline right on the same line */
+.t-row { display: flex; align-items: baseline; gap: var(--gap); }
+.task .t { flex: 1; min-width: 0; min-height: var(--tap); padding: 9px 0 4px; font-size: var(--fs-body); line-height: 1.35; color: var(--ink); overflow-wrap: anywhere; }
 .task .t:hover { text-decoration: underline; }
 .task.done .t { color: var(--ink-3); text-decoration: line-through; }
 .task.blocked .t { color: var(--ink-2); }
+/* one signal per row, and one quiet line for everything else (docs/changes/020) */
+.sig { display: flex; padding-bottom: 6px; }
+.sig-chip { font-size: var(--fs-micro); font-weight: 600; padding: 2px 8px; border-radius: var(--r-tag); border: 1px solid transparent; }
+.sig-chip.late { background: var(--danger-bg); color: var(--danger); }
+.sig-chip.waitme { background: var(--card); border-color: var(--ink); color: var(--ink); }
+.sig-chip.blocked { padding-left: 0; font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); }
+.sig-chip.blocked .btn-text { min-height: 0; padding: 0; }
+.quiet { font-size: var(--fs-small); color: var(--ink-3); line-height: 1.35; padding-bottom: 8px; overflow-wrap: anywhere; }
+.quiet .ndot { width: 14px; height: 14px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: var(--fs-nano); font-weight: 700; line-height: 1; vertical-align: -2px; }
+.quiet .ndot.S { background: var(--seb); }
+.quiet .ndot.A { background: var(--anna); }
+.quiet .ndot.C { background: var(--claude); }
 .meta { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; font-size: var(--fs-small); color: var(--ink-2); padding-bottom: 8px; }
 .own { border-radius: var(--r-tag); padding: 1px 7px; font-size: var(--fs-micro); font-weight: 600; }
 .own.S { background: var(--seb-bg); color: var(--seb); }
@@ -233,9 +290,9 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* "wartet auf dich" is urgent, but neither a deadline nor irreversible: weight and an outline
    in text colour carry it, red stays with "überfällig" and with what cannot be undone (015) */
 .own.wait { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.due { padding: 0 3px; margin: 0 -3px; }
+.due { flex: none; font-size: var(--fs-small); color: var(--ink-2); padding: 0 3px; margin: 0 -3px; font-variant-numeric: tabular-nums; }
 .due.crit { background: var(--mark); color: var(--ink); font-weight: 600; }
-.due.late { color: var(--danger); font-weight: 600; }
+.due.late { color: var(--danger); font-weight: 600; background: transparent; }
 .tag { font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid var(--line); }
 .tag.claude { background: var(--claude-bg); color: var(--claude); border-color: transparent; }
 .tag.wait-me { background: var(--card); color: var(--ink); border-color: var(--ink); font-weight: 600; }
@@ -272,10 +329,11 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .akte-title:focus { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 .akte-meta { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; font-size: var(--fs-small); color: var(--ink-2); margin: 8px 0 0; padding-left: 34px; }
 .wait-banner { margin: 14px 0 0; padding: 10px 12px; background: var(--paper); color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); font-size: var(--fs-meta); font-weight: 600; }
-.akte-more { border-top: 1px solid var(--line); margin-top: 16px; text-decoration: none; }
+.akte-more { border-top: 1px solid var(--line); margin-top: 16px; }
 .akte-foot { margin-top: 16px; }
-.link-plain { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
-.link-plain:hover { color: var(--ink); text-decoration: underline; }
+/* an inline reference to another task: a link inside a line of text, not a button (020) */
+.tlink { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.tlink:hover { color: var(--ink); }
 
 .row { display: flex; gap: var(--gap); flex-wrap: wrap; align-items: center; margin-top: 8px; }
 .row.nowrap { flex-wrap: nowrap; margin-top: 0; }
@@ -285,13 +343,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .row select { max-width: 100%; }
 .num { width: 76px; }
 .detail textarea { width: 100%; min-height: 72px; resize: vertical; margin-top: 4px; font-size: var(--fs-ui); line-height: 1.4; }
-.btn { border: 1px solid var(--ink); background: var(--card); min-height: var(--tap); padding: 8px 14px; font-size: var(--fs-ui); display: inline-flex; align-items: center; justify-content: center; }
-.btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); font-weight: 600; }
-.btn.claude { background: var(--claude); color: #fff; border-color: var(--claude); font-weight: 600; }
-.btn.danger { color: var(--danger); border-color: var(--line); }
-.btn.small { padding: 6px 10px; font-size: var(--fs-meta); min-height: 40px; }
-.btn.wide { width: 100%; }
-.btn:disabled { opacity: 0.6; cursor: default; }
+
 .check-label { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-meta); min-height: var(--tap); }
 .check-label input { width: 20px; height: 20px; accent-color: var(--both); }
 .chips { display: flex; gap: var(--gap); flex-wrap: wrap; margin: 8px 0; }
@@ -312,7 +364,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .com textarea { margin-top: 6px; }
 /* docs/changes/013 B5: only the own comments carry these - delete always, edit within ten minutes */
 .com-own-actions { display: flex; gap: 14px; align-items: center; white-space: normal; }
-.com-own-actions .link { padding: 6px 0; }
+.com-own-actions .btn-text { padding: 6px 0; }
 details.adv { border-bottom: 1px solid var(--line); }
 details.adv summary { cursor: pointer; padding: 12px 0; font-size: var(--fs-ui); font-weight: 600; min-height: 48px; display: flex; align-items: center; gap: 6px; list-style: none; }
 details.adv summary::-webkit-details-marker { display: none; }
@@ -372,9 +424,8 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 .fin-num.balance { grid-column: 1 / -1; }
 .fin-num.balance .n { font-size: var(--fs-kpi); }
 .fin-payments { margin: 10px var(--gutter) 0; display: flex; flex-wrap: wrap; gap: var(--gap) 16px; }
-.fin-payments button { min-height: var(--tap); font-size: var(--fs-small); color: var(--ink-2); display: inline-flex; align-items: center; gap: 5px; }
-.fin-payments button[aria-pressed=true] { color: var(--ink); text-decoration: underline; }
-.fin-payments .late b { color: var(--danger); }
+.fin-payments .pill.late { border-color: var(--danger); color: var(--danger); }
+.fin-payments .pill.late[aria-pressed=true] { background: var(--danger); border-color: var(--danger); color: #fff; }
 .fin-buffer { margin: 10px var(--gutter) 0; display: flex; flex-wrap: wrap; gap: var(--gap) 10px; align-items: center; font-size: var(--fs-meta); color: var(--ink-2); }
 .fin-buffer b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .fin-buffer .cost-form { flex: 1 0 100%; }
@@ -414,7 +465,7 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 
 /* ---------- page footer (utilities) ---------- */
 .foot { padding: 8px var(--gutter) 24px; padding-bottom: max(24px, env(safe-area-inset-bottom)); display: flex; gap: var(--gutter); flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); font-size: var(--fs-small); color: var(--ink-3); }
-.foot .link { font-size: var(--fs-small); }
+
 .foot .version { color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .foot .ico.info { position: relative; min-width: 40px; min-height: 40px; color: var(--ink-2); }
 .foot .ico.info:hover { background: none; color: var(--ink); }
@@ -449,8 +500,8 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
    ===================================================================== */
 @media (min-width: 600px) {
   .wrap { max-width: 760px; }
-  .eyebrow .long { display: inline; }
-  .eyebrow .short { display: none; }
+  .countdown .btn-text .long { display: inline; }
+  .countdown .btn-text .short { display: none; }
   .countdown .n { font-size: 34px; }
   .tile.money .n { font-size: var(--fs-ui); }
   /* room for the sub-counts on the tiles (issues.md #3: never show less on the bigger screen) */
@@ -484,7 +535,7 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
   .col-head { padding: 12px 12px 8px; flex-wrap: wrap; }
   .col .note { flex-basis: 100%; margin-left: 0; text-align: left; }
   .col-body { padding: 0 12px; }
-  .col-more { padding: 10px 12px; }
+  .col-list .btn-text.row { padding-left: 12px; padding-right: 12px; }
   .cols .task { grid-template-columns: 36px 1fr; }
   .cols .task .check { margin-left: -4px; }
   .cols .task .t { font-size: var(--fs-ui); }
@@ -510,7 +561,7 @@ details.adv .body.none { color: var(--ink-3); font-style: italic; }
 
 /* keyboard: the chip row clips outlines on narrow screens (it scrolls), so keep the ring inside */
 @media (max-width: 599px) {
-  .pchip:focus-visible { outline-offset: -2px; }
+  .pill:focus-visible { outline-offset: -2px; }
 }
 @media (min-width: 900px) {
   .panel :focus-visible { outline-offset: -2px; }

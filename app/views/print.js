@@ -46,8 +46,8 @@ export function printHTML() {
     <div class="print-head noprint">
       <h2 id="print-title">Umzugstag drucken</h2>
       <span class="spacer"></span>
-      <button class="btn small primary" data-act="print-now">Drucken</button>
-      <button class="btn small" data-act="print-close">Schließen</button>
+      <button class="btn-primary" data-act="print-now">Drucken</button>
+      <button class="btn-secondary" data-act="print-close">Schließen</button>
     </div>
     <div class="sheet">
       <h1>Umzugstag</h1>
