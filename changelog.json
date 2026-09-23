@@ -22,7 +22,8 @@
       "improved": [
         "Einheitliche Schaltflächen, ein Signal je Aufgabe, blockierte Aufgaben nicht mehr abhakbar.",
         "Finanzen beantwortet drei Fragen: was kostet es, was ist als Nächstes zu zahlen, wer schuldet wem.",
-        "Die Akte hat zwei Modi: Ansehen und Bearbeiten – nichts wird mehr versehentlich geändert."
+        "Die Akte hat zwei Modi: Ansehen und Bearbeiten – nichts wird mehr versehentlich geändert.",
+        "Das Dashboard zeigt am Handy eine Person zur Zeit, sortiert nach Zeit, und sagt, was sich seit deinem letzten Besuch geändert hat."
       ],
       "fixed": []
     },

@@ -175,6 +175,20 @@ begin
 end;
 $$;
 
+-- task_changes (a018): Aenderungsprotokoll fuer Frist, Stichtag, Zustaendigkeit und Titel.
+-- Gelesen wird es von "Seit du zuletzt da warst"; geschrieben ausschliesslich vom Trigger.
+create table if not exists public.task_changes (
+  id          bigint generated always as identity primary key,
+  task_id     text not null references public.tasks(id) on delete cascade,
+  field       text not null check (field in ('offset_days', 'anchor', 'owner', 'title')),
+  old_value   text,
+  new_value   text,
+  changed_by  text check (changed_by in ('S', 'A')),
+  changed_at  timestamptz not null default now()
+);
+create index if not exists task_changes_at_idx on public.task_changes (changed_at desc);
+create index if not exists task_changes_task_idx on public.task_changes (task_id);
+
 do $$
 declare t text;
 begin
@@ -184,6 +198,39 @@ begin
   end loop;
 end;
 $$;
+
+create or replace function public.log_task_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who text := public.current_person();
+begin
+  if new.offset_days is distinct from old.offset_days then
+    insert into public.task_changes (task_id, field, old_value, new_value, changed_by)
+    values (new.id, 'offset_days', old.offset_days::text, new.offset_days::text, who);
+  end if;
+  if new.anchor is distinct from old.anchor then
+    insert into public.task_changes (task_id, field, old_value, new_value, changed_by)
+    values (new.id, 'anchor', old.anchor, new.anchor, who);
+  end if;
+  if new.owner is distinct from old.owner then
+    insert into public.task_changes (task_id, field, old_value, new_value, changed_by)
+    values (new.id, 'owner', old.owner, new.owner, who);
+  end if;
+  if new.title is distinct from old.title then
+    insert into public.task_changes (task_id, field, old_value, new_value, changed_by)
+    values (new.id, 'title', old.title, new.title, who);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists tasks_log_change on public.tasks;
+create trigger tasks_log_change after update on public.tasks
+  for each row execute function public.log_task_change();
 
 -- costs: paid_on settles the row; due_on defaults to the task deadline on insert (docs/changes/004),
 -- now via the task's own anchor date instead of always einzugstermin (bugfix 1.1)
@@ -274,6 +321,13 @@ alter table public.comments  enable row level security;
 drop policy if exists allowlist_select on public.allowlist;
 create policy allowlist_select on public.allowlist
   for select to authenticated using (public.is_allowed());
+
+-- task_changes (a018): lesen ja, schreiben nur der Trigger.
+alter table public.task_changes enable row level security;
+drop policy if exists task_changes_select on public.task_changes;
+create policy task_changes_select on public.task_changes for select using (public.is_allowed());
+revoke insert, update, delete on table public.task_changes from authenticated;
+grant select on table public.task_changes to authenticated;
 
 revoke update on table public.allowlist from authenticated;
 grant update (last_seen_version, last_visit_at, seen_comments) on table public.allowlist to authenticated;
@@ -451,6 +505,17 @@ alter table public.subtasks  replica identity full;
 alter table public.comments  replica identity full;
 alter table public.costs     replica identity full;
 alter table public.recurring replica identity full;
+
+-- task_changes (a018) is append-only: realtime carries the new row, nothing else changes.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'task_changes'
+  ) then
+    alter publication supabase_realtime add table public.task_changes;
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------
 --  Initial data
