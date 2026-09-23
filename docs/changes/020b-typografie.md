@@ -1,5 +1,6 @@
 # 020b – Typografie: Instrument Sans wirklich laden
 
+Status: umgesetzt (Branch `feat/020b-typografie` → `preview`, Abweichungen in `020b-abweichungen.md`)
 Stand: 23.09.2026 · Meilenstein 2.0 · Ziel-Branch: `preview` · Modell: Sonnet · Aufwand: S
 Ergänzung zu 020 (wird nicht angefasst). Einreihen direkt nach 020.
 
@@ -22,8 +23,8 @@ Ergänzung zu 020 (wird nicht angefasst). Einreihen direkt nach 020.
 
 ## Akzeptanzkriterien
 
-- [ ] Frisches Gerät ohne installierte Schrift (Chromium-Profil ohne Systemfont): App rendert Instrument Sans, kein Request an fonts.googleapis.com/gstatic (Netzwerk-Log)
-- [ ] Offline nach erstem Laden: Schrift bleibt (SW-Cache)
-- [ ] Lighthouse/Console: keine CSP-Verletzung
-- [ ] 380 px Hauptansicht gegen Mockup 2a: Zeilenumbrüche der Titel identisch bei gleichem Text
-- [ ] Bericht ≤ 10 Zeilen, Changelog: „Die App lädt ihre Schrift jetzt selbst – sieht überall gleich aus."
+- [x] Frisches Gerät ohne installierte Schrift (Chromium-Profil ohne Systemfont): App rendert Instrument Sans, kein Request an fonts.googleapis.com/gstatic (Netzwerk-Log)
+- [x] Offline nach erstem Laden: Schrift bleibt (SW-Cache)
+- [x] Lighthouse/Console: keine CSP-Verletzung
+- [x] 380 px Hauptansicht gegen Mockup 2a: Zeilenumbrüche der Titel identisch bei gleichem Text
+- [x] Bericht ≤ 10 Zeilen, Changelog: „Die App lädt ihre Schrift jetzt selbst – sieht überall gleich aus."
