@@ -1,6 +1,6 @@
 # Meilenstein 2.0 auf `preview` – Status
 
-Reihenfolge wie beauftragt: 020 → 016 → 017 → 018 → 022 → 019 → 021. Session 2: 020b → 016b → 024.
+Reihenfolge wie beauftragt: 020 → 016 → 017 → 018 → 022 → 019 → 021. Session 2: 020b → 016b → 024. Session 3: 026, dann 016c → 019c.
 Sebastian hat `preview` (bis 024) am 23.09.2026 nach `main` gemergt (`6528454`) – Meilenstein 2.0
 ist damit eröffnet. Session 3 (026) baut auf `preview` weiter, noch **nicht** in `main`.
 Migrationen liegen nur als Dateien vor – **keine ist angewendet**, weder auf `main` noch auf
@@ -19,6 +19,8 @@ Migrationen liegen nur als Dateien vor – **keine ist angewendet**, weder auf `
 | 021 Phasen/Gates | `0bc839c` | fertig | `013_a021_seen_gates.sql` – ohne sie merkt sich die App den gesehenen Gate-Moment nur für die Sitzung |
 | 024 Claude-Anbindung (Teil 2) | `068a22f` | Teil 2 fertig, Teil 1+3 offen (nicht Claude Code) | `015_a024_claude_run.sql` – ohne sie fehlt in der Stand-Zeile „zuletzt HH:MM", sonst läuft alles |
 | 026 Gemeinsamer Start | `bd64950` | fertig | `016_a026_setup.sql` – ohne sie startet das Setup trotzdem (liest als leer/false), `stammdaten` existiert in der Live-DB schon |
+| 016c Finanzen-Abgleich | `ef9eda9` | fertig | keine |
+| 019c Timeline-Abgleich | `0114cd4` | fertig | keine |
 
 ## Migrationen in dieser Reihenfolge einspielen
 

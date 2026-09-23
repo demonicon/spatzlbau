@@ -97,6 +97,7 @@ ui.gate = null; // phase id whose gate moment is on screen (021)
 ui.view = 'personen'; // 'personen' | 'phasen' | 'timeline' (019), kept per device
 ui.tlOwner = 'all'; // timeline: 'all' | 'me' | 'B' | 'you' (019)
 ui.tlDone = false; // timeline: the ticked-off tasks unfolded at the end (019)
+ui.tlWait = null; // timeline: the row whose "wartet auf n ›" is unfolded (019c)
 ui.icsShow = null; // 'S' | 'A': the calendar address shown as text when copying failed (022)
 ui.col = 'me'; // which of the three columns the phone shows (018 §1), kept per device
 ui.visitOpen = false; // "Seit du zuletzt da warst" unfolded (018 §6)
@@ -590,7 +591,7 @@ async function newIcsToken() {
 const OFFLINE_OK = new Set([
   'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
   'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'col-person', 'visit-toggle', 'group-open',
-  'view-switch', 'tl-owner', 'tl-done', 'tl-today',
+  'view-switch', 'tl-owner', 'tl-done', 'tl-today', 'tl-wait',
   'brief-read', 'adv-open', 'akte-cancel', 'akte-discard',
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
@@ -961,6 +962,10 @@ function wireEvents() {
           ui.tlDone = !ui.tlDone;
           render();
           return;
+        case 'tl-wait': // 019c: "wartet auf 2 ›" names the two tasks right under the row
+          ui.tlWait = ui.tlWait === b.dataset.ref ? null : b.dataset.ref;
+          render();
+          return;
         case 'tl-today':
           jumpToToday();
           return;
@@ -1246,6 +1251,7 @@ function wireEvents() {
           return;
         case 'post-open':
           ui.postOpen = true;
+          if (b.dataset.to) ui.postFilter = b.dataset.to; // "5 offene Posten zeigen" shows those five (016c)
           render();
           return;
         case 'fin-filter':
@@ -1724,6 +1730,8 @@ async function enter(session) {
   if (!viaLink) ui.gate = unseenGate();
   show('app');
   render();
+  // 019c: opened straight into the timeline (the view is kept per device) - it starts at today too
+  if (!viaLink && ui.view === 'timeline' && ui.screen === 'dashboard') jumpToToday();
   if (viaLink) $('.task.open')?.scrollIntoView({ block: 'start' });
   else if (hasUnread()) openChangelog(true); // once per person: after login and data, never when following a task link
   subscribeRealtime();

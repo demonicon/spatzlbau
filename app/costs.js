@@ -99,7 +99,8 @@ export function summary(rows = state.costs) {
 
 /** Every month of double rent added up - the single largest item of the move (016 F2). */
 export function doubleRentTotal() {
-  if (moveOutMissing()) return null;
+  // docs/changes/016c: all three dates or nothing - with them, no overlap is a real 0 €
+  if (moveOutMissing() || typeof state.settings.einzugstermin !== 'string' || !state.settings.einzugstermin) return null;
   let n = 0;
   for (const m of cashflowMonths()) n += doubleRent(m) || 0;
   return Math.round(n * 100) / 100;
@@ -230,7 +231,7 @@ export function cashflowMonths() {
     const d = new Date(o + 'T00:00:00');
     if (d > last) last.setTime(d.getTime());
   }
-  last.setMonth(last.getMonth() + 2);
+  last.setMonth(last.getMonth() + 1); // 016c: one month past the last move-out, as the export
   if (last < from) last.setTime(from.getTime());
   const months = [];
   const cur = new Date(from.getFullYear(), from.getMonth(), 1);
@@ -288,7 +289,8 @@ export function recurringSummary() {
 }
 
 /** The buffer row lives in costs without a task (docs/changes/004). */
-export const bufferRow = () => state.costs.find((c) => !c.task_id) || null;
+// a balance transfer (kind 'ausgleich', 016) has no task either - it is never the buffer
+export const bufferRow = () => state.costs.find((c) => !c.task_id && c.kind !== 'ausgleich') || null;
 export const bufferPct = () => settingNum('buffer_pct', 20);
 
 /** What the buffer should be: the percentage on everything counted that belongs to a task. */

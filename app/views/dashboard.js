@@ -474,11 +474,14 @@ export function dashboardView() {
   // docs/changes/006 + 013 A3: from 1180 px the list and a quiet side panel sit next to each
   // other; between 900 and 1179 px the list uses the full width and the Akte is an overlay
   const open = ui.expanded ? byId(ui.expanded) : null;
-  const panelTask = ui.mode === 'panel' ? open : null;
+  // docs/changes/019c: the timeline keeps its list at most 720 px wide and puts the Akte (or
+  // "Zwischen euch") next to it from 900 px on - the overlay step of 013 A3 is skipped there
+  const mode = tl && ui.mode === 'overlay' ? 'panel' : ui.mode;
+  const panelTask = mode === 'panel' ? open : null;
   return (
     updateBarHTML() +
     setupHintHTML() +
-    `<div class="board mode-${ui.mode}"><div class="col-list">` +
+    `<div class="board mode-${mode}${tl ? ' v-timeline' : ''}"><div class="col-list">` +
     headHTML() +
     searchHTML() +
     viewChipsHTML() +
@@ -493,9 +496,9 @@ export function dashboardView() {
         (q && !cols.length ? `<p class="empty no-hits">Kein Treffer für „${esc(q)}“ – auch nicht in den Teilschritten.</p>` : `<div class="cols">${cols.map(columnHTML).join('')}</div>`)) +
     addBoxHTML() +
     `</div>` +
-    (ui.mode === 'panel' ? panelHTML(panelTask) : '') +
+    (mode === 'panel' ? panelHTML(panelTask) : '') +
     `</div>` +
-    (ui.mode === 'overlay' ? overlayHTML(open) : '') +
+    (mode === 'overlay' ? overlayHTML(open) : '') +
     (ui.gate !== null && ui.gate !== undefined ? gateHTML(ui.gate) : '') +
     (ui.printOpen ? printHTML() : '') +
     (ui.changelogOpen ? changelogHTML() : '') +
