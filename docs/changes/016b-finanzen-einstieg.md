@@ -1,5 +1,6 @@
 # 016b – Finanzen: drei Stände, Posten anlegen, Ersteinrichtung
 
+Status: umgesetzt (Branch `feat/016b-finanzen-einstieg` → `preview`, Abweichungen in `016b-abweichungen.md`)
 Stand: 23.09.2026 · Meilenstein 2.0 · Ziel-Branch: `preview` · Modell: Sonnet · Aufwand: M
 Ergänzung zu 016 (läuft im Batch, wird nicht angefasst). Reihenfolge im Auftrag: Teil 2 (Stand) zuerst, dann 2b, dann 1. Einreihen nach 016, vor 017 – oder als nächster Auftrag der laufenden Session, sobald 016 gemerged ist. Setzt 020 voraus.
 
@@ -66,14 +67,14 @@ Belege als Datei (→ 025), Import aus Kontoauszug, Wiederkehrende Kosten neu (0
 
 ## Akzeptanzkriterien
 
-- [ ] Leere Datenbank (nach Clean Cut) → Finanzen öffnet die vier Schritte; „Später" → leere Ansicht mit Hinweiszeile; Abschluss → Antwortzahl > 0 (Doppelmiete + Kautionen + Puffer)
-- [ ] Vorbelegte Werte aus recurring/costs werden übernommen, nicht dupliziert (seed_key bleibt)
-- [ ] „+ Posten" aus der Akte `material`: Bezeichnung „Kartons", 180 → Zeile geschätzt, Wohnung N, fällig = Frist von `material`, gehört zu B, kein weiteres Feld sichtbar
-- [ ] Betragseingabe: `1.800`, `1800`, `1.800,00`, `1800,5` → 1800 / 1800 / 1800 / 1800,50
-- [ ] Zeile geschätzt → Betrag festlegen → Bezahlt (Anna) in zwei Tipps; Saldo in der Ausgleich-Karte ändert sich danach
-- [ ] Bezahlte Zeile antippen → Bearbeiten: Stand auf „fest" zurück, Betrag 1.420 → 1.380, Fertig → Zeile und Antwortzahl aktualisiert, Realtime beim anderen Gerät
-- [ ] Betrag in der Zeile antippen → Inline-Feld, Enter speichert, Esc verwirft
-- [ ] Bestandszeilen mit `angebot`/`beauftragt` erscheinen als „fest", nichts geht verloren; Seed-Merge `--dry` mit Teil-B-Paket: 0 Fehler
-- [ ] Kein Stand-Dropdown mehr in der App (grep); in der Oberfläche kommen die Wörter „faellig", „angebot", „beauftragt", „einmalig" nicht vor
-- [ ] Kaution alt: ausstehend → Erhalten 2.610 von 2.910 → Hinweis „300 € einbehalten – prüfen"
-- [ ] 380 px + 1280 px, Bericht ≤ 15 Zeilen, Changelog: „Ein Posten hat drei Stände: geschätzt, fest, bezahlt. Finanzen fragt beim ersten Öffnen vier Dinge und rechnet dann selbst."
+- [x] Leere Datenbank (nach Clean Cut) → Finanzen öffnet die vier Schritte; „Später" → leere Ansicht mit Hinweiszeile; Abschluss → Antwortzahl > 0 (Doppelmiete + Kautionen + Puffer)
+- [x] Vorbelegte Werte aus recurring/costs werden übernommen, nicht dupliziert (seed_key bleibt)
+- [x] „+ Posten" aus der Akte `material`: Bezeichnung „Kartons", 180 → Zeile geschätzt, Wohnung N, fällig = Frist von `material`, gehört zu B, kein weiteres Feld sichtbar
+- [x] Betragseingabe: `1.800`, `1800`, `1.800,00`, `1800,5` → 1800 / 1800 / 1800 / 1800,50
+- [x] Zeile geschätzt → Betrag festlegen → Bezahlt (Anna) in zwei Tipps; Saldo in der Ausgleich-Karte ändert sich danach
+- [x] Bezahlte Zeile antippen → Bearbeiten: Stand auf „fest" zurück, Betrag 1.420 → 1.380, Fertig → Zeile und Antwortzahl aktualisiert, Realtime beim anderen Gerät
+- [x] Betrag in der Zeile antippen → Inline-Feld, Enter speichert, Esc verwirft
+- [x] Bestandszeilen mit `angebot`/`beauftragt` erscheinen als „fest", nichts geht verloren (geprüft) · Seed-Merge `--dry` mit Teil-B-Paket: **nicht geprüft** – kein Teil-B-Paket im Repo, siehe `016b-abweichungen.md`
+- [x] Kein Stand-Dropdown mehr in der App (grep); in der Oberfläche kommen die Wörter „faellig", „angebot", „beauftragt", „einmalig" nicht vor
+- [x] Kaution alt: ausstehend → Erhalten 2.610 von 2.910 → Hinweis „300 € einbehalten – prüfen"
+- [x] 380 px + 1280 px, Bericht ≤ 15 Zeilen, Changelog: „Ein Posten hat drei Stände: geschätzt, fest, bezahlt. Finanzen fragt beim ersten Öffnen vier Dinge und rechnet dann selbst."

@@ -5,10 +5,13 @@
 // they do not change the task. Everything else lives behind "Bearbeiten": a mode of its own with
 // form fields and a clear end. Fertig writes every changed field in one go, Abbrechen discards.
 import { esc, fmtTime } from './dom.js';
-import { OWN, STEPS, STEP_OWNER, ADV } from './labels.js';
-import { state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, umzugstag, freshComments, canEditComment } from '../state.js';
+import { OWN, STEPS, STEP_OWNER, ADV, PAID_BY } from './labels.js';
+import { state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, umzugstag, dueInfo, anchorDate, freshComments, canEditComment } from '../state.js';
 import { isLate, isCritical } from '../filters.js';
-import { costsOf, isHistory, isCostLate, eur, num, COST_LABEL, COST_NEXT, KIND, APARTMENT, nextStep, prevStep } from '../costs.js';
+import {
+  costsOf, isHistory, isCostLate, isCostSoon, eur, num, KIND, APARTMENT, ladderState, refundState,
+  LADDER, LADDER_LABEL, REFUND, REFUND_LABEL,
+} from '../costs.js';
 
 const opts = (sel, arr) => arr.map(([v, l]) => `<option value="${v}" ${sel === v ? 'selected' : ''}>${l}</option>`).join('');
 
@@ -108,12 +111,22 @@ function subtasksViewHTML(t) {
 }
 
 /** One line per cost row: amount, state, due date. Nothing to tap - that is Bearbeiten. */
+/** One line per cost row, in the words of the three-rung ladder (docs/changes/016b). */
+function costLineText(c) {
+  const amt = eur(c.amount);
+  if (c.kind === 'rueckfluss') {
+    return refundState(c) === 'erhalten' ? `${amt} erhalten${c.paid_on ? ' ' + fmtDay(c.paid_on) : ''}` : `${amt} ausstehend`;
+  }
+  const st = ladderState(c);
+  if (st === 'geschaetzt') return `≈ ${amt}`;
+  if (st === 'bezahlt') return `${amt} · bezahlt${c.paid_on ? ' ' + fmtDay(c.paid_on) : ''}${c.paid_by ? ', ' + esc(PAID_BY[c.paid_by] || c.paid_by) : ''}`;
+  return `${amt} · ${isCostLate(c) ? `überfällig seit ${fmtDay(c.due_on)}` : c.due_on ? `fällig ${fmtDay(c.due_on)}` : 'fest'}`;
+}
+
 function costsViewHTML(t) {
   const rows = costsOf(t.id).filter((c) => !isHistory(c));
   if (!rows.length) return '';
-  return `<div class="akte-line"><span class="l">Kosten</span><span class="v">${rows
-    .map((c) => `${eur(c.amount)} · ${isCostLate(c) ? `überfällig seit ${fmtDay(c.due_on)}` : COST_LABEL[c.status] + (c.due_on ? ` bis ${fmtDay(c.due_on)}` : '')}`)
-    .join('<br>')}</span></div>`;
+  return `<div class="akte-line"><span class="l">Kosten</span><span class="v">${rows.map(costLineText).join('<br>')}</span></div>`;
 }
 
 function dependsViewHTML(t) {
@@ -279,76 +292,205 @@ function editHTML(t, withHead) {
   </div>`;
 }
 
-/* ---------- Kosten (docs/changes/007 point 1) ----------
-   One row per amount. Tapping a row opens its fields inline - no overlay, no dialog. The status
-   moves one step at a time and can go back exactly one step. Estimates that lost against a firm
-   row of the same task stay visible as history, greyed out. */
+/* ---------- Kosten (docs/changes/007 point 1, ladder rebuilt in 016b) ----------
+   Three rungs instead of five: geschätzt (amount unsure) -> fest (amount and date stand) ->
+   bezahlt (money is gone). A Rückfluss (a deposit coming back) has its own two rungs: ausstehend
+   -> erhalten. The database still has all five status values (angebot/beauftragt/faellig all
+   read as "fest"); the app writes only geschaetzt | faellig | bezahlt from here on.
+   Three ways into a row: the label opens the full Bearbeiten-Modus (017-style, every field,
+   the ladder itself movable in both directions); the one button on the row is the short way
+   forward (Betrag festlegen / Bezahlt / Erhalten); amount and due date are tappable in place for
+   the one-field correction (Enter speichert, Esc verwirft). */
 
-function costFormHTML(c) {
-  return `<div class="cost-form">
-    <div class="row"><label class="lbl">Bezeichnung<input type="text" data-cost-field="label" data-ref="${c.id}" value="${esc(c.label)}"></label></div>
+/** The ladder as three (or two, for a refund) dots and the current word - no learning required. */
+export function ladderHTML(c) {
+  const steps = c.kind === 'rueckfluss' ? REFUND : LADDER;
+  const label = c.kind === 'rueckfluss' ? REFUND_LABEL : LADDER_LABEL;
+  const cur = c.kind === 'rueckfluss' ? refundState(c) : ladderState(c);
+  const at = steps.indexOf(cur);
+  return `<span class="ladder"><span class="dots" aria-hidden="true">${steps.map((_, i) => `<i class="${i <= at ? 'on' : ''}"></i>`).join('')}</span>${esc(label[cur])}</span>`;
+}
+
+/** Amount, tappable in place unless a form already has this row open (016b). */
+function amountFieldHTML(c, editable) {
+  if (ui.costQuick && ui.costQuick.id === c.id && ui.costQuick.field === 'amount') {
+    return `<input class="cost-quick" type="text" inputmode="decimal" data-quick-field="amount" data-ref="${c.id}" value="${esc(String(num(c.amount)).replace('.', ','))}" aria-label="Betrag in Euro">`;
+  }
+  const text = `${c.kind === 'rueckfluss' ? '+ ' : ''}${eur(c.amount)}`;
+  return editable
+    ? `<button class="cost-amount" data-act="cost-quick" data-ref="${c.id}" data-field="amount" aria-label="Betrag ändern: ${esc(text)}">${text}</button>`
+    : `<span class="cost-amount">${text}</span>`;
+}
+
+/** Due date, tappable in place the same way - only where a date makes sense (fest, ausstehend). */
+function dateFieldHTML(c) {
+  if (ui.costQuick && ui.costQuick.id === c.id && ui.costQuick.field === 'due_on') {
+    return `<input class="cost-quick" type="date" data-quick-field="due_on" data-ref="${c.id}" value="${esc(c.due_on || '')}" aria-label="Fällig am">`;
+  }
+  const late = isCostLate(c);
+  const soon = isCostSoon(c);
+  const text = c.due_on ? (late ? `überfällig seit ${fmtDay(c.due_on)}` : `fällig ${fmtDay(c.due_on)}`) : 'ohne Datum';
+  return `<button class="due ${late ? 'late' : soon ? 'crit' : ''}" data-act="cost-quick" data-ref="${c.id}" data-field="due_on" aria-label="Fälligkeit ändern: ${esc(text)}">${esc(text)}</button>`;
+}
+
+/** The one button a row offers to move forward - never backward (that is Bearbeiten only). */
+function costActionHTML(c) {
+  if (c.kind === 'rueckfluss') {
+    return refundState(c) === 'ausstehend'
+      ? `<button class="btn-secondary" data-act="cost-pay" data-ref="${c.id}">Erhalten</button>`
+      : `<button class="btn-text" data-act="cost-open" data-ref="${c.id}">ändern</button>`;
+  }
+  const st = ladderState(c);
+  if (st === 'geschaetzt') return `<button class="btn-secondary" data-act="cost-set" data-ref="${c.id}">Betrag festlegen</button>`;
+  if (st === 'fest') return `<button class="btn-secondary" data-act="cost-pay" data-ref="${c.id}">Bezahlt</button>`;
+  return `<button class="btn-text" data-act="cost-open" data-ref="${c.id}">ändern</button>`;
+}
+
+/** "Betrag festlegen": the amount and the date it is due, plus an optional note. */
+function costSetHTML(c) {
+  const t = c.task_id ? byId(c.task_id) : null;
+  const prefillDue = c.due_on || (t && anchorDate(t) ? new Date(dueInfo(t).sort).toISOString().slice(0, 10) : '');
+  return `<div class="cost-form cost-set">
     <div class="row">
-      <label class="lbl">Betrag<input type="text" inputmode="decimal" data-cost-field="amount" data-ref="${c.id}" value="${esc(String(num(c.amount)).replace('.', ','))}" aria-label="Betrag in Euro"></label>
-      <label class="lbl">Art<select data-cost-field="kind" data-ref="${c.id}">${opts(c.kind, Object.entries(KIND))}</select></label>
+      <label class="lbl">Betrag<input type="text" inputmode="decimal" data-input="set-amount" value="${c.status === 'geschaetzt' && num(c.amount) ? esc(String(num(c.amount)).replace('.', ',')) : ''}" aria-label="Betrag in Euro"></label>
+      <label class="lbl">fällig am<input type="date" data-input="set-due" value="${esc(prefillDue)}"></label>
     </div>
-    <div class="row">
-      <label class="lbl">Wohnung<select data-cost-field="apartment" data-ref="${c.id}"><option value="">keine</option>${opts(c.apartment || '', Object.entries(APARTMENT))}</select></label>
-      <label class="lbl">Fällig<input type="date" data-cost-field="due_on" data-ref="${c.id}" value="${esc(c.due_on || '')}"></label>
-    </div>
-    <label class="check-label"><input type="checkbox" data-cost-field="tax_relevant" data-ref="${c.id}" ${c.tax_relevant ? 'checked' : ''}> steuerrelevant</label>
-    <div class="row"><label class="lbl">Beleg (Link)<input type="text" inputmode="url" data-cost-field="receipt_url" data-ref="${c.id}" value="${esc(c.receipt_url || '')}" placeholder="optional"></label></div>
-    <div class="row">
-      ${
-        ui.confirm === 'costdel:' + c.id
-          ? `<span class="confirm">Kostenzeile löschen? <button class="btn-text danger" data-act="cost-del-yes" data-ref="${c.id}">Ja</button><button class="btn-secondary" data-act="confirm-no">Nein</button></span>`
-          : `<button class="btn-text danger" data-act="cost-del" data-ref="${c.id}">Löschen</button>`
-      }
-      <span class="spacer"></span>
-      <button class="btn-secondary" data-act="cost-edit-done">Fertig</button>
-    </div>
+    <div class="row"><label class="lbl">Angebot von … <span class="hint">(optional)</span><input type="text" data-input="set-note" value="${esc(c.note || '')}" placeholder="z. B. Umzug Schmidt GmbH"></label></div>
+    <div class="row"><button class="btn-secondary" data-act="cost-set-save" data-ref="${c.id}">Speichern</button><button class="btn-text" data-act="cost-set-cancel">Abbrechen</button></div>
   </div>`;
 }
 
-function costPayHTML(c) {
+/** "Bezahlt" (wer/Datum) or "Erhalten" (Betrag/Datum, Teilbetrag erlaubt) - one question each. */
+function costAdvanceHTML(c) {
+  if (c.kind === 'rueckfluss') {
+    return `<div class="cost-form cost-pay">
+      <p class="hint">Erwartet: ${eur(c.amount)}</p>
+      <div class="row">
+        <label class="lbl">Erhalten<input type="text" inputmode="decimal" data-input="recv-amount" value="${esc(String(num(c.amount)).replace('.', ','))}" aria-label="Erhaltener Betrag in Euro"></label>
+        <label class="lbl">am<input type="date" data-input="recv-date" value="${today()}"></label>
+      </div>
+      <div class="row"><button class="btn-secondary" data-act="cost-recv-save" data-ref="${c.id}">Erhalten buchen</button><button class="btn-text" data-act="cost-pay-cancel">Abbrechen</button></div>
+    </div>`;
+  }
+  const cur = ui.costPayBy || c.paid_by || state.person;
   return `<div class="cost-form cost-pay">
-    <div class="row">
-      <label class="lbl">Bezahlt am<input type="date" data-input="paid-on" data-ref="${c.id}" value="${today()}"></label>
-      <label class="lbl">Von<select data-input="paid-by" data-ref="${c.id}">${opts(c.paid_by || state.person, [['S', OWN.S], ['A', OWN.A]])}</select></label>
+    <div class="lbl">Wer hat bezahlt?
+      <div class="seg" role="group" aria-label="Wer hat bezahlt">${Object.entries(PAID_BY)
+        .map(([k, l]) => `<button class="pill" data-act="pay-by-set" data-to="${k}" aria-pressed="${cur === k}">${k === state.person ? 'du' : l}</button>`)
+        .join('')}</div>
     </div>
-    <div class="row"><button class="btn-secondary" data-act="cost-pay-save" data-ref="${c.id}">Als bezahlt buchen</button><button class="btn-text" data-act="cost-pay-cancel">Abbrechen</button></div>
+    <div class="row"><label class="lbl">am<input type="date" data-input="pay-date" value="${today()}"></label></div>
+    <div class="row"><button class="btn-secondary" data-act="cost-pay-save" data-ref="${c.id}" data-by="${cur}">Bezahlt buchen</button><button class="btn-text" data-act="cost-pay-cancel">Abbrechen</button></div>
+  </div>`;
+}
+
+/* ---------- the draft (mirrors 017 exactly, keyed by cost id instead of task id) ---------- */
+
+export const costDraftOf = (c) => (ui.costDraft && ui.costDraft.id === c.id ? ui.costDraft.fields : {});
+export const costDraftCount = (c) => Object.keys(costDraftOf(c)).length;
+export function costFieldValue(c, key) {
+  const d = costDraftOf(c);
+  return key in d ? d[key] : c[key];
+}
+const costChanged = (c, key) => key in costDraftOf(c);
+const cmark = (c, key) => (costChanged(c, key) ? ' <span class="changed">geändert</span>' : '');
+const cmarkCls = (c, key) => (costChanged(c, key) ? ' is-changed' : '');
+
+/** The full Bearbeiten-Modus of one cost row: every field, the ladder movable both ways. */
+export function costEditHTML(c) {
+  const n = costDraftCount(c);
+  const other = state.person === 'S' ? 'A' : 'S';
+  const asking = ui.confirm === 'cost-cancel:' + c.id;
+  const steps = c.kind === 'rueckfluss' ? REFUND : LADDER;
+  const label = c.kind === 'rueckfluss' ? REFUND_LABEL : LADDER_LABEL;
+  const cur = c.kind === 'rueckfluss' ? refundState({ status: costFieldValue(c, 'status') }) : ladderState({ status: costFieldValue(c, 'status') });
+  const statusFor = (want) => (c.kind === 'rueckfluss' ? { ausstehend: 'faellig', erhalten: 'bezahlt' }[want] : { geschaetzt: 'geschaetzt', fest: 'faellig', bezahlt: 'bezahlt' }[want]);
+  const more = ui.costMore === c.id;
+  const tasks = state.tasks.slice().sort((a, b) => a.phase - b.phase || a.sort - b.sort);
+  const del =
+    ui.confirm === 'costdel:' + c.id
+      ? `<span class="confirm">Kostenzeile löschen? <button class="btn-text danger" data-act="cost-del-yes" data-ref="${c.id}">Ja</button><button class="btn-secondary" data-act="confirm-no">Nein</button></span>`
+      : `<button class="btn-text danger" data-act="cost-del" data-ref="${c.id}">Kostenzeile löschen</button>`;
+  return `<div class="cost-edit" data-cost-edit="${c.id}">
+    <div class="edit-bar on-ink">
+      <button class="btn-text" data-act="cost-cancel" data-ref="${c.id}">Abbrechen</button>
+      <b>Kostenzeile bearbeiten</b>
+      <button class="btn-primary" data-act="cost-done" data-ref="${c.id}">Fertig</button>
+    </div>
+    ${
+      asking
+        ? `<p class="edit-hint ask">${n} ${n === 1 ? 'Änderung' : 'Änderungen'} verwerfen?
+            <button class="btn-text danger" data-act="cost-discard" data-ref="${c.id}">Ja, verwerfen</button>
+            <button class="btn-secondary" data-act="confirm-no">Nein</button></p>`
+        : `<p class="edit-hint">${n ? `${n} ungespeicherte ${n === 1 ? 'Änderung' : 'Änderungen'} · ${OWN[other]} sieht sie erst nach „Fertig“` : `Noch nichts geändert · ${OWN[other]} sieht Änderungen erst nach „Fertig“`}</p>`
+    }
+    <label class="lbl${cmarkCls(c, 'label')}"><span class="lbl-h">Bezeichnung${cmark(c, 'label')}</span>
+      <input type="text" data-cost-draft="label" value="${esc(costFieldValue(c, 'label'))}" aria-label="Bezeichnung"></label>
+    <div class="row">
+      <label class="lbl${cmarkCls(c, 'amount')}"><span class="lbl-h">Betrag${cmark(c, 'amount')}</span>
+        <input type="text" inputmode="decimal" data-cost-draft="amount" value="${esc(String(num(costFieldValue(c, 'amount'))).replace('.', ','))}" aria-label="Betrag in Euro"></label>
+      <label class="lbl${cmarkCls(c, 'due_on')}"><span class="lbl-h">fällig am${cmark(c, 'due_on')}</span>
+        <input type="date" data-cost-draft="due_on" value="${esc(costFieldValue(c, 'due_on') || '')}"></label>
+    </div>
+    <div class="lbl">Stand${cmark(c, 'status')}
+      <div class="seg" role="group" aria-label="Stand">${steps
+        .map((k) => `<button class="pill" data-act="cost-draft-status" data-ref="${c.id}" data-to="${statusFor(k)}" aria-pressed="${cur === k}">${label[k]}</button>`)
+        .join('')}</div>
+    </div>
+    <div class="row">
+      <div class="lbl">${c.kind === 'rueckfluss' ? 'Wer hat es bekommen?' : 'Wer hat bezahlt?'}${cmark(c, 'paid_by')}
+        <div class="seg" role="group" aria-label="Wer">${Object.entries(PAID_BY)
+          .filter(([k]) => k !== 'H' || c.kind !== 'rueckfluss')
+          .map(([k, l]) => `<button class="pill" data-act="cost-draft-set" data-ref="${c.id}" data-field="paid_by" data-to="${k}" aria-pressed="${costFieldValue(c, 'paid_by') === k}">${l}</button>`)
+          .join('')}</div>
+      </div>
+      <label class="lbl${cmarkCls(c, 'paid_on')}"><span class="lbl-h">Datum${cmark(c, 'paid_on')}</span>
+        <input type="date" data-cost-draft="paid_on" value="${esc(costFieldValue(c, 'paid_on') || '')}"></label>
+    </div>
+    <label class="lbl${cmarkCls(c, 'task_id')}"><span class="lbl-h">Aufgabe${cmark(c, 'task_id')}</span>
+      <select data-cost-draft="task_id"><option value="">keine Aufgabe</option>${tasks
+        .map((x) => `<option value="${x.id}" ${costFieldValue(c, 'task_id') === x.id ? 'selected' : ''}>${x.phase} · ${esc(x.title.slice(0, 60))}</option>`)
+        .join('')}</select></label>
+    ${
+      more
+        ? `<div class="row">
+            <label class="lbl">Wohnung<select data-cost-draft="apartment"><option value="">keine</option>${opts(costFieldValue(c, 'apartment') || '', Object.entries(APARTMENT))}</select></label>
+            <label class="lbl">Art<select data-cost-draft="kind">${opts(costFieldValue(c, 'kind'), Object.entries(KIND))}</select></label>
+          </div>
+          <div class="row">
+            <label class="lbl">Gehört zu<select data-cost-draft="belongs_to">${opts(costFieldValue(c, 'belongs_to'), [['B', 'gemeinsam'], ['S', OWN.S], ['A', OWN.A]])}</select></label>
+            <label class="lbl">Anteil ${OWN.S} in %<input type="text" inputmode="numeric" data-cost-draft="split_s" value="${costFieldValue(c, 'split_s') ?? ''}" placeholder="Standard"></label>
+          </div>
+          <label class="check-label"><input type="checkbox" data-cost-draft="tax_relevant" ${costFieldValue(c, 'tax_relevant') ? 'checked' : ''}> steuerrelevant</label>
+          <label class="lbl">Beleg (Link)<input type="text" inputmode="url" data-cost-draft="receipt_url" value="${esc(costFieldValue(c, 'receipt_url') || '')}" placeholder="optional"></label>
+          <button class="btn-text row mehr-link" data-act="cost-more" data-ref="${c.id}">− weniger</button>`
+        : `<button class="btn-text row mehr-link" data-act="cost-more" data-ref="${c.id}">mehr: Wohnung, gehört zu, Anteil, steuerrelevant, Beleg</button>`
+    }
+    <div class="row cost-edit-foot"><span class="spacer"></span>${del}</div>
   </div>`;
 }
 
 export function costHTML(c) {
   const open = ui.costEdit === c.id;
+  const setting = ui.costSet === c.id;
   const paying = ui.costPay === c.id;
-  const next = nextStep(c);
-  const back = prevStep(c);
   const late = isCostLate(c);
   return `<div class="cost ${isHistory(c) ? 'history' : ''} ${open ? 'open' : ''}" data-cost="${c.id}">
-    <button class="cost-head" data-act="cost-edit" data-ref="${c.id}" aria-expanded="${open}">
-      <span class="cost-label">${esc(c.label)}</span>
-      <span class="cost-amount">${c.kind === 'rueckfluss' ? '+ ' : ''}${eur(c.amount)}</span>
-      <span class="cost-meta">
-        <span class="tag">${COST_LABEL[c.status] || c.status}</span>
-        ${c.status === 'bezahlt' && c.paid_on ? `<span class="due">bezahlt ${fmtDay(c.paid_on)}</span>` : ''}
-        ${c.due_on && c.status !== 'bezahlt' ? `<span class="due ${late ? 'late' : ''}">${late ? 'überfällig seit ' : 'bis '}${fmtDay(c.due_on)}</span>` : ''}
-        ${c.kind === 'rueckfluss' ? `<span class="tag">Rückfluss</span>` : ''}
-        ${c.apartment ? `<span class="tag">${APARTMENT[c.apartment]}</span>` : ''}
-        ${c.tax_relevant ? `<span class="tag">steuerrelevant</span>` : ''}
-        ${c.paid_by && c.status === 'bezahlt' ? `<span class="own ${c.paid_by}">${OWN[c.paid_by]}</span>` : ''}
-      </span>
-    </button>
-    ${open ? costFormHTML(c) : ''}
-    ${paying ? costPayHTML(c) : ''}
-    ${
-      paying
-        ? ''
-        : `<div class="cost-actions">
-      ${next ? `<button class="btn-secondary" data-act="${next === 'bezahlt' ? 'cost-pay' : 'cost-step'}" data-ref="${c.id}" data-to="${next}">${COST_NEXT[c.status]}</button>` : ''}
-      ${back ? `<button class="btn-text back" data-act="cost-step" data-ref="${c.id}" data-to="${back}">zurück auf ${COST_LABEL[back]}</button>` : ''}
-    </div>`
-    }
+    <div class="cost-row">
+      <button class="cost-label" data-act="cost-open" data-ref="${c.id}" aria-expanded="${open}">${esc(c.label)}</button>
+      ${amountFieldHTML(c, !open && !setting && !paying)}
+    </div>
+    <div class="cost-meta">
+      ${ladderHTML(c)}
+      ${c.due_on && !open && !setting && !paying ? dateFieldHTML(c) : ''}
+      ${c.apartment ? `<span class="tag">${APARTMENT[c.apartment]}</span>` : ''}
+      ${c.tax_relevant ? `<span class="tag">steuerrelevant</span>` : ''}
+      ${c.paid_by && c.status === 'bezahlt' ? `<span class="own ${c.paid_by}">${PAID_BY[c.paid_by] || c.paid_by}</span>` : ''}
+    </div>
+    ${!open && !setting && !paying ? `<div class="cost-actions">${costActionHTML(c)}</div>` : ''}
+    ${setting ? costSetHTML(c) : ''}
+    ${paying ? costAdvanceHTML(c) : ''}
+    ${open ? costEditHTML(c) : ''}
   </div>`;
 }
 
@@ -356,17 +498,37 @@ export function costRowsHTML(t, filter = () => true) {
   const rows = costsOf(t.id).filter(filter);
   const adding = ui.costAdd === t.id;
   return `${rows.map(costHTML).join('')}
+    ${adding ? costNewHTML(t.id) : `<button class="btn-text row" data-act="cost-add" data-ref="${t.id}">+ Posten</button>`}`;
+}
+
+/** Anlegen - two required fields, the rest inferred or behind "mehr" (docs/changes/016b §2b). */
+export function costNewHTML(taskId) {
+  const t = taskId ? byId(taskId) : null;
+  const tasks = state.tasks.slice().sort((a, b) => a.phase - b.phase || a.sort - b.sort);
+  const more = ui.costNewMore;
+  return `<div class="cost-form cost-new">
+    <div class="row"><label class="lbl">Was?<input type="text" data-input="cost-label" placeholder="z. B. Kartons" aria-label="Bezeichnung"></label></div>
+    <div class="row"><label class="lbl">Wieviel?<input type="text" inputmode="decimal" data-input="cost-amount" placeholder="180" aria-label="Betrag in Euro"></label></div>
+    <label class="lbl">Aufgabe<select data-input="cost-task">${t ? `<option value="${t.id}" selected>${t.phase} · ${esc(t.title.slice(0, 60))}</option>` : ''}<option value="" ${t ? '' : 'selected'}>keine Aufgabe</option>${tasks
+      .filter((x) => x.id !== taskId)
+      .map((x) => `<option value="${x.id}">${x.phase} · ${esc(x.title.slice(0, 60))}</option>`)
+      .join('')}</select></label>
     ${
-      adding
-        ? `<div class="cost-form cost-new">
-            <div class="row">
-              <label class="lbl">Bezeichnung<input type="text" data-input="cost-label" placeholder="z. B. Umzugsunternehmen"></label>
-              <label class="lbl">Betrag<input type="text" inputmode="decimal" data-input="cost-amount" placeholder="1800" aria-label="Betrag in Euro"></label>
-            </div>
-            <div class="row"><button class="btn-secondary" data-act="cost-add-save">Hinzufügen</button><button class="btn-text" data-act="cost-add-cancel">Abbrechen</button></div>
-          </div>`
-        : `<button class="btn-text row" data-act="cost-add">+ Bezeichnung und Betrag</button>`
-    }`;
+      more
+        ? `<div class="row">
+            <label class="lbl">Wohnung<select data-input="cost-apartment"><option value="">keine</option>${opts('', Object.entries(APARTMENT))}</select></label>
+            <label class="lbl">Art<select data-input="cost-kind">${opts('einmalig', Object.entries(KIND))}</select></label>
+          </div>
+          <div class="row">
+            <label class="lbl">Gehört zu<select data-input="cost-belongs">${opts('B', [['B', 'gemeinsam'], ['S', OWN.S], ['A', OWN.A]])}</select></label>
+            <label class="lbl">Anteil ${OWN.S} in %<input type="text" inputmode="numeric" data-input="cost-split" placeholder="Standard"></label>
+          </div>
+          <label class="check-label"><input type="checkbox" data-input="cost-tax"> steuerrelevant</label>
+          <button class="btn-text row mehr-link" data-act="cost-new-more">− weniger</button>`
+        : `<button class="btn-text row mehr-link" data-act="cost-new-more">mehr: Wohnung, gehört zu, Anteil, steuerrelevant</button>`
+    }
+    <div class="row"><button class="btn-secondary" data-act="cost-add-save">Anlegen</button><button class="btn-text" data-act="cost-add-cancel">Abbrechen</button></div>
+  </div>`;
 }
 
 export function costsHTML(t) {
@@ -375,6 +537,7 @@ export function costsHTML(t) {
     ${costRowsHTML(t)}`;
 }
 
+/** Title as plain text - editing it is a mode of its own since 017. */
 /** Title as plain text - editing it is a mode of its own since 017. */
 export function titleHTML(t, cls = 'akte-title-text') {
   return `<h2 class="${cls}">${esc(t.title)}</h2>`;

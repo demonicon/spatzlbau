@@ -93,6 +93,9 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 /* "Mehr zeigen" is a full row, not a button in the middle of nowhere */
 .btn-text.row { width: 100%; justify-content: flex-start; padding: 0; }
 @media (max-width: 899px) { .btn-text.row { min-height: var(--tap); } }
+/* docs/changes/016b: "mehr: Wohnung, gehört zu, Anteil, steuerrelevant, Beleg" is longer than the
+   button system's usual row text - let it wrap instead of pushing the page wider than 380 px */
+.mehr-link { white-space: normal; text-align: left; line-height: 1.3; height: auto; padding: 8px 0; }
 .pill { padding: 0 14px; border-radius: var(--r-pill); border-color: var(--line); background: var(--card); color: var(--ink-2); }
 .pill:hover { border-color: var(--line-dash); color: var(--ink); }
 .pill.on, .pill[aria-pressed=true], .pill[aria-current=page] { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
@@ -329,6 +332,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* "wartet auf dich" is urgent, but neither a deadline nor irreversible: weight and an outline
    in text colour carry it, red stays with "überfällig" and with what cannot be undone (015) */
 .own.wait { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.own.H { background: var(--card); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-dash); } /* Haushaltskonto (016b): neither person */
 .due { flex: none; font-size: var(--fs-small); color: var(--ink-2); padding: 0 3px; margin: 0 -3px; }
 .due.crit { background: var(--mark); color: var(--ink); font-weight: 600; }
 .due.late { color: var(--danger); font-weight: 600; background: transparent; }
@@ -391,10 +395,10 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .edit-hint.ask { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; background: var(--danger-bg); padding: 8px 10px; color: var(--ink); }
 /* a touched field says so - in ink, not in a colour (Rot-Regel aus 015) */
 .changed { font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); border: 1px solid var(--ink); border-radius: var(--r-tag); padding: 1px 5px; margin-left: 6px; }
-.detail .lbl-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.detail .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); margin-top: 10px; flex: 1 1 140px; min-width: 0; }
-.detail .lbl.is-changed { box-shadow: inset 3px 0 0 var(--ink); padding-left: 8px; margin-left: -8px; }
-.detail .lbl > input, .detail .lbl > select { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
+.detail .lbl-h, .cost-edit .lbl-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.detail .lbl, .cost-edit .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); margin-top: 10px; flex: 1 1 140px; min-width: 0; }
+.detail .lbl.is-changed, .cost-edit .lbl.is-changed { box-shadow: inset 3px 0 0 var(--ink); padding-left: 8px; margin-left: -8px; }
+.detail .lbl > input, .detail .lbl > select, .cost-edit .lbl > input, .cost-edit .lbl > select { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
 .seg { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; align-items: center; }
 .sub.sub-edit { grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px; padding: 4px 0; }
 .sub-move { display: flex; flex-direction: column; }
@@ -452,23 +456,41 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .addbox { margin: 18px var(--gutter) 24px; background: var(--card); border: 1px dashed var(--line-dash); padding: 10px 12px; }
 .addbox .row:first-child { margin-top: 0; }
 
-/* ---------- cost rows in the Akte (docs/changes/007) ----------
-   No colour for money: status is a neutral tag, the warning colour stays reserved for an
-   overdue payment. Estimates that lost against a firm row of the same task go grey. */
-.cost { border-bottom: 1px solid var(--line); }
-.cost-head { width: 100%; min-height: var(--tap); display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 0; align-items: baseline; }
-.cost-label { font-size: var(--fs-ui); line-height: 1.3; overflow-wrap: anywhere; }
-.cost-amount { font-size: var(--fs-ui); font-weight: 600; white-space: nowrap; }
-.cost-meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: var(--fs-small); color: var(--ink-2); }
+/* ---------- cost rows: three-rung ladder (docs/changes/016b, was 007) ----------
+   No colour for money: the ladder is dots and a word, the warning colour stays reserved for an
+   overdue payment (and the 7-day amber, the one other place yellow is allowed). Estimates that
+   lost against a firm row of the same task go grey. Three tap targets on one row: the label
+   opens the full editor, the one action button moves it forward, amount/due date are their own
+   small buttons for the one-field correction. */
+.cost { border-bottom: 1px solid var(--line); padding: 10px 0; }
+.cost-row { display: flex; align-items: flex-start; gap: 10px; }
+.cost-label { flex: 1 1 auto; min-width: 0; min-height: var(--tap); display: flex; align-items: center; font-size: var(--fs-ui); line-height: 1.3; overflow-wrap: anywhere; }
+.cost-amount { flex: none; font-size: var(--fs-ui); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+button.cost-amount { min-height: var(--tap); padding: 0 4px; margin: 0 -4px; border-radius: var(--r-tag); }
+button.cost-amount:hover { background: var(--line); }
+.cost-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: var(--fs-small); color: var(--ink-2); margin-top: 2px; }
+.cost-meta button.due { min-height: var(--tap); display: inline-flex; align-items: center; padding: 0 6px; margin: 0 -6px; border-radius: var(--r-tag); }
+.cost-meta button.due:hover { background: var(--line); }
 .cost.history .cost-label, .cost.history .cost-amount { color: var(--ink-3); }
 .cost.history .cost-amount { text-decoration: line-through; }
-.cost.open { background: var(--card); margin: 0 -8px; padding: 0 8px; }
-.cost-actions { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; padding: 0 0 10px; }
-.cost-form { padding: 2px 0 10px; }
+.cost.open { background: var(--card); margin: 0 -8px; padding: 10px 8px; }
+.cost-actions { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; margin-top: 8px; }
+.cost-quick { min-height: var(--tap); min-width: 100px; max-width: 100%; padding: 4px 8px; border: 1.5px solid var(--ink); background: var(--card); font-size: var(--fs-ui); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+/* the ladder itself: dots filled up to the current rung, then the word - nothing to learn */
+.ladder { display: inline-flex; align-items: center; gap: 6px; }
+.ladder .dots { display: inline-flex; gap: 3px; }
+.ladder .dots i { width: 6px; height: 6px; border-radius: var(--r-pill); background: var(--line-dash); display: block; }
+.ladder .dots i.on { background: var(--ink); }
+.cost-form { padding: 8px 0 10px; }
 .cost-form .row { margin-top: 8px; align-items: flex-end; }
 .cost-form .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); flex: 1 1 140px; min-width: 0; }
 .cost-form .lbl input, .cost-form .lbl select { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
-.cost-pay { background: var(--paper); margin: 0 -8px; padding: 2px 8px 10px; }
+.cost-form .hint { margin: 0 0 4px; font-size: var(--fs-small); color: var(--ink-2); }
+.cost-form.cost-pay, .cost-form.cost-set { background: var(--paper); margin: 0 -8px; padding: 8px 8px 10px; }
+/* the full Bearbeiten-Modus of a row - same shape as the Akte's (017), but its own wrapper so
+   it also stands on its own inside Finanzen (Als Nächstes zahlen, Alle Posten) */
+.cost-edit { background: var(--card); margin: 8px -8px 0; padding: 0 8px 8px; }
+.cost-edit-foot { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--line); }
 /* the amount a task carries, in its row in the list */
 .cost-badge { font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
 
@@ -562,6 +584,19 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .fin-rahmen-line .fin-note { flex: 1 0 100%; margin: 0; }
 .ics-url { flex: 1 0 100%; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-small); color: var(--ink-2); }
 .head-link { text-decoration: none; font-size: var(--fs-small); }
+
+/* ---------- Ersteinrichtung: vier Fragen (docs/changes/016b) ----------
+   The same one-quiet-page shape as the gate moment (021): one card, one primary action. */
+.fin-setup { position: fixed; inset: 0; z-index: 60; background: var(--paper); display: flex; align-items: center; justify-content: center; padding: var(--gutter); overflow-y: auto; }
+.fs-card { width: 100%; max-width: 480px; }
+.fs-eyebrow { margin: 0; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
+.fs-card h2 { margin: 6px 0 18px; font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
+.fs-card .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); margin-top: 12px; }
+.fs-card .lbl > input, .fs-card .lbl > select { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
+.fs-card .row { display: flex; gap: var(--gap); margin-top: 12px; }
+.fs-card .row > .lbl { flex: 1 1 0; margin-top: 0; }
+.fs-foot { margin-top: 22px; align-items: center; }
+.fin-setup-hint { margin: 10px var(--gutter) 0; }
 
 /* ---------- page footer (utilities) ---------- */
 .foot { padding: 8px var(--gutter) 24px; padding-bottom: max(24px, env(safe-area-inset-bottom)); display: flex; gap: var(--gutter); flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); font-size: var(--fs-small); color: var(--ink-3); }

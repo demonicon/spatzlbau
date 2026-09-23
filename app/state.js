@@ -599,9 +599,11 @@ export async function deleteCost(id) {
 }
 
 /* ---------- monthly costs (docs/changes/007 commit 3) ---------- */
-export async function addRecurring(label) {
+export async function addRecurring(label, fields = {}) {
   const rows = state.recurring;
-  const row = { label, amount_s: null, amount_a: null, amount_n: null, sort: rows.length ? Math.max(...rows.map((r) => r.sort)) + 1 : 0 };
+  // docs/changes/016b: the Ersteinrichtung wizard hands amounts and a seed_key straight in,
+  // instead of inserting empty and updating right after
+  const row = { label, amount_s: null, amount_a: null, amount_n: null, sort: rows.length ? Math.max(...rows.map((r) => r.sort)) + 1 : 0, ...fields };
   status('saving', 'Speichern …');
   const { data, error } = await supabase.from('recurring').insert(row).select().single();
   if (error) {

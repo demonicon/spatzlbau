@@ -121,7 +121,7 @@ create table if not exists public.costs (
   amount        numeric(10,2) not null default 0,
   due_on        date,                                                                -- default on insert: task deadline (trigger)
   paid_on       date,                                                                -- set => status bezahlt (trigger)
-  paid_by       text check (paid_by in ('S', 'A')),
+  paid_by       text check (paid_by in ('S', 'A', 'H')),                              -- H = Haushaltskonto (a016b)
   belongs_to    text not null default 'B' check (belongs_to in ('S', 'A', 'B')),     -- B = shared by split_s
   split_s       numeric(5,2) check (split_s between 0 and 100),                      -- Sebastian's share in %, null = settings.split_default_s
   tax_relevant  boolean not null default false,
@@ -136,6 +136,9 @@ create table if not exists public.costs (
 alter table public.costs drop constraint if exists costs_kind_check;
 alter table public.costs add constraint costs_kind_check
   check (kind in ('einmalig', 'rueckfluss', 'ausgleich'));                            -- a016
+alter table public.costs drop constraint if exists costs_paid_by_check;
+alter table public.costs add constraint costs_paid_by_check
+  check (paid_by in ('S', 'A', 'H'));                                                 -- a016b
 
 create index if not exists costs_task_idx on public.costs (task_id);
 create index if not exists costs_due_idx  on public.costs (due_on);
@@ -530,7 +533,8 @@ insert into public.settings (key, value) values
   ('move_out_a',      'null'::jsonb),   -- Auszug Anna
   ('split_default_s', '50'::jsonb),     -- Standardanteil Sebastian in % bei belongs_to = B
   ('buffer_pct',      '20'::jsonb),     -- Puffersatz in %
-  ('ics_token',       'null'::jsonb)   -- a022: Geheimnis hinter der Kalender-Abo-Adresse, App erzeugt es
+  ('ics_token',       'null'::jsonb),  -- a022: Geheimnis hinter der Kalender-Abo-Adresse, App erzeugt es
+  ('fin_setup_done',  'false'::jsonb)  -- a016b: die "vier Fragen" schon beantwortet? Fehlt wirkt wie false
 on conflict (key) do nothing;
 
 -- Show the result of this run.

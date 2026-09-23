@@ -2,20 +2,116 @@
 // else: what does the move cost us, what is next to pay, who owes whom. No charts, no new money
 // colours - yellow stays the deadline, red stays overdue.
 import { esc } from '../ui/dom.js';
-import { OWN } from '../ui/labels.js';
+import { OWN, PAID_BY } from '../ui/labels.js';
 import { state, ui, byId, einzug, umzugstag } from '../state.js';
-import { costHTML } from '../ui/detail.js';
+import { costHTML, costNewHTML } from '../ui/detail.js';
 import { appHeadHTML, updateBarHTML, footHTML } from '../ui/chrome.js';
 import { SUPABASE_URL } from '../config.js';
 import {
   summary, balance, balanceText, balanceParts, cashflow, peakMonth, moveOutMissing, bufferRow, bufferPct,
-  suggestedBuffer, nextPayments, recurringRows, recurringSummary, rowDelta, isCounted, isCostLate,
-  eur, eurShort, num, COST_LABEL, COST_NEXT, nextStep,
+  suggestedBuffer, nextPayments, recurringRows, recurringSummary, rowDelta, isCounted, isCostLate, isCostSoon,
+  eur, eurShort, num, ladderState, refundState, LADDER_LABEL, REFUND_LABEL,
 } from '../costs.js';
 
 const money = (v) => (v === null || v === undefined ? '–' : eur(v));
 const fmtDay = (iso) => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '');
 const head = (title, extra = '') => `<div class="fin-h"><h2>${title}${extra ? ` <span class="fin-h-note">${extra}</span>` : ''}</h2>`;
+
+/* ---------- 0. Ersteinrichtung: vier Fragen (docs/changes/016b) ----------
+   Finanzen without a starting point is just an empty screen. The wizard asks the four things
+   that make the answer number real - the frame dates, what the two flats and the new one cost
+   each month, the deposits, and how the two of them split. Every value stays editable
+   afterwards through the same mechanisms this replaces (Rahmendaten "ändern", Laufend
+   "Bearbeiten", the cost rows themselves) - there is no separate "reopen step n" launcher. */
+
+const recurringSeed = (key) => state.recurring.find((r) => r.seed_key === key) || null;
+const costSeed = (key) => state.costs.find((c) => c.seed_key === key) || null;
+const setupDate = (v) => (typeof v === 'string' ? v : '');
+const setupAmount = (v) => (v === null || v === undefined ? '' : esc(String(num(v)).replace('.', ',')));
+
+function setupTermineHTML() {
+  const v = (k) => setupDate(state.settings[k]);
+  return `
+    <label class="lbl">Einzug (Schlüsselübergabe)<input type="date" data-input="setup-einzug" value="${esc(v('einzugstermin'))}"></label>
+    <label class="lbl">Umzugstag<input type="date" data-input="setup-umzugstag" value="${esc(v('umzugstag'))}"></label>
+    <div class="row">
+      <label class="lbl">Auszug ${OWN.S}<input type="date" data-input="setup-auszug-s" value="${esc(v('move_out_s'))}"></label>
+      <label class="lbl">Auszug ${OWN.A}<input type="date" data-input="setup-auszug-a" value="${esc(v('move_out_a'))}"></label>
+    </div>`;
+}
+
+function setupMietenHTML() {
+  const miete = recurringSeed('miete');
+  const nk = recurringSeed('nk');
+  // vorbelegt aus Teil B, wo vorhanden - sonst die bekannten Werte aus dem Vertrag (016b)
+  const row = (id, label, r, fallS, fallA) => `<tr>
+      <th scope="row">${label}</th>
+      <td><input type="text" inputmode="decimal" data-input="setup-${id}-s" value="${r ? setupAmount(r.amount_s) : setupAmount(fallS)}" placeholder="–"></td>
+      <td><input type="text" inputmode="decimal" data-input="setup-${id}-a" value="${r ? setupAmount(r.amount_a) : setupAmount(fallA)}" placeholder="–"></td>
+      <td><input type="text" inputmode="decimal" data-input="setup-${id}-n" value="${r ? setupAmount(r.amount_n) : ''}" placeholder="–"></td>
+    </tr>`;
+  return `<div class="fin-table-wrap"><table class="fin-table rec">
+      <thead><tr><th>Posten</th><th>alt ${OWN.S}</th><th>alt ${OWN.A}</th><th>neu</th></tr></thead>
+      <tbody>
+        ${row('miete', 'Kaltmiete', miete, 1150, 700)}
+        ${row('nk', 'Nebenkosten', nk, 200, 150)}
+      </tbody>
+    </table></div>`;
+}
+
+function setupKautionenHTML() {
+  const altS = costSeed('kaution-alt-s');
+  const altA = costSeed('kaution-alt-a');
+  const neu = costSeed('kaution-neu');
+  return `
+    <div class="row">
+      <label class="lbl">Kaution alt ${OWN.S}<input type="text" inputmode="decimal" data-input="setup-kaution-s" value="${altS ? setupAmount(altS.amount) : setupAmount(2910)}"></label>
+      <label class="lbl">Kaution alt ${OWN.A}<input type="text" inputmode="decimal" data-input="setup-kaution-a" value="${altA ? setupAmount(altA.amount) : setupAmount(2040)}"></label>
+    </div>
+    <div class="row">
+      <label class="lbl">Kaution neu, Betrag<input type="text" inputmode="decimal" data-input="setup-kaution-neu-betrag" value="${neu ? setupAmount(neu.amount) : ''}" placeholder="z. B. 2400"></label>
+      <label class="lbl">fällig am<input type="date" data-input="setup-kaution-neu-frist" value="${neu ? esc(neu.due_on || '') : ''}"></label>
+    </div>`;
+}
+
+function setupAufteilungHTML() {
+  const split = state.settings.split_default_s ?? 50;
+  const hh = ui.finSetupHousehold;
+  return `
+    <label class="lbl">Anteil ${OWN.S} in %<input type="text" inputmode="numeric" data-input="setup-split" value="${esc(String(split))}"></label>
+    <label class="lbl">Puffer in %<input type="text" inputmode="numeric" data-input="setup-puffer" value="${esc(String(bufferPct()))}"></label>
+    <div class="lbl">Haushaltskonto?
+      <div class="seg" role="group" aria-label="Haushaltskonto">
+        <button class="pill" data-act="fin-setup-household" data-to="ja" aria-pressed="${hh === true}">ja</button>
+        <button class="pill" data-act="fin-setup-household" data-to="nein" aria-pressed="${hh === false}">nein</button>
+      </div>
+    </div>`;
+}
+
+const SETUP_STEPS = [
+  ['Termine', setupTermineHTML],
+  ['Mieten', setupMietenHTML],
+  ['Kautionen', setupKautionenHTML],
+  ['Aufteilung', setupAufteilungHTML],
+];
+
+function setupHTML() {
+  const step = Math.min(Math.max(ui.finSetupStep || 0, 0), 3);
+  const [title, body] = SETUP_STEPS[step];
+  return `<div class="fin-setup" role="dialog" aria-modal="true" aria-labelledby="fs-h">
+    <div class="fs-card">
+      <p class="fs-eyebrow">Einrichtung ${step + 1}/4</p>
+      <h2 id="fs-h">${title}</h2>
+      ${body()}
+      <div class="row fs-foot">
+        ${step > 0 ? `<button class="btn-text" data-act="fin-setup-back">‹ Zurück</button>` : ''}
+        <span class="spacer"></span>
+        <button class="btn-text" data-act="fin-setup-skip">Später</button>
+        <button class="btn-primary" data-act="fin-setup-next">${step < 3 ? 'Weiter' : 'Fertig'}</button>
+      </div>
+    </div>
+  </div>`;
+}
 
 /* ---------- 1. one answer, with the derivation under it (F1, F2) ---------- */
 
@@ -92,20 +188,27 @@ function balanceHTML() {
 /* ---------- 3. what is next to pay (F5) ---------- */
 
 function payRowHTML(c) {
-  // while this row is being paid or edited it turns into the full component from the Akte
-  if (ui.costPay === c.id || ui.costEdit === c.id) return `<div class="fin-pay open">${costHTML(c)}</div>`;
+  // while this row has a form open it turns into the full component from the Akte (016b)
+  if (ui.costPay === c.id || ui.costEdit === c.id || ui.costSet === c.id) return `<div class="fin-pay open">${costHTML(c)}</div>`;
   const t = c.task_id ? byId(c.task_id) : null;
-  const next = nextStep(c);
   const d = c.due_on ? new Date(c.due_on + 'T00:00:00') : null;
   const late = isCostLate(c);
+  const st = ladderState(c);
+  const word = st === 'geschaetzt' ? 'geschätzt' : late ? 'überfällig' : LADDER_LABEL[st];
+  const action =
+    st === 'geschaetzt'
+      ? `<button class="btn-secondary" data-act="cost-set" data-ref="${c.id}">Betrag festlegen</button>`
+      : st === 'fest'
+        ? `<button class="btn-secondary" data-act="cost-pay" data-ref="${c.id}">Bezahlt</button>`
+        : '';
   return `<div class="fin-pay ${late ? 'late' : ''}" data-cost="${c.id}">
     <div class="fin-pay-date">${d ? `<b>${String(d.getDate()).padStart(2, '0')}.</b><span>${d.toLocaleDateString('de-DE', { month: 'short' })}</span>` : '<span>offen</span>'}</div>
     <div class="fin-pay-body">
       <button class="fin-task-title" data-act="fin-open" data-ref="${esc(c.task_id || '')}">${esc(c.label)}</button>
-      <div class="quiet"><span class="sig-chip ${late ? 'late' : 'state'}">${late ? 'überfällig' : COST_LABEL[c.status]}</span> ${t ? esc(OWN[t.owner]) : 'Puffer'}</div>
-      ${next ? `<button class="btn-secondary" data-act="${next === 'bezahlt' ? 'cost-pay' : 'cost-step'}" data-ref="${c.id}" data-to="${next}">${COST_NEXT[c.status]}</button>` : ''}
+      <div class="quiet"><span class="sig-chip ${late ? 'late' : 'state'}">${esc(word)}</span> ${t ? esc(OWN[t.owner]) : 'Puffer'}</div>
+      ${action}
     </div>
-    <div class="fin-pay-amount">${eurShort(c.amount)}</div>
+    <div class="fin-pay-amount">${st === 'geschaetzt' ? '≈ ' : ''}${eurShort(c.amount)}</div>
   </div>`;
 }
 
@@ -239,7 +342,8 @@ function postsHTML() {
           ? `<div class="fin-posts">${rows.map(costHTML).join('')}</div>`
           : '<p class="empty">Keine Zeile in dieser Auswahl.</p>'
         : `<button class="btn-text row" data-act="post-open">${rows.length} ${rows.length === 1 ? 'Posten' : 'Posten'} zeigen →</button>`
-    }`;
+    }
+    ${ui.finPostAdd ? costNewHTML(null) : `<button class="btn-text row" data-act="fin-post-add">+ Posten</button>`}`;
 }
 
 /* ---------- 7. the frame data, read first (§8) ---------- */
@@ -312,6 +416,12 @@ function rahmenHTML() {
 }
 
 export function finanzenView() {
+  // docs/changes/016b: without settings.fin_setup_done, Finanzen opens to the four questions
+  // instead of an empty view - "Später" leaves it empty with a way back in
+  if (!state.settings.fin_setup_done && !ui.finSetupSkip) return updateBarHTML() + setupHTML();
+  const setupHint = !state.settings.fin_setup_done
+    ? `<p class="fin-setup-hint"><button class="btn-text" data-act="fin-setup-resume">Einrichtung abschließen ›</button></p>`
+    : '';
   const filterRow = ui.finFilter
     ? `<div class="filter-row">
         <button class="pill on filter-chip" data-act="fin-filter-clear" aria-label="Filter entfernen">Filter: ${esc(breakdown().find((r) => r.key === ui.finFilter)?.label || ui.finFilter)}<span class="x" aria-hidden="true">×</span></button>
@@ -321,6 +431,7 @@ export function finanzenView() {
     updateBarHTML() +
     `<div class="fin">` +
     `<header class="fin-head">${appHeadHTML('finanzen')}</header>` +
+    setupHint +
     answerHTML() +
     balanceHTML() +
     filterRow +

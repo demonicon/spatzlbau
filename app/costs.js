@@ -8,14 +8,32 @@
 //   (task_id null) always counts.
 import { state } from './state.js';
 
-export const COST_STEPS = ['geschaetzt', 'angebot', 'beauftragt', 'faellig', 'bezahlt'];
-export const COST_LABEL = { geschaetzt: 'geschätzt', angebot: 'Angebot', beauftragt: 'beauftragt', faellig: 'fällig', bezahlt: 'bezahlt' };
-// the button that moves a row one step forward; 'bezahlt' is the end of the line
-export const COST_NEXT = { geschaetzt: 'Angebot eintragen', angebot: 'Beauftragen', beauftragt: 'Fällig', faellig: 'Bezahlt am …' };
 export const KIND = { einmalig: 'einmalig', rueckfluss: 'Rückfluss' };
+
+// docs/changes/016b: three states in the interface, five in the database. angebot/beauftragt/
+// faellig all read as "fest" - only Umzugsunternehmen ever needed the difference between them,
+// and that lives in the task now (Teilschritt "Entscheiden und buchen"), not in the cost row.
+// The app writes only geschaetzt | faellig | bezahlt from here on; the other two stay in the
+// check constraint so seed-merge and the old (main-branch) app keep working untouched.
+export const LADDER = ['geschaetzt', 'fest', 'bezahlt'];
+export const LADDER_LABEL = { geschaetzt: 'geschätzt', fest: 'fest', bezahlt: 'bezahlt' };
+/** Which of the three rungs an einmalig row is on right now. */
+export function ladderState(c) {
+  if (c.status === 'bezahlt') return 'bezahlt';
+  if (c.status === 'geschaetzt') return 'geschaetzt';
+  return 'fest'; // angebot | beauftragt | faellig - a Bestandszeile from before 016b
+}
+// Rückfluss (Kautionen, Erstattungen) has its own two-rung ladder on the same status column.
+export const REFUND = ['ausstehend', 'erhalten'];
+export const REFUND_LABEL = { ausstehend: 'ausstehend', erhalten: 'erhalten' };
+export const refundState = (c) => (c.status === 'bezahlt' ? 'erhalten' : 'ausstehend');
+/** The ladder a row is actually on, whichever kind it is. */
+export const rowState = (c) => (c.kind === 'rueckfluss' ? refundState(c) : ladderState(c));
 // docs/changes/016: an 'ausgleich' row is a transfer between the two - it settles the balance
 // and counts in no other sum. It is not offered in the kind picker, only created by the button.
 export const isBalanceRow = (c) => c.kind === 'ausgleich';
+// docs/changes/016b: Haushaltskonto pays too, and settles nothing between the two of them
+export const isHousehold = (c) => c.paid_by === 'H';
 export const APARTMENT = { S: 'Wohnung Sebastian', A: 'Wohnung Anna', N: 'neue Wohnung' };
 const FIRM = ['beauftragt', 'faellig', 'bezahlt'];
 
@@ -102,9 +120,14 @@ export function isCostLate(c) {
   return new Date(c.due_on + 'T00:00:00') < today;
 }
 
-export const stepOf = (c) => COST_STEPS.indexOf(c.status);
-export const nextStep = (c) => COST_STEPS[stepOf(c) + 1] || null;
-export const prevStep = (c) => COST_STEPS[stepOf(c) - 1] || null;
+/** Due within a week: the one other place yellow is allowed (fristkritisch, docs/changes/016b). */
+export function isCostSoon(c) {
+  if (isCostLate(c) || c.status === 'bezahlt' || !c.due_on) return false;
+  const in7 = new Date();
+  in7.setHours(0, 0, 0, 0);
+  in7.setDate(in7.getDate() + 7);
+  return new Date(c.due_on + 'T00:00:00') <= in7;
+}
 
 /* ---------- the numbers behind the Finanzen view (docs/changes/007 commit 2) ---------- */
 
@@ -113,12 +136,13 @@ const settingNum = (key, fallback) => {
   return v === null || v === undefined || v === '' ? fallback : Number(v);
 };
 
-/** Who owes whom. Positive = Anna owes Sebastian. Only rows that were actually paid count. */
+/** Who owes whom. Positive = Anna owes Sebastian. Only rows that were actually paid count,
+    and only by one of the two - the household account (016b) settles nothing between them. */
 export function balance() {
   const split = settingNum('split_default_s', 50);
   let n = 0;
   for (const c of state.costs) {
-    if (!c.paid_on || !c.paid_by) continue;
+    if (!c.paid_on || !c.paid_by || isHousehold(c)) continue;
     const amount = num(c.amount) * (c.kind === 'rueckfluss' ? -1 : 1); // a refund flows back to whoever received it
     const shareS = c.belongs_to === 'S' ? 1 : c.belongs_to === 'A' ? 0 : (c.split_s === null || c.split_s === undefined ? split : Number(c.split_s)) / 100;
     // the payer advanced the whole amount but owes only their own share
@@ -133,7 +157,7 @@ export function balanceParts() {
   let paidS = 0;
   let paidA = 0;
   for (const c of state.costs) {
-    if (!c.paid_on || !c.paid_by) continue;
+    if (!c.paid_on || !c.paid_by || isHousehold(c)) continue;
     const amount = num(c.amount) * (c.kind === 'rueckfluss' ? -1 : 1);
     if (c.paid_by === 'S') paidS += amount;
     else paidA += amount;
