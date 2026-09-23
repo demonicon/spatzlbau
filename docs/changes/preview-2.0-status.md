@@ -19,7 +19,7 @@ Migrationen liegen nur als Dateien vor – **keine ist angewendet**, weder auf `
 | 021 Phasen/Gates | `0bc839c` | fertig | `013_a021_seen_gates.sql` – ohne sie merkt sich die App den gesehenen Gate-Moment nur für die Sitzung |
 | 024 Claude-Anbindung (Teil 2) | `068a22f` | Teil 2 fertig, Teil 1+3 offen (nicht Claude Code) | `015_a024_claude_run.sql` – ohne sie fehlt in der Stand-Zeile „zuletzt HH:MM", sonst läuft alles |
 | 026 Gemeinsamer Start | `bd64950` | fertig | `016_a026_setup.sql` – ohne sie startet das Setup trotzdem (liest als leer/false), `stammdaten` existiert in der Live-DB schon |
-| 016c Finanzen-Abgleich | _folgt beim Merge_ | fertig | keine |
+| 016c Finanzen-Abgleich | `ef9eda9` | fertig | keine |
 
 ## Migrationen in dieser Reihenfolge einspielen
 
