@@ -9,3 +9,5 @@ Eine Zeile pro Idee: Datum · von wem (S/A/Claude) · Idee · Auslöser. Kein St
 - 22.09. · Claude · Akte am Handy als Vollbild mit Browser-Zurück
 - 22.09. · Claude · Suchfeld hinter Lupe – nach zwei Wochen Nutzung entscheiden
 - 22.09. · S · Breakpoint-Feinschliff: Tablet und Zwischenbreiten (600–899 px, Querformat, > 1800 px) – Tablet-Test mit Anna am 27.09.
+
+- **Teilschritte per Ziehen sortieren.** 017 hat dafür zwei Pfeile (↑/↓) statt des Griffs aus dem Mockup: Ziehen braucht am Handy eine lange Berührung und streitet sich mit dem Scrollen. Ein echter Griff mit Pointer-Events wäre eine eigene kleine Aufgabe.

@@ -25,7 +25,6 @@ export const ui = {
   expanded: null, // task id with open detail
   confirm: null, // 'del:<id>' | null
   phaseOpen: {}, // phase id -> bool (default open)
-  editingAdvice: null, // '<taskId>:<key>'
   // docs/changes/010: the same deploy serves "/" and "/preview/" out of the same database.
   // The preview is read-only for the per-person reading state (012 bugfix), so the flag lives
   // here, next to the three writers it stops – not only in the view layer.

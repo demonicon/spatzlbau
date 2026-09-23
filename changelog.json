@@ -21,7 +21,8 @@
       "new": [],
       "improved": [
         "Einheitliche Schaltflächen, ein Signal je Aufgabe, blockierte Aufgaben nicht mehr abhakbar.",
-        "Finanzen beantwortet drei Fragen: was kostet es, was ist als Nächstes zu zahlen, wer schuldet wem."
+        "Finanzen beantwortet drei Fragen: was kostet es, was ist als Nächstes zu zahlen, wer schuldet wem.",
+        "Die Akte hat zwei Modi: Ansehen und Bearbeiten – nichts wird mehr versehentlich geändert."
       ],
       "fixed": []
     },
