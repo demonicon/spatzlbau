@@ -36,8 +36,12 @@
 }
 :root {
   /* surfaces & ink */
-  --bg: #e9ebe6; --paper: #f4f6f2; --card: #ffffff; --line: #d9ded8; --line-dash: #b8bfb9;
-  --ink: #1e2b24; --ink-2: #4e5b54; --ink-3: #68726b; /* ink-3: ≥ 4.5:1 on paper and card (docs/changes/008b) */
+  --bg: #f3f3f3; --paper: #fafafa; --card: #ffffff; --line: #e0e0e0; --line-dash: #c7c7c7;
+  --ink: #1e2b24; --ink-2: #4d5751; --ink-3: #616161; /* ink-2/ink-3: ≥ 4.5:1 on paper and card (docs/changes/008b, 029) */
+  /* Karten, Schatten, Fokus (docs/changes/029) */
+  --r-card: 8px; --sh-card: 0 0 2px rgba(0, 0, 0, .12), 0 2px 4px rgba(0, 0, 0, .14);
+  --sh-pop: 0 0 8px rgba(0, 0, 0, .12), 0 16px 32px rgba(0, 0, 0, .14);
+  --divider: #f0f0f0; --focus: var(--ink);
   /* owner colours (semantic, values from the handoff) */
   --seb: #2e5a9c; --seb-bg: #e4ecf7; --anna: #9a3d64; --anna-bg: #f6e4ec; --both: #2f6f4e; --both-bg: #e1efe6;
   --claude: #6b4e16; --claude-bg: #f3e9d2; --claude-past: #c9b98a;
@@ -85,7 +89,9 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 .on-ink .btn-secondary { border-color: var(--card); color: var(--card); }
 .on-ink .btn-text { color: var(--card); }
 .on-ink .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
-.btn-secondary { padding: 0 14px; background: transparent; border-color: var(--ink); color: var(--ink); }
+/* 029 Regel 4: Sekundär-Rahmen grau statt schwarz - Text bleibt ink (border-radius trägt schon
+   die gemeinsame Regel oben, --r-tag war hier nie eckig) */
+.btn-secondary { padding: 0 14px; background: transparent; border-color: var(--line-dash); color: var(--ink); }
 .btn-secondary:hover { background: var(--line); }
 .btn-text { padding: 0 4px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 .btn-text:hover { color: var(--ink-2); }
@@ -111,8 +117,17 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
   .btn-primary, .btn-secondary, .btn-text, .pill { min-height: var(--btn-h-desktop); }
 }
 [hidden] { display: none !important; }
-:focus-visible { outline: 2px solid var(--seb); outline-offset: 2px; }
+/* 029 Regel 6: ein Fokusring überall, in Tinte statt in einer Personenfarbe */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-tag); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* 029 Regel 3: Tags vereinheitlichen - .tag, .sig-chip, .st-chip, .cost-badge, .own, .tl-sig
+   bekommen eine Höhe, eine Randfarbe (Textfarbe bei 35 % über color-mix) und den Tag-Radius;
+   die Füllfarben bleiben, wie sie in jeder Klasse einzeln gesetzt sind. */
+.tag, .sig-chip, .st-chip, .cost-badge, .own, .tl-sig {
+  display: inline-flex; align-items: center; min-height: 20px; line-height: 18px; padding: 0 6px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent); border-radius: var(--r-tag);
+}
 
 /* phone column, as in the handoff */
 .wrap { width: 100%; max-width: var(--col-max); min-height: 100vh; margin: 0 auto; background: var(--paper); border-left: 1px solid var(--line); border-right: 1px solid var(--line); display: flex; flex-direction: column; }
@@ -190,21 +205,23 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 
 /* ---------- "Seit du zuletzt da warst" (docs/changes/018 §6) ----------
    One line while folded; it only exists when something actually happened. */
-.visit { margin: 10px var(--gutter) 0; border: 1px solid var(--line); background: var(--card); }
+.visit { margin: 10px var(--gutter) 0; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); }
 .visit-line { width: 100%; min-height: var(--tap); display: flex; align-items: center; gap: 6px; padding: 6px 12px; text-align: left; font-size: var(--fs-meta); }
 .visit-line .l { color: var(--ink-2); flex: none; }
 .visit-line .v { color: var(--ink); font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .visit-line .chev { margin-left: auto; color: var(--ink-3); font-size: 16px; flex: none; }
-.visit-body { border-top: 1px solid var(--line); padding: 4px 12px 8px; }
+.visit-body { border-top: 1px solid var(--divider); padding: 4px 12px 8px; }
 .visit-item { margin: 8px 0 0; font-size: var(--fs-small); line-height: 1.45; color: var(--ink-2); overflow-wrap: anywhere; }
 .visit-item b { color: var(--ink); }
 .visit-item .k { font-size: var(--fs-nano); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; margin-right: 4px; }
 
 /* ---------- the three signals (docs/changes/018 §3) ---------- */
-.kpis { margin: 10px var(--gutter) 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+/* 029 Regel 1: die Kacheln waren eine Linien-Grafik (1 px Spalt auf Linienfarbe) - jetzt eigene
+   Karten mit Luft dazwischen, kein Rahmen-Trick mehr */
+.kpis { margin: 10px var(--gutter) 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.tile { background: var(--card); min-height: 58px; padding: 8px 8px 7px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; text-align: left; }
+.tile { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); min-height: 58px; padding: 8px 8px 7px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; text-align: left; }
 .tile[aria-pressed=true] { border-bottom-color: var(--ink); }
 .tile .n { font-size: 21px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
 .tile .n span { padding: 0 4px; margin-left: -4px; }
@@ -243,8 +260,9 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .tgroup-more { color: var(--ink-2); }
 
 /* ---------- "Zwischen euch" in the desktop panel (docs/changes/018 §5) ---------- */
-.panel.between { padding-bottom: 12px; }
-.between-block { padding: 12px 14px 4px; border-bottom: 1px solid var(--line); }
+/* 029 Regel 1/2: "Zwischen euch" ist eine Karte, ihre Blöcke trennt --divider statt --line */
+.panel.between { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); padding: 0 0 12px; margin-top: 6px; }
+.between-block { padding: 12px 14px 4px; border-bottom: 1px solid var(--divider); }
 .between-block h3 { margin: 0; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--ink-2); }
 .between-title { display: block; width: 100%; text-align: left; font-size: var(--fs-ui); line-height: 1.35; font-weight: 600; padding: 6px 0 0; overflow-wrap: anywhere; }
 
@@ -264,8 +282,11 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 
 /* ---------- search (docs/changes/012) ---------- */
 .search-row { position: relative; display: flex; align-items: center; margin: 10px var(--gutter) 0; }
-.search-row input { width: 100%; min-height: var(--tap); padding: 8px 44px 8px 2px; border: 0; border-bottom: 1px solid var(--line-dash); border-radius: 0; background: transparent; font-size: var(--fs-ui); color: var(--ink); appearance: none; -webkit-appearance: none; }
-.search-row input:focus { border-bottom-color: var(--ink); }
+/* 029 Regel 5: die Suche behält ihren Unterstrich, bekommt aber --card als Grund; die Höhe bleibt
+   --tap (44 px) statt der Button-Höhe - die Zeile hat kein Zusatz-Padding, das den Tap-Ziel-Verlust
+   sonst auffinge (CLAUDE.md, Abweichung in 029-abweichungen.md) */
+.search-row input { width: 100%; min-height: var(--tap); padding: 8px 44px 8px 2px; border: 0; border-bottom: 1px solid var(--line-dash); border-radius: 0; background: var(--card); font-size: var(--fs-ui); color: var(--ink); appearance: none; -webkit-appearance: none; }
+.search-row input:focus { border-bottom-color: var(--focus); }
 .search-row input::placeholder { color: var(--ink-3); }
 /* the browser's own clear button would sit next to ours and is too small to hit */
 .search-row input::-webkit-search-cancel-button, .search-row input::-webkit-search-decoration { display: none; }
@@ -314,10 +335,11 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .task.blocked .t { color: var(--ink-2); }
 /* one signal per row, and one quiet line for everything else (docs/changes/020) */
 .sig { display: flex; padding-bottom: 6px; }
-.sig-chip { font-size: var(--fs-micro); font-weight: 600; padding: 2px 8px; border-radius: var(--r-tag); border: 1px solid transparent; }
+.sig-chip { font-size: var(--fs-micro); font-weight: 600; }
 .sig-chip.late { background: var(--danger-bg); color: var(--danger); }
-.sig-chip.waitme { background: var(--card); border-color: var(--ink); color: var(--ink); }
-.sig-chip.blocked { padding-left: 0; font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); }
+.sig-chip.waitme { background: var(--card); color: var(--ink); }
+/* "wartet auf: <task>" ist kein Chip, sondern ein Textlink in der Zeile - Regel 3 gilt ihm nicht */
+.sig-chip.blocked { display: inline; min-height: auto; line-height: inherit; padding-left: 0; border: 0; font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); }
 .sig-chip.blocked .btn-text { min-height: 0; padding: 0; }
 /* docs/changes/014 #2: inline padding widens the hit area, not the line - 4 px up (the title keeps
    its own edge), 22 px down over the quiet line (positioned, so it lies on top): 44 px in all */
@@ -328,22 +350,24 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .quiet .ndot.A { background: var(--anna); }
 .quiet .ndot.C { background: var(--claude); }
 .meta { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; font-size: var(--fs-small); color: var(--ink-2); padding-bottom: 8px; }
-.own { border-radius: var(--r-tag); padding: 1px 7px; font-size: var(--fs-micro); font-weight: 600; }
+.own { font-size: var(--fs-micro); font-weight: 600; }
 .own.S { background: var(--seb-bg); color: var(--seb); }
 .own.A { background: var(--anna-bg); color: var(--anna); }
 .own.B { background: var(--both-bg); color: var(--both); }
 .own.C { background: var(--claude-bg); color: var(--claude); }
 /* "wartet auf dich" is urgent, but neither a deadline nor irreversible: weight and an outline
-   in text colour carry it, red stays with "überfällig" and with what cannot be undone (015) */
-.own.wait { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.own.H { background: var(--card); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-dash); } /* Haushaltskonto (016b): neither person */
+   in text colour carry it, red stays with "überfällig" and with what cannot be undone (015) -
+   der Rand kommt seit 029 aus der Tag-Regel (Textfarbe bei 35 %), kein eigener box-shadow mehr */
+.own.wait { background: var(--card); color: var(--ink); }
+.own.H { background: var(--card); color: var(--ink-2); } /* Haushaltskonto (016b): neither person */
 .due { flex: none; font-size: var(--fs-small); color: var(--ink-2); padding: 0 3px; margin: 0 -3px; }
 .due.crit { background: var(--mark); color: var(--ink); font-weight: 600; }
 .due.late { color: var(--danger); font-weight: 600; background: transparent; }
-.tag { font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid var(--line); }
-.tag.claude { background: var(--claude-bg); color: var(--claude); border-color: transparent; }
-.tag.wait-me { background: var(--card); color: var(--ink); border-color: var(--ink); font-weight: 600; }
-.tag.block { border: 0; padding: 0; color: var(--ink-3); text-decoration: underline dotted; text-underline-offset: 2px; font-size: var(--fs-micro); }
+.tag { font-size: var(--fs-micro); }
+.tag.claude { background: var(--claude-bg); color: var(--claude); }
+.tag.wait-me { background: var(--card); color: var(--ink); font-weight: 600; }
+/* ein Textlink auf eine blockierende Aufgabe, kein Chip - Regel 3 gilt ihm nicht */
+.tag.block { display: inline; min-height: auto; line-height: inherit; border: 0; padding: 0; color: var(--ink-3); text-decoration: underline dotted; text-underline-offset: 2px; font-size: var(--fs-micro); }
 .tag.block:hover { color: var(--ink); }
 .muted { color: var(--ink-3); }
 /* new comment since the last visit, in the colour of whoever wrote it, with an initial so it
@@ -356,7 +380,8 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .meta .ndot.C { background: var(--claude); }
 
 /* ---------- detail panel ("Akte"), two weight classes since 009 ---------- */
-.detail { grid-column: 1 / -1; background: var(--card); border: 1px solid var(--line); padding: 12px 14px; margin: 6px 0 8px; }
+/* 029 Regel 1: die Akte ist immer eine Karte, auch am Handy */
+.detail { grid-column: 1 / -1; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); padding: 12px 14px; margin: 6px 0 8px; }
 .detail h3 { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; margin: 18px 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); color: var(--ink-2); }
 .detail h3:first-child { margin-top: 0; }
 .detail h3 small { font-weight: 400; color: var(--ink-3); text-transform: none; letter-spacing: 0; }
@@ -375,7 +400,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .akte-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
 .akte-view .nohead-meta { padding-left: 0; margin-top: 0; }
 /* a labelled line: "Kosten  1.740 € · beauftragt · fällig 01.01." */
-.akte-line { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--gap); padding: 10px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-ui); line-height: 1.4; }
+.akte-line { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--gap); padding: 10px 0; border-bottom: 1px solid var(--divider); font-size: var(--fs-ui); line-height: 1.4; }
 .akte-line .l { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; padding-top: 3px; }
 .sub-read { font-size: var(--fs-ui); padding: 10px 0; line-height: 1.35; overflow-wrap: anywhere; }
 .sub.done .sub-read { color: var(--ink-3); text-decoration: line-through; }
@@ -390,7 +415,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .adv-pills { margin-top: 8px; }
 .adv-body { margin-top: 10px; padding: 12px 14px; background: var(--card); box-shadow: inset 3px 0 0 var(--line); font-size: var(--fs-ui); line-height: 1.55; white-space: pre-wrap; }
 .com .new { color: var(--ink); font-weight: 600; }
-.akte-changed { margin: 18px 0 0; padding-top: 10px; border-top: 1px solid var(--line); font-size: var(--fs-micro); color: var(--ink-3); }
+.akte-changed { margin: 18px 0 0; padding-top: 10px; border-top: 1px solid var(--divider); font-size: var(--fs-micro); color: var(--ink-3); }
 
 /* ---------- Bearbeiten (docs/changes/017): one bar, a counter, form fields ---------- */
 .akte-edit { background: #fff; }
@@ -404,6 +429,20 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .detail .lbl, .cost-edit .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); margin-top: 10px; flex: 1 1 140px; min-width: 0; }
 .detail .lbl.is-changed, .cost-edit .lbl.is-changed { box-shadow: inset 3px 0 0 var(--ink); padding-left: 8px; margin-left: -8px; }
 .detail .lbl > input, .detail .lbl > select, .cost-edit .lbl > input, .cost-edit .lbl > select { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
+/* 029 Regel 5: Eingabefelder (Akte-Bearbeiten, Rahmendaten, Suche) - dunkle Unterkante, im Fokus
+   2 px in der Fokusfarbe, der Tag-Radius. Ein Auswahlblock statt sieben Einzel-Regeln. */
+.detail .lbl > input, .detail .lbl > select, .cost-edit .lbl > input, .cost-edit .lbl > select,
+.sub.sub-edit input[type=text], .row select, .row input[type=text], .row input[type=number], .detail textarea,
+.cost-form .lbl input, .cost-form .lbl select, .fin .lbl input, .fin .lbl select, .fin-table.rec input,
+.fs-card .lbl > input, .fs-card .lbl > select {
+  border-bottom-color: var(--ink-3); border-radius: var(--r-tag);
+}
+.detail .lbl > input:focus, .detail .lbl > select:focus, .cost-edit .lbl > input:focus, .cost-edit .lbl > select:focus,
+.sub.sub-edit input[type=text]:focus, .row select:focus, .row input[type=text]:focus, .row input[type=number]:focus, .detail textarea:focus,
+.cost-form .lbl input:focus, .cost-form .lbl select:focus, .fin .lbl input:focus, .fin .lbl select:focus, .fin-table.rec input:focus,
+.fs-card .lbl > input:focus, .fs-card .lbl > select:focus {
+  border-bottom: 2px solid var(--focus);
+}
 .seg { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; align-items: center; }
 .sub.sub-edit { grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px; padding: 4px 0; }
 /* docs/changes/014 #3: no drag handle exists (017 chose arrows) - so the arrows get the full
@@ -432,14 +471,14 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .chip { border: 1px solid var(--line); background: var(--card); border-radius: var(--r-pill); padding: 6px 6px 6px 12px; font-size: var(--fs-meta); min-height: 40px; display: inline-flex; align-items: center; gap: 4px; }
 .ico { min-width: var(--tap); min-height: var(--tap); padding: 4px 6px; color: var(--ink-3); font-size: 18px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
 .ico:hover { background: var(--line); color: var(--ink); }
-.sub { display: grid; grid-template-columns: var(--tap) 1fr auto; align-items: center; border-bottom: 1px solid var(--line); }
+.sub { display: grid; grid-template-columns: var(--tap) 1fr auto; align-items: center; border-bottom: 1px solid var(--divider); }
 .sub input[type=checkbox] { width: 20px; height: 20px; margin: 0 auto; accent-color: var(--ok); }
 /* docs/changes/013 B2: the text is a button that opens edit mode - no more one-tap × to delete */
 .sub-text { font-size: var(--fs-ui); padding: 10px 0; min-height: var(--tap); width: 100%; }
 .sub.done .sub-text { color: var(--ink-3); text-decoration: line-through; }
 .sub.sub-editing { display: block; padding: 8px 0; }
 .sub-edit-title { width: 100%; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
-.com { padding: 10px 12px; margin: 0 -12px; border-bottom: 1px solid var(--line); font-size: var(--fs-ui); white-space: pre-wrap; }
+.com { padding: 10px 12px; margin: 0 -12px; border-bottom: 1px solid var(--divider); font-size: var(--fs-ui); white-space: pre-wrap; }
 .com .h { font-size: var(--fs-micro); color: var(--ink-3); white-space: normal; }
 .com .h b { color: var(--ink-2); }
 .com.C { background: var(--claude-bg); }
@@ -470,6 +509,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
    opens the full editor, the one action button moves it forward, amount/due date are their own
    small buttons for the one-field correction. */
 .cost { border-bottom: 1px solid var(--line); padding: 10px 0; }
+.detail .cost { border-bottom-color: var(--divider); } /* innerhalb der Akte-Karte (029 Regel 2) */
 .cost-row { display: flex; align-items: flex-start; gap: 10px; }
 .cost-label { flex: 1 1 auto; min-width: 0; min-height: var(--tap); display: flex; align-items: center; font-size: var(--fs-ui); line-height: 1.3; overflow-wrap: anywhere; }
 .cost-amount { flex: none; font-size: var(--fs-ui); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -497,9 +537,9 @@ button.cost-amount:hover { background: var(--line); }
 /* the full Bearbeiten-Modus of a row - same shape as the Akte's (017), but its own wrapper so
    it also stands on its own inside Finanzen (Als Nächstes zahlen, Alle Posten) */
 .cost-edit { background: var(--card); margin: 8px -8px 0; padding: 0 8px 8px; }
-.cost-edit-foot { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--line); }
+.cost-edit-foot { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--divider); }
 /* the amount a task carries, in its row in the list */
-.cost-badge { font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
+.cost-badge { font-size: var(--fs-micro); color: var(--ink); white-space: nowrap; }
 
 /* ---------- Finanzen (docs/changes/016, layout 016c against the export "Variante B v2") ----------
    One flat list of blocks in phone order; the aside is display: contents below 900 px and a
@@ -541,17 +581,18 @@ button.cost-amount:hover { background: var(--line); }
 .fin-break-row.paid-row .l { color: var(--ink-2); }
 .fin-break-row[aria-pressed=true] { background: var(--card); box-shadow: inset 3px 0 0 var(--ink); }
 
-/* the balance: the one card with a primary action behind it */
-.fin-balance { margin-top: 16px; border: 1px solid var(--ink); background: var(--card); padding: 12px 14px; }
+/* the balance: the one card with a primary action behind it (029 Regel 1: jetzt Karte statt
+   Ink-Rahmen; die Trennlinien darin sind seit Regel 2 --divider) */
+.fin-balance { margin-top: 16px; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); padding: 12px 14px; }
 .fin-bal { font-size: 20px; font-weight: 600; margin-top: 2px; line-height: 1.45; }
 .fin-bal-sub { font-size: var(--fs-small); color: var(--ink-2); margin-top: 2px; line-height: 1.4; }
 .fin-bal-rows { display: none; width: 100%; border-collapse: collapse; margin-top: 8px; font-size: var(--fs-small); color: var(--ink-2); }
-.fin-bal-rows th, .fin-bal-rows td { padding: 6px 0; border-top: 1px solid var(--line); font-weight: 400; text-align: right; white-space: nowrap; }
+.fin-bal-rows th, .fin-bal-rows td { padding: 6px 0; border-top: 1px solid var(--divider); font-weight: 400; text-align: right; white-space: nowrap; }
 .fin-bal-rows th { text-align: left; white-space: normal; }
 .fin-bal-rows td { padding-left: 12px; }
 .fin-balance .fin-bal-actions { margin-top: 10px; align-items: center; }
-.fin-how { margin-top: 10px; border-top: 1px solid var(--line); font-size: var(--fs-meta); }
-.fin-how > div { display: flex; justify-content: space-between; gap: var(--gap); padding: 6px 0; border-bottom: 1px solid var(--line); }
+.fin-how { margin-top: 10px; border-top: 1px solid var(--divider); font-size: var(--fs-meta); }
+.fin-how > div { display: flex; justify-content: space-between; gap: var(--gap); padding: 6px 0; border-bottom: 1px solid var(--divider); }
 .fin-how .fin-note { margin: 8px 0 0; }
 
 /* section heads: a line of small caps with an optional action on the right; a 40 px button in
@@ -577,10 +618,10 @@ button.cost-amount:hover { background: var(--line); }
 .fin-pay-meta .btn-secondary { order: 3; margin-top: 8px; }
 .fin-pay-amount { font-size: 16px; font-weight: 600; line-height: 20px; white-space: nowrap; }
 .fin-pay.late .fin-pay-date b { color: var(--danger); }
-.sig-chip.state { background: var(--card); border-color: var(--line); color: var(--ink-2); font-weight: 400; }
+.sig-chip.state { background: var(--card); color: var(--ink-2); font-weight: 400; }
 /* the state as a chip, in the three words of 016b and the colours of the export */
-.st-chip { font-size: var(--fs-micro); font-weight: 600; line-height: 17px; padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid transparent; white-space: nowrap; }
-.st-chip.geschaetzt { background: var(--card); border-color: var(--line-dash); color: var(--ink-2); }
+.st-chip { font-size: var(--fs-micro); font-weight: 600; white-space: nowrap; }
+.st-chip.geschaetzt { background: var(--card); color: var(--ink-2); }
 .st-chip.fest { background: var(--claude-bg); color: var(--claude); }
 .st-chip.bezahlt, .st-chip.erhalten { background: var(--both-bg); color: var(--both); }
 .st-chip.ausstehend { background: var(--ink); color: #fff; }
@@ -683,12 +724,13 @@ button.cost-amount:hover { background: var(--line); }
   .fin-hero { flex: 0 0 auto; min-width: 237px; padding-top: 8px; }
   .fin-number .n { font-size: 56px; letter-spacing: -0.035em; }
   .fin-number .u { font-size: var(--fs-ui); }
-  .fin-break { flex: 1 1 auto; margin-top: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
-  .fin-break-row { background: var(--card); min-height: 82px; display: flex; flex-direction: column-reverse; justify-content: center; align-items: flex-start; gap: 4px; padding: 10px 12px; border: 0; }
+  /* 029 Regel 1: die vier Kennzahlen waren eine Linien-Grafik (1 px Spalt), jetzt eigene Karten */
+  .fin-break { flex: 1 1 auto; margin-top: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .fin-break-row { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); min-height: 82px; display: flex; flex-direction: column-reverse; justify-content: center; align-items: flex-start; gap: 4px; padding: 10px 12px; border: 0; }
   .fin-break-row .v { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; line-height: 24px; }
   .fin-break-row .l { font-size: var(--fs-micro); color: var(--ink-2); line-height: 15px; }
   .fin-break-row .arr { display: none; }
-  .fin-break-row[aria-pressed=true] { box-shadow: inset 0 -3px 0 var(--ink); }
+  .fin-break-row[aria-pressed=true] { box-shadow: var(--sh-card), inset 0 -3px 0 var(--ink); }
   .fin-next { grid-area: next; padding: 24px 14px 0 20px; }
   .fin-mon { grid-area: mon; padding: 24px 20px 0 14px; }
   .fin-months .paidcol { display: table-cell; }
@@ -796,7 +838,8 @@ button.cost-amount:hover { background: var(--line); }
 .setup-next-list li { padding: 4px 0; border-bottom: 1px solid var(--line); }
 .setup-picker-list { display: flex; flex-direction: column; }
 .avatar-wrap { position: relative; }
-.avatar-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 70; min-width: 220px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); padding: 6px; }
+/* 029 Regel 1 (+ optional): das Menü ist eine Karte, --sh-pop statt des fest eingetragenen Schattens */
+.avatar-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 70; min-width: 220px; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-pop); padding: 6px; }
 .avatar-menu-item { display: block; width: 100%; min-height: var(--tap); padding: 8px 10px; font-size: var(--fs-small); }
 .avatar-menu-item:hover { background: var(--line); }
 
@@ -858,9 +901,11 @@ button.cost-amount:hover { background: var(--line); }
      full width and the Akte is an overlay, so no empty panel stands around */
   .board.mode-panel { display: grid; grid-template-columns: minmax(0, 1fr) clamp(420px, 30vw, 600px); align-items: start; }
   .col-list { min-width: 0; }
-  /* the person columns start here, as many as fit */
-  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1px; background: var(--line); margin-top: 20px; border-top: 1px solid var(--line); }
-  .col { background: var(--paper); margin-top: 0; padding-bottom: 12px; min-width: 0; }
+  /* the person columns start here, as many as fit (029 Regel 1: Karten statt der Linien-Grafik;
+     Regel 2: ihre Zeilen-Trennlinien werden hier innen zu --divider) */
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 20px; }
+  .col { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); margin-top: 0; padding-bottom: 12px; min-width: 0; }
+  .col .task, .col .col-sub { border-bottom-color: var(--divider); }
   .col-head { padding: 12px 12px 8px; flex-wrap: wrap; }
   .col .note { flex-basis: 100%; margin-left: 0; text-align: left; }
   .col-body { padding: 0 12px; }
@@ -874,7 +919,9 @@ button.cost-amount:hover { background: var(--line); }
   .panel.empty p { margin: 0; color: var(--ink-3); font-size: var(--fs-ui); }
   .panel-head { display: flex; align-items: center; gap: 6px; padding: 8px 0 0; min-height: 52px; }
   .panel .detail { margin: 0; }
-  .task.selected { border-left: 3px solid var(--ink); margin-left: -3px; background: var(--card); }
+  /* 029: .col ist jetzt selbst eine Karte (var(--card)) - die Markierung braucht seither den
+     Seitenton, sonst verschwindet sie gegen den eigenen Kartengrund */
+  .task.selected { border-left: 3px solid var(--ink); margin-left: -3px; background: var(--paper); }
   /* the columns are grouped by owner from here on, so the chip in the row is noise */
   .cols .task .own { display: none; }
 }
@@ -991,10 +1038,10 @@ button.cost-amount:hover { background: var(--line); }
 .tl-row.blocked .check::before { border-color: var(--line-dash); border-style: dashed; background: transparent; }
 .tl-row.blocked .check { cursor: default; opacity: 1; }
 .tl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 8px; font-size: var(--fs-micro); line-height: 17px; color: var(--ink-3); }
-.tl-meta .own, .tl-sig { padding: 0 6px; line-height: 17px; border-radius: var(--r-tag); font-size: var(--fs-micro); font-weight: 600; white-space: nowrap; }
+.tl-sig { font-size: var(--fs-micro); font-weight: 600; white-space: nowrap; }
 .tl-sig.late { background: var(--danger-bg); color: var(--danger); }
 .tl-sig.crit { background: var(--mark); color: var(--ink); }
-.tl-sig.waitme { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.tl-sig.waitme { background: var(--card); color: var(--ink); }
 /* docs/changes/014 #2: the drawn line stays 17 px; the hit area is 44 px tall - from the title's
    lower edge (8 px above) down into the free space under the row, never over the title itself */
 .tl-wait { position: relative; min-height: 0; padding: 0; font: inherit; color: inherit; }
