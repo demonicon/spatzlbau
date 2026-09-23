@@ -8,8 +8,8 @@ import { costHTML, costNewHTML, ladderHTML } from '../ui/detail.js';
 import { updateBarHTML, footHTML, setupHintHTML, avatarHTML } from '../ui/chrome.js';
 import { SUPABASE_URL } from '../config.js';
 import {
-  summary, balance, balanceParts, cashflow, peakMonth, moveOutMissing, bufferRow, bufferPct,
-  suggestedBuffer, nextPayments, recurringRows, recurringSummary, rowDelta, isCounted, isCostLate, isCostSoon,
+  summary, balance, balanceParts, cashflow, peakMonth, moveOutMissing, bufferInfo, bufferPct, bufferFixed,
+  nextPayments, recurringRows, recurringSummary, rowDelta, isCounted, isCostLate, isCostSoon,
   eur, eurShort, num, ladderState, refundState, rowState, LADDER_LABEL, REFUND_LABEL,
 } from '../costs.js';
 
@@ -159,8 +159,10 @@ export function breakdown() {
   const s = summary();
   // 016c: "Termine fehlen" only while one of the three dates is missing - with all three set,
   // no overlap is a real 0 € (Fund 23.09.)
+  // 014c: der Puffer ist keine Zeile mehr - die Kachel "Posten inkl. Puffer" addiert ihn dazu
+  const plannedWithBuffer = s.planned_total === null && s.buffer_mode !== 'fixed' ? null : (s.planned_total || 0) + (s.buffer || 0);
   const rows = [
-    { key: 'planned', label: 'Posten', sub: 'inkl. Puffer', value: s.planned_total },
+    { key: 'planned', label: 'Posten', sub: 'inkl. Puffer', value: plannedWithBuffer },
     { key: 'double', label: 'Doppelmiete', sub: s.double_rent === null ? 'Termine fehlen' : 'berechnet', value: s.double_rent },
     { key: 'refunds', label: 'Rückflüsse', sub: 'Kautionen', value: s.refunds_expected === null ? null : -s.refunds_expected },
   ];
@@ -280,9 +282,10 @@ function actionHTML(c) {
 // the form opens only in the list it was tapped in (ui.costWhere), the other copy stays a row
 const openRow = (c, where) =>
   (ui.costPay === c.id || ui.costEdit === c.id || ui.costSet === c.id) && (!ui.costWhere || ui.costWhere === where);
+// 014c: task_id null war einmal immer der Puffer - jetzt ist es ein normaler Posten ohne Aufgabe
 const ownerOf = (c) => {
   const t = c.task_id ? byId(c.task_id) : null;
-  return t ? who(t.owner) : 'Puffer';
+  return t ? who(t.owner) : 'ohne Aufgabe';
 };
 
 function payRowHTML(c) {
@@ -487,6 +490,7 @@ function postsHTML() {
     </div>
     ${filterRow}
     ${list}
+    ${bufferFootHTML()}
     ${ui.finPostAdd ? costNewHTML(null) : `<button class="btn-text row fin-add" data-act="fin-post-add">+ Posten</button>`}`;
 }
 
@@ -498,8 +502,34 @@ const SETTINGS = [
   ['move_out_s', 'Auszug ' + OWN.S, 'date'],
   ['move_out_a', 'Auszug ' + OWN.A, 'date'],
   ['split_default_s', 'Anteil ' + OWN.S + ' in %', 'num'],
-  ['buffer_pct', 'Puffer in %', 'num'],
 ];
+
+/** Die stille Fußzeile unter der Posten-Tabelle: der Puffer steckt in keiner Zeile, nur in der
+    Summe "Posten inkl. Puffer" oben (docs/changes/014c §4). */
+function bufferFootHTML() {
+  const buf = bufferInfo();
+  const label = buf.mode === 'fixed' ? `${eurShort(buf.amount)} fest` : `${bufferPct()} % · ${eurShort(buf.amount)}`;
+  return `<p class="fin-note fin-buffer-foot">+ Puffer ${label}</p>`;
+}
+
+/** Puffer als Segment Satz | Betrag (014c §3): Satz schreibt buffer_pct, Betrag schreibt
+    buffer_fixed - ein Wechsel zurück auf Satz räumt buffer_fixed wieder ab. */
+function bufferSettingHTML() {
+  const mode = ui.bufferMode || (bufferFixed() !== null ? 'fixed' : 'pct');
+  return `<div class="row">
+    <div class="lbl">Puffer
+      <div class="seg" role="group" aria-label="Puffer">
+        <button class="pill" data-act="buffer-mode" data-to="pct" aria-pressed="${mode === 'pct'}">Satz</button>
+        <button class="pill" data-act="buffer-mode" data-to="fixed" aria-pressed="${mode === 'fixed'}">Betrag</button>
+      </div>
+    </div>
+    ${
+      mode === 'pct'
+        ? `<label class="lbl">Puffer in %<input type="text" inputmode="numeric" data-setting="buffer_pct" value="${esc(String(bufferPct()))}"></label>`
+        : `<label class="lbl">Puffer in €<input type="text" inputmode="decimal" data-setting="buffer_fixed" value="${bufferFixed() === null ? '' : esc(String(bufferFixed()).replace('.', ','))}"></label>`
+    }
+  </div>`;
+}
 
 /* ---------- 8b. the calendar subscription (docs/changes/022) ----------
    Two addresses, one per person. The token in them is the whole secret, so the line says what
@@ -541,9 +571,10 @@ function rahmenHTML() {
   const d = (k) => (set(k) ? fmtDay(set(k)) : '–');
   const split = state.settings.split_default_s ?? 50;
   const out = (p) => (p === 'S' ? 'move_out_s' : 'move_out_a');
-  const buffer = bufferRow();
+  const buf = bufferInfo();
+  const bufferShort = buf.mode === 'fixed' ? `Puffer ${eurShort(buf.amount)} fest` : `Puffer ${bufferPct()} %`;
   // the phone: one line; the desktop rail: a small read block - same data, same "ändern"
-  const line = `Einzug ${d('einzugstermin')}${umzugstag() ? ` · Umzug ${d('umzugstag')}` : ''} · Auszug du ${d(out(ME()))}, ${OWN[OTHER()]} ${d(out(OTHER()))} · ${split}/${100 - split} · Puffer ${bufferPct()} %`;
+  const line = `Einzug ${d('einzugstermin')}${umzugstag() ? ` · Umzug ${d('umzugstag')}` : ''} · Auszug du ${d(out(ME()))}, ${OWN[OTHER()]} ${d(out(OTHER()))} · ${split}/${100 - split} · ${bufferShort}`;
   const kv = (l, v) => `<div><dt>${l}</dt><dd>${v}</dd></div>`;
   const block = `<dl class="fin-kv">
       ${kv('Einzug', set('einzugstermin') ? esc(fmtLong(set('einzugstermin'))) : '–')}
@@ -551,7 +582,7 @@ function rahmenHTML() {
       ${kv('Auszug du', set(out(ME())) ? fmtFull(set(out(ME()))) : '–')}
       ${kv('Auszug ' + OWN[OTHER()], set(out(OTHER())) ? fmtFull(set(out(OTHER()))) : '–')}
       ${kv('Aufteilung', `${split} / ${100 - split}`)}
-      ${kv('Puffer', `${bufferPct()} %${buffer ? ' · ' + eurShort(buffer.amount) : ''}`)}
+      ${kv('Puffer', buf.mode === 'fixed' ? `${eurShort(buf.amount)} fest · ${bufferPct()} % wären ${eurShort(buf.suggested)}` : `${bufferPct()} % · ${eurShort(buf.amount)}`)}
     </dl>`;
   return `<section class="fin-rahmen" id="fin-settings">
     <div class="fin-h fin-rahmen-h"><h2>Rahmendaten</h2><button class="btn-text" data-act="fin-settings" aria-expanded="${!!ui.finSettings}">ändern</button></div>
@@ -564,13 +595,7 @@ function rahmenHTML() {
               ([key, label, kind]) => `<label class="lbl">${label}<input type="${kind === 'date' ? 'date' : 'text'}" ${kind === 'num' ? 'inputmode="decimal"' : ''} data-setting="${key}" value="${esc(state.settings[key] ?? '')}"></label>`,
             ).join('')}
           </div>
-          <div class="row">
-            ${
-              buffer
-                ? `<span class="muted">Puffer ${eur(buffer.amount)}</span><button class="btn-secondary" data-act="buffer-pct-apply" data-ref="${buffer.id}">Satz auf Summe anwenden (${eurShort(suggestedBuffer())})</button>`
-                : `<button class="btn-secondary" data-act="buffer-add">Puffer anlegen (${eurShort(suggestedBuffer())})</button>`
-            }
-          </div>`
+          ${bufferSettingHTML()}`
         : ''
     }
     ${icsHTML()}
