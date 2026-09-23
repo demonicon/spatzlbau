@@ -145,7 +145,8 @@ function recurringHTML() {
 
 /* ---------- the small settings area ---------- */
 const SETTINGS = [
-  ['einzugstermin', 'Einzug', 'date'],
+  ['einzugstermin', 'Einzug (Schlüssel)', 'date'],
+  ['umzugstag', 'Umzugstag', 'date'], // bugfix 1.1: separate from the key handover date
   ['move_out_s', 'Auszug Sebastian', 'date'],
   ['move_out_a', 'Auszug Anna', 'date'],
   ['split_default_s', 'Anteil Sebastian in %', 'num'],

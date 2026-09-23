@@ -3,7 +3,7 @@
 // wants to look up on a phone with cold hands: meter readings, keys, emergency numbers.
 import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
-import { state, ui, phases, einzug, subsOf } from '../state.js';
+import { state, ui, phases, einzug, umzugstag, subsOf } from '../state.js';
 
 const METERS = ['Strom', 'Gas', 'Wasser'];
 const METER_FIELDS = ['Zählernummer', 'Stand', 'Uhrzeit'];
@@ -19,7 +19,9 @@ const line = (label) => `<div class="pline"><span>${esc(label)}</span><span clas
 const meterBlock = (m) => `<div class="pmi"><span class="pmi-l">${esc(m)}</span>${METER_FIELDS.map(line).join('')}</div>`;
 
 export function printHTML() {
-  const base = einzug();
+  // bugfix 1.1: the sheet is for the day itself - the moving day, falling back to the key
+  // handover date while the moving day is not entered yet
+  const base = umzugstag() || einzug();
   const day = base
     ? new Date(base + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     : 'Termin steht noch nicht fest';
