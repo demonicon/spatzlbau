@@ -117,9 +117,10 @@ export function sinceVisit() {
   const at = state.lastVisitAt;
   if (!at) return null;
   const mine = state.person;
-  // only changes by the other person, and only on tasks that still exist
+  // only changes not made by me, and only on tasks that still exist; changed_by = null means a
+  // content package, the seed script or the connector wrote it (docs/changes/014 #1)
   const moved = state.changes
-    .filter((c) => c.changed_at > at && c.changed_by && c.changed_by !== mine && byId(c.task_id))
+    .filter((c) => c.changed_at > at && c.changed_by !== mine && byId(c.task_id))
     .slice(0, 20);
   const coms = state.comments.filter((c) => c.created_at > at && c.author !== mine && byId(c.task_id));
   const done = state.tasks.filter(doneByOther);
@@ -132,7 +133,7 @@ const FIELD_LABEL = { offset_days: 'Frist', anchor: 'Stichtag', owner: 'Zuständ
 /** "Halteverbot: 11.12. → 04.12., Sebastian" - the sentence for one logged change. */
 function changeLine(c) {
   const t = byId(c.task_id);
-  const who = c.changed_by ? OWN[c.changed_by] : '';
+  const who = c.changed_by ? OWN[c.changed_by] || c.changed_by : 'Inhaltspaket';
   if (c.field === 'offset_days') {
     const at = (v) => {
       const base = t && t.anchor === 'umzugstag' && umzugstag() ? umzugstag() : einzug();
@@ -252,7 +253,8 @@ function phaseNoteHTML() {
 
 /* ---------- the columns: who has to act (docs/changes/009) ---------- */
 
-const order = (a, b) => a.offset_days - b.offset_days || a.sort - b.sort;
+// by calendar date, not by offset - two anchors (Einzug, Umzugstag) mix in one list (014 #6)
+const order = (a, b) => dueInfo(a).sort - dueInfo(b).sort || a.sort - b.sort;
 
 // A column holds three lists: what can be done now, what waits for another task
 // (collapsed, review decision after commit 2) and what is already ticked off.
@@ -451,7 +453,7 @@ function addBoxHTML() {
       <select data-input="new-type" aria-label="Typ"><option value="self">nur ihr</option><option value="assist">Claude unterstützt</option><option value="claude" ${claude ? 'selected' : ''}>an Claude delegiert</option></select>
       <span class="row nowrap"><input type="number" inputmode="numeric" data-input="new-w" value="2" min="0" class="num" aria-label="Wochen"><select data-input="new-dir" aria-label="Richtung"><option value="-1">Wochen vorher</option><option value="1">Wochen danach</option></select></span>
       <label class="check-label"><input type="checkbox" data-input="new-c"> kritisch</label>
-      <button class="btn-primary" data-act="add">Hinzufügen</button>
+      <button class="${ui.akteEdit || ui.printOpen ? 'btn-secondary' : 'btn-primary'}" data-act="add">Hinzufügen</button>
     </div></div>`;
 }
 

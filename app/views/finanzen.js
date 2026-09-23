@@ -222,6 +222,8 @@ function balanceHTML() {
   const mine = ME() === 'S' ? p.paidS : p.paidA;
   const theirs = ME() === 'S' ? p.paidA : p.paidS;
   const owed = Math.abs(balance());
+  // 014 #4: one primary per view - while a post is being edited its "Fertig" is the primary
+  const balBtn = ui.costEdit ? 'btn-secondary' : 'btn-primary';
   const form = ui.balPay
     ? `<div class="cost-form">
         <div class="row">
@@ -229,12 +231,12 @@ function balanceHTML() {
           <label class="lbl">von<select data-input="bal-by">${['S', 'A'].map((k) => `<option value="${k}" ${k === (n < 0 ? ME() : OTHER()) ? 'selected' : ''}>${OWN[k]}</option>`).join('')}</select></label>
         </div>
         <div class="row">
-          <button class="btn-primary" data-act="bal-save">Überweisung erfassen</button>
+          <button class="${balBtn}" data-act="bal-save">Überweisung erfassen</button>
           <button class="btn-text" data-act="bal-cancel">Abbrechen</button>
         </div>
       </div>`
     : `<div class="row fin-bal-actions">
-        <button class="btn-primary" data-act="bal-pay">Überweisung erfassen</button>
+        <button class="${balBtn}" data-act="bal-pay">Überweisung erfassen</button>
         <button class="btn-text fin-bal-how" data-act="bal-how" aria-expanded="${!!ui.balHow}">Wie gerechnet?</button>
       </div>`;
   const how = ui.balHow
@@ -274,7 +276,10 @@ function actionHTML(c) {
   return '';
 }
 
-const openRow = (c) => ui.costPay === c.id || ui.costEdit === c.id || ui.costSet === c.id;
+// docs/changes/014 #7: a post can stand in "Als Nächstes zahlen" and in "Alle Posten" at once -
+// the form opens only in the list it was tapped in (ui.costWhere), the other copy stays a row
+const openRow = (c, where) =>
+  (ui.costPay === c.id || ui.costEdit === c.id || ui.costSet === c.id) && (!ui.costWhere || ui.costWhere === where);
 const ownerOf = (c) => {
   const t = c.task_id ? byId(c.task_id) : null;
   return t ? who(t.owner) : 'Puffer';
@@ -282,10 +287,10 @@ const ownerOf = (c) => {
 
 function payRowHTML(c) {
   // while this row has a form open it turns into the full component from the Akte (016b)
-  if (openRow(c)) return `<div class="fin-pay open">${costHTML(c)}</div>`;
+  if (openRow(c, 'next')) return `<div class="fin-pay open" data-where="next">${costHTML(c)}</div>`;
   const d = c.due_on ? new Date(c.due_on + 'T00:00:00') : null;
   const late = isCostLate(c);
-  return `<div class="fin-pay ${late ? 'late' : ''}" data-cost="${c.id}">
+  return `<div class="fin-pay ${late ? 'late' : ''}" data-cost="${c.id}" data-where="next">
     <div class="fin-pay-date">${d ? `<b>${String(d.getDate()).padStart(2, '0')}.</b><span>${MONTHS[d.getMonth()]}</span>` : '<span>offen</span>'}</div>
     <div class="fin-pay-body">
       <button class="fin-task-title" data-act="fin-open" data-ref="${esc(c.task_id || '')}">${esc(c.label)}</button>
@@ -426,9 +431,9 @@ const dueText = (c) => (c.due_on ? fmtDay(c.due_on) : '—');
 
 /** ≥ 900 px: one table row per post, the columns of the export plus the action of 016b. */
 function postRowHTML(c) {
-  if (openRow(c)) return `<tr class="fin-post-open"><td colspan="7">${costHTML(c)}</td></tr>`;
+  if (openRow(c, 'list')) return `<tr class="fin-post-open" data-where="list"><td colspan="7">${costHTML(c)}</td></tr>`;
   const t = c.task_id ? byId(c.task_id) : null;
-  return `<tr class="fin-post ${c.status === 'bezahlt' ? 'paid' : ''} ${isCostLate(c) ? 'late' : ''}" data-cost="${c.id}">
+  return `<tr class="fin-post ${c.status === 'bezahlt' ? 'paid' : ''} ${isCostLate(c) ? 'late' : ''}" data-cost="${c.id}" data-where="list">
     <th scope="row"><button class="fp-title" data-act="cost-open" data-ref="${c.id}">${esc(c.label)}</button></th>
     <td class="fp-task">${t ? `<button class="fin-link" data-act="fin-open" data-ref="${esc(t.id)}">${esc(t.title)}</button>` : '—'}</td>
     <td class="fp-state">${ladderHTML(c)}</td>
@@ -441,8 +446,8 @@ function postRowHTML(c) {
 
 /** < 900 px: at most two lines - title and amount, then state · due · who and the action. */
 function postLineHTML(c) {
-  if (openRow(c)) return `<div class="fin-post-open">${costHTML(c)}</div>`;
-  return `<div class="fin-post ${c.status === 'bezahlt' ? 'paid' : ''} ${isCostLate(c) ? 'late' : ''}" data-cost="${c.id}">
+  if (openRow(c, 'list')) return `<div class="fin-post-open" data-where="list">${costHTML(c)}</div>`;
+  return `<div class="fin-post ${c.status === 'bezahlt' ? 'paid' : ''} ${isCostLate(c) ? 'late' : ''}" data-cost="${c.id}" data-where="list">
     <div class="fp-l1"><button class="fp-title" data-act="cost-open" data-ref="${c.id}">${esc(c.label)}</button><span class="fp-amt">${amountText(c)}${taxMark(c)}</span></div>
     <div class="fp-l2"><span class="fp-meta">${ladderHTML(c)}${c.due_on ? ` · ${isCostLate(c) ? 'überfällig seit ' : 'fällig '}${fmtDay(c.due_on)}` : ''} · ${esc(payerText(c))}</span>${actionHTML(c)}</div>
   </div>`;

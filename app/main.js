@@ -67,6 +67,7 @@ ui.blockedCols = new Set(); // columns with "N warten auf einen Vorgänger" unfo
 ui.costEdit = null; // cost row in the full Bearbeiten-Modus (007, rebuilt 016b)
 ui.costSet = null; // cost row asking "Betrag festlegen" (016b)
 ui.costPay = null; // cost row asking "Bezahlt" / "Erhalten" (016b)
+ui.costWhere = null; // 'next' | 'list' - which Finanzen list opened it (014 #7)
 ui.costPayBy = null; // who is picked in that open "Wer hat bezahlt?" form (016b)
 ui.costDraft = null; // { id, fields } - the unsaved changes of a cost row's Bearbeiten-Modus (016b)
 ui.costMore = null; // cost row (in Bearbeiten-Modus) showing the "mehr" fields (016b)
@@ -1483,14 +1484,18 @@ function wireEvents() {
           await addCost(taskId, fields).catch(fail);
           return;
         }
-        case 'cost-open':
-          ui.costEdit = ui.costEdit === b.dataset.ref ? null : b.dataset.ref;
+        case 'cost-open': {
+          // 014 #7: remember in which Finanzen list it was tapped (null in the Akte)
+          const where = b.closest('[data-where]')?.dataset.where || null;
+          ui.costEdit = ui.costEdit === b.dataset.ref && ui.costWhere === where ? null : b.dataset.ref;
+          ui.costWhere = where;
           ui.costSet = null;
           ui.costPay = null;
           ui.costDraft = null;
           ui.costMore = null;
           render();
           return;
+        }
         case 'cost-more':
           ui.costMore = ui.costMore === b.dataset.ref ? null : b.dataset.ref;
           render();
@@ -1503,6 +1508,7 @@ function wireEvents() {
         /* ---------- "Betrag festlegen": geschätzt -> fest ---------- */
         case 'cost-set':
           ui.costSet = b.dataset.ref;
+          ui.costWhere = b.closest('[data-where]')?.dataset.where || null;
           ui.costEdit = null;
           ui.costPay = null;
           render();
@@ -1525,6 +1531,7 @@ function wireEvents() {
         /* ---------- "Bezahlt" (einmalig) / "Erhalten" (Rückfluss): fest/ausstehend -> Ende ---------- */
         case 'cost-pay':
           ui.costPay = b.dataset.ref;
+          ui.costWhere = b.closest('[data-where]')?.dataset.where || null;
           ui.costEdit = null;
           ui.costSet = null;
           ui.costPayBy = null;

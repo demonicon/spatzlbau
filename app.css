@@ -319,6 +319,9 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .sig-chip.waitme { background: var(--card); border-color: var(--ink); color: var(--ink); }
 .sig-chip.blocked { padding-left: 0; font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); }
 .sig-chip.blocked .btn-text { min-height: 0; padding: 0; }
+/* docs/changes/014 #2: inline padding widens the hit area, not the line - 4 px up (the title keeps
+   its own edge), 22 px down over the quiet line (positioned, so it lies on top): 44 px in all */
+.sig-chip.blocked .tlink { position: relative; padding: 4px 0 22px; }
 .quiet { font-size: var(--fs-small); color: var(--ink-3); line-height: 1.35; padding-bottom: 8px; overflow-wrap: anywhere; }
 .quiet .ndot { width: 14px; height: 14px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: var(--fs-nano); font-weight: 700; line-height: 1; vertical-align: -2px; }
 .quiet .ndot.S { background: var(--seb); }
@@ -403,8 +406,10 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .detail .lbl > input, .detail .lbl > select, .cost-edit .lbl > input, .cost-edit .lbl > select { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
 .seg { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; align-items: center; }
 .sub.sub-edit { grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px; padding: 4px 0; }
-.sub-move { display: flex; flex-direction: column; }
-.sub-move .ico { min-height: 22px; min-width: 28px; font-size: 13px; padding: 0; }
+/* docs/changes/014 #3: no drag handle exists (017 chose arrows) - so the arrows get the full
+   44 x 44 and 8 px between them, one above the other */
+.sub-move { display: flex; flex-direction: column; gap: 8px; }
+.sub-move .ico { min-height: var(--tap); min-width: var(--tap); font-size: 15px; padding: 0; justify-content: center; }
 .sub-move .ico[disabled] { color: var(--line); }
 .sub.sub-edit input[type=text] { width: 100%; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
 .row.sub-add input[type=text] { flex: 1; border-style: dashed; border-color: var(--line-dash); }
@@ -979,19 +984,21 @@ button.cost-amount:hover { background: var(--line); }
 .tl-c { min-width: 0; padding: 10px 16px 10px 4px; border-bottom: 1px solid var(--line); }
 .tl-top { display: flex; align-items: flex-start; gap: var(--gap); }
 .tl-top .t { flex: 1 1 auto; min-width: 0; min-height: 0; padding: 0; text-align: left; font-size: var(--fs-ui); line-height: 1.35; font-weight: 400; overflow-wrap: anywhere; position: relative; }
-.tl-top .t::before { content: ''; position: absolute; left: 0; right: 0; top: -10px; bottom: -6px; }
+.tl-top .t::before { content: ''; position: absolute; left: 0; right: 0; top: -10px; bottom: 0; }
 .tl-row.crit .tl-top .t { font-weight: 600; }
 .tl-top .check { flex: none; margin: -12px -14px -12px 0; }
 .tl-top .check::before { width: 20px; height: 20px; }
 .tl-row.blocked .check::before { border-color: var(--line-dash); border-style: dashed; background: transparent; }
 .tl-row.blocked .check { cursor: default; opacity: 1; }
-.tl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 5px; font-size: var(--fs-micro); line-height: 17px; color: var(--ink-3); }
+.tl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 8px; font-size: var(--fs-micro); line-height: 17px; color: var(--ink-3); }
 .tl-meta .own, .tl-sig { padding: 0 6px; line-height: 17px; border-radius: var(--r-tag); font-size: var(--fs-micro); font-weight: 600; white-space: nowrap; }
 .tl-sig.late { background: var(--danger-bg); color: var(--danger); }
 .tl-sig.crit { background: var(--mark); color: var(--ink); }
 .tl-sig.waitme { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+/* docs/changes/014 #2: the drawn line stays 17 px; the hit area is 44 px tall - from the title's
+   lower edge (8 px above) down into the free space under the row, never over the title itself */
 .tl-wait { position: relative; min-height: 0; padding: 0; font: inherit; color: inherit; }
-.tl-wait::before { content: ''; position: absolute; left: -4px; right: -4px; top: -13px; bottom: -13px; }
+.tl-wait::before { content: ''; position: absolute; left: -4px; right: -4px; top: -8px; bottom: -19px; }
 .tl-wait:hover { color: var(--ink); text-decoration: underline; }
 .tl-waitlist { margin-top: 6px; font-size: var(--fs-micro); color: var(--ink-2); line-height: 1.5; }
 .tl-row.done .tl-top .t { color: var(--ink-3); text-decoration: line-through; }
@@ -1017,12 +1024,12 @@ button.cost-amount:hover { background: var(--line); }
    the Akte (or "Zwischen euch") in the panel next to it (019c §6) */
 @media (min-width: 900px) {
   .board.mode-panel.v-timeline { grid-template-columns: minmax(0, 720px) minmax(360px, 1fr); }
-  .tl-c, .tl-gate { padding-top: 7px; padding-bottom: 7px; }
-  .tl-meta { margin-top: 4px; }
-  .tl-when { padding-top: 8px; }
-  .rail .dot, .rail .gate { top: 12px; }
-  .rail.end::before { height: 17px; }
-  .rail.end::after { top: 17px; }
+  /* 5 + 20 + 8 + 17 + 5 + 1 = 56 px with the 8 px gap under the title (014 #2) */
+  .tl-c, .tl-gate { padding-top: 5px; padding-bottom: 5px; }
+  .tl-when { padding-top: 6px; }
+  .rail .dot, .rail .gate { top: 10px; }
+  .rail.end::before { height: 15px; }
+  .rail.end::after { top: 15px; }
   /* one line per title - the whole title is in the tooltip and in the panel next to the list */
   .tl-top .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
