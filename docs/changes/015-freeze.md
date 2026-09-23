@@ -1,6 +1,6 @@
 # Änderungsauftrag 015 – Meilenstein 1.0 (Freeze)
 
-Stand: 22.09.2026 (vollständige Sammlung) · Status: offen · Branch: `chore/release-1-0` · Modell: Sonnet · Aufwand: S
+Stand: 22.09.2026 (vollständige Sammlung) · Status: umgesetzt · Branch: `chore/release-1-0` · Modell: Sonnet · Aufwand: S
 Start nach Merge von 013/013b. Betrifft: Versionierung, `changelog.json`, `CLAUDE.md`, `BRIEFING.md`, `docs/backlog.md`, `docs/release-check.md`, `docs/history.md`. Kein Funktionscode.
 
 ## 1. Was ein Freeze bedeutet
@@ -69,10 +69,16 @@ Eine Zeile pro Idee: Datum · von wem (S/A/Claude) · Idee · Auslöser. Kein St
 
 ## Akzeptanzkriterien
 
-- [ ] Footer 1.0; Changelog-Panel mit 1.0 offen und 0.1–0.7 eingeklappt; alle bestehenden Einträge zugeordnet
-- [ ] Tag `v1.0`
-- [ ] `docs/release-check.md` (Vorlage) und `docs/release-check-1.0.md` (Kopie, offen für 27.09.)
-- [ ] `docs/backlog.md` mit sieben Einträgen
-- [ ] `CLAUDE.md` mit Freeze-Regeln, Versionierung, Prüftiefe S/M/L, Berichtsregel, Modell/Effort, Parallelität
-- [ ] `BRIEFING.md` + `CLAUDE.md` < 500 Zeilen, `docs/history.md` vorhanden
-- [ ] Bericht dieses Auftrags selbst nach der neuen S-Regel: ≤ 10 Zeilen
+- [x] Footer 1.0; Changelog-Panel mit 1.0 offen und 0.1–0.7 eingeklappt; alle bestehenden Einträge zugeordnet
+- [ ] Tag `v1.0` – bewusst offen gelassen, macht Sebastian nach dem Merge (siehe Auftragsanweisung: nicht pushen, nicht mergen, kein Tag durch Claude Code)
+- [x] `docs/release-check.md` (Vorlage) und `docs/release-check-1.0.md` (Kopie, offen für 27.09.)
+- [x] `docs/backlog.md` mit sieben Einträgen
+- [x] `CLAUDE.md` mit Freeze-Regeln, Versionierung, Prüftiefe S/M/L, Berichtsregel, Modell/Effort, Parallelität
+- [x] `BRIEFING.md` + `CLAUDE.md` < 500 Zeilen (203 zusammen), `docs/history.md` vorhanden
+- [x] Bericht dieses Auftrags selbst nach der neuen S-Regel: ≤ 10 Zeilen
+
+## Umsetzung (Nachtrag)
+
+- Release-Zuordnung der bestehenden Einträge: chronologisch fortlaufend (ältester Eintrag `2026.09.22` → 0.1, jüngster bestehender `2026.09.22.7` → 0.7), passend zur Reihenfolge der Tabelle oben. Die Titel der Tabelle sind reine Release-Check-Dokumentation; im Changelog-Panel bleibt der ursprüngliche Titel jedes Eintrags stehen, die Gruppe zeigt nur die Versionsnummer.
+- `compareVersions` (`app/changelog.js`) erkennt Datums-Versionen (vier Segmente, beginnt mit `20`) und behandelt jede andere Version als Release-Nummer, die immer neuer zählt. Geprüft mit `scen015.mjs` (12/12 PASS, `window.__db` blieb leer).
+- Siehe `docs/changes/015-abweichungen.md` für die eine Auslegungsfrage (Wortlaut „erledigte Entscheidungen").

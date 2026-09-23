@@ -40,7 +40,11 @@ export function footHTML() {
   const cur = ui.changelog?.entries?.[0] || null;
   const unseen = hasUnread();
   const info = `<button class="ico info ${unseen ? 'new' : ''}" data-act="changelog" aria-expanded="${!!ui.changelogOpen}" aria-label="Was ist neu?${unseen ? ' – neue Einträge' : ''}" title="Was ist neu?">${ICON.info}${unseen ? '<span class="ndot" aria-hidden="true"></span>' : ''}</button>`;
-  // plain text on purpose (013 A6): the version is information, not a button
-  const version = `<span class="version"${build() ? ` title="Build ${esc(build())}"` : ''}>${cur ? esc(cur.version) : 'Version unbekannt'}</span>`;
+  // plain text on purpose (013 A6): the version is information, not a button.
+  // CLAUDE.md: "Der erste Eintrag ist die Version, die die App im Footer zeigt" - the entry's own
+  // version (1.0, then 1.1, 1.2, ...), not its release group (which stays 1.0 across every
+  // bugfix until the next milestone and only labels the changelog panel's groups, see below).
+  const tip = [cur?.date, build() ? `Build ${build()}` : ''].filter(Boolean).join(' · ');
+  const version = `<span class="version"${tip ? ` title="${esc(tip)}"` : ''}>${cur ? esc(cur.version) : 'Version unbekannt'}</span>`;
   return `<footer class="foot">${info}${version}<button class="link" data-act="print" aria-expanded="${!!ui.printOpen}">Umzugstag drucken</button><span class="spacer"></span><button class="link" data-act="logout">Abmelden</button></footer>`;
 }

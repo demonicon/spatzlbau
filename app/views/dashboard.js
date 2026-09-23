@@ -4,7 +4,7 @@
 import { esc } from '../ui/dom.js';
 import { OWN, STEPS } from '../ui/labels.js';
 import { appHeadHTML, updateBarHTML, footHTML } from '../ui/chrome.js';
-import { state, ui, byId, phases, einzug, dueInfo, freshComments, doneByOther, claudeStep } from '../state.js';
+import { state, ui, byId, phases, einzug, umzugstag, dueInfo, freshComments, doneByOther, claudeStep } from '../state.js';
 import { FILTERS, matches, count, isBlocked, isLate, isCritical, waitsOnMe, other } from '../filters.js';
 import { taskHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
@@ -15,6 +15,10 @@ import { printHTML } from './print.js';
 
 const DAY = 86400000;
 const CAP = 8; // rows per column before "alle n zeigen"
+
+// bugfix 1.1: same abbreviations as the due-date labels elsewhere ("bis Do 15.10.")
+const fmtWeekday = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
+const fmtDayMonth = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 
 function daysToMoveIn() {
   const base = einzug();
@@ -36,13 +40,18 @@ function headHTML() {
   const d = base ? new Date(base + 'T00:00:00') : null;
   const dateLong = d ? d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : '';
   const dateShort = d ? d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  // bugfix 1.1: the moving day is a second, independent date - shown only once it differs from
+  // einzug, so a device that has never seen it renders byte-identical to before
+  const move = umzugstag() && umzugstag() !== base ? umzugstag() : '';
+  // fmtDayMonth already ends in a dot (de-DE "02.01."), like fmtShort elsewhere - no second one
+  const moveSuffix = move ? ` · Umzug ${fmtWeekday(move)} ${fmtDayMonth(move)}` : '';
   const count = !base
     ? `<span class="n open">Termin offen</span><span class="t">Einzugstermin eintragen, dann zählt die App</span>`
     : days > 0
-      ? `<span class="n">${days}</span><span class="t">${days === 1 ? 'Tag' : 'Tage'} bis zur Schlüsselübergabe</span>`
+      ? `<span class="n">${days}</span><span class="t">${days === 1 ? 'Tag' : 'Tage'} bis zur Schlüsselübergabe${moveSuffix}</span>`
       : days === 0
-        ? `<span class="n">Heute</span><span class="t">ist Schlüsselübergabe</span>`
-        : `<span class="n">${-days}</span><span class="t">${-days === 1 ? 'Tag' : 'Tage'} seit der Schlüsselübergabe</span>`;
+        ? `<span class="n">Heute</span><span class="t">ist Schlüsselübergabe${moveSuffix}</span>`
+        : `<span class="n">${-days}</span><span class="t">${-days === 1 ? 'Tag' : 'Tage'} seit der Schlüsselübergabe${moveSuffix}</span>`;
   const showDate = ui.dateEdit || !base;
   return `<header class="dash-head">
     ${appHeadHTML('dashboard')}
@@ -360,19 +369,29 @@ function overlayHTML(t) {
   </div>`;
 }
 
-/* ---------- changelog (docs/changes/005): opened from the info icon in the footer ---------- */
+/* ---------- changelog (docs/changes/005, grouped by release since 015): opened from the info icon in the footer ---------- */
 const SECTIONS = [['new', 'Neu'], ['improved', 'Verbessert'], ['fixed', 'Behoben']];
 function changelogHTML() {
   const all = ui.changelog?.entries || [];
   // auto-opened: every version this person has not closed yet; opened from the footer: everything
   const entries = ui.changelogUnreadOnly ? all.filter((e) => compareVersions(e.version, state.lastSeenVersion) > 0) : all;
-  const body = entries
-    .map(
-      (e) => `<article class="release">
+  // group by release (docs/changes/015): newest release open, older releases collapsed; entries stay in file order within a group
+  const groups = [];
+  for (const e of entries) {
+    const key = e.release || e.version;
+    let g = groups[groups.length - 1];
+    if (!g || g.key !== key) { g = { key, entries: [] }; groups.push(g); }
+    g.entries.push(e);
+  }
+  const article = (e) => `<article class="release">
       <h3><span class="v">${esc(e.version)}</span>${esc(e.title || '')}</h3>
       ${SECTIONS.map(([k, label]) => (Array.isArray(e[k]) && e[k].length ? `<h4>${label}</h4><ul>${e[k].map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '')).join('')}
-    </article>`,
-    )
+    </article>`;
+  const body = groups
+    .map((g, i) => `<details class="adv" ${i === 0 ? 'open' : ''}>
+      <summary>Version ${esc(g.key)}${ui.changelog?.releases?.[g.key] ? ' · ' + esc(ui.changelog.releases[g.key]) : ''}</summary>
+      ${g.entries.map(article).join('')}
+    </details>`)
     .join('');
   return `<section class="changelog" id="changelog" aria-labelledby="changelog-title">
     <div class="changelog-head"><h2 id="changelog-title">Was ist neu?</h2><span class="spacer"></span><button class="btn small" data-act="changelog-close">Schließen</button></div>
