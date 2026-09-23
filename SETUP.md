@@ -173,6 +173,33 @@ Das Skript zeigt zuerst die Abweichungen je Tabelle und fragt im Terminal nach B
 
 ---
 
+## 11. Kalender-Abo ausliefern (Auftrag 022)
+
+Die Edge Function `ics` liefert die fristkritischen Aufgaben und die fünf Gates als Kalenderdatei. Sie liest mit der Service-Role, weil eine Kalender-App keinen Login hat; das Geheimnis ist allein der Token in der Adresse.
+
+**Einmalig (~5 Minuten):**
+1. Migration `supabase/migrations/012_a022_ics_token.sql` einspielen (legt den Schlüssel `ics_token` an, zunächst leer).
+2. Function ausrollen – der Schalter `--no-verify-jwt` ist der Punkt, eine Kalender-App schickt keinen Authorization-Header:
+   ```bash
+   supabase functions deploy ics --no-verify-jwt --project-ref <projekt-ref>
+   ```
+   `SUPABASE_URL` und `SUPABASE_SERVICE_ROLE_KEY` setzt Supabase selbst. Optional zusätzlich `APP_URL` setzen (die Adresse, auf die die Links in den Terminen zeigen):
+   ```bash
+   supabase secrets set APP_URL=https://sylv83.github.io/pwa-spatzlbau/ --project-ref <projekt-ref>
+   ```
+3. In der App: Finanzen → ganz unten **Rahmendaten** → „Abo-Adressen erzeugen". Danach steht dort je eine Adresse für Sebastian und für Anna zum Kopieren.
+4. Prüfen (die zweite Zeile muss 401 liefern):
+   ```bash
+   curl -i "https://<projekt-ref>.supabase.co/functions/v1/ics?token=<token>&person=S" | head -20
+   curl -s -o /dev/null -w "%{http_code}
+" "https://<projekt-ref>.supabase.co/functions/v1/ics?token=falsch&person=S"
+   ```
+5. Abonnieren: iPhone → Einstellungen → Kalender → Accounts → Account hinzufügen → Andere → Kalenderabo; Google Kalender → Weitere Kalender → Per URL. **Google aktualisiert abonnierte Kalender bis zu 24 Stunden später** – das ist Googles Takt, nicht die App.
+
+**„Link neu erzeugen"** in den Rahmendaten setzt einen neuen Token. Die alten Adressen liefern danach 401, laufende Abos hören auf zu aktualisieren und müssen neu eingetragen werden.
+
+---
+
 ## Anhang: Zugriffsregeln (RLS) in Klartext
 
 Gilt für alle Zugriffe über die App (Anon-Key + Login). Der Service-Role-Key (nur lokal bei Claude Code) umgeht diese Regeln bewusst.

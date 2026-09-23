@@ -1,5 +1,6 @@
 # 022 – Kalender-Abo
 
+Status: umgesetzt (Branch `feat/022-kalender` → `preview`, Abweichungen in `022-abweichungen.md`)
 Stand: 23.09.2026 · Meilenstein 2.0 · Ziel-Branch: `preview` · Modell: Sonnet · Aufwand: S
 Quelle: Funktionsideen Teil E, 4a.
 
@@ -20,8 +21,8 @@ Migration `NNN_a022_ics_token.sql`: `settings.ics_token` (initial null; App erze
 
 ## Akzeptanzkriterien
 
-- [ ] Function lokal (`supabase functions serve` oder Node-Test der Handler-Funktion): mit Token 200 + gültiges ICS (validator), ohne 401
-- [ ] Person S: `kuend-s` drin, `kuend-a` nicht; `B`-Aufgaben in beiden
-- [ ] Gates als fünf Termine mit ◆ im Titel
-- [ ] "Link neu erzeugen" ändert Token, alte URL → 401
-- [ ] Bericht ≤ 10 Zeilen, Changelog: "Fristen und Gates lassen sich als Kalender abonnieren."
+- [x] Function lokal (`supabase functions serve` oder Node-Test der Handler-Funktion): mit Token 200 + gültiges ICS (validator), ohne 401
+- [x] Person S: `kuend-s` drin, `kuend-a` nicht; `B`-Aufgaben in beiden
+- [x] Gates als fünf Termine mit ◆ im Titel
+- [x] "Link neu erzeugen" ändert Token, alte URL → 401
+- [x] Bericht ≤ 10 Zeilen, Changelog: "Fristen und Gates lassen sich als Kalender abonnieren."

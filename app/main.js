@@ -44,6 +44,7 @@ import { draftOf, draftCount, fieldValue } from './ui/detail.js';
 import { searching } from './search.js';
 import { parseAmount, bufferRow, bufferPct, suggestedBuffer, costsOf } from './costs.js';
 import { OWN } from './ui/labels.js';
+import { icsToken, icsUrl } from './views/finanzen.js';
 
 const UI_KEY = 'spatzlbau-ui';
 const PERSON_KEY = 'spatzlbau-person';
@@ -78,6 +79,7 @@ ui.wide = false; // ≥ 900 px: the Akte is not inline any more (006)
 // docs/changes/013 A3: three steps instead of two - 'phone' (Akte inline), 'overlay' (Akte comes
 // in from the right over the list) and 'panel' (list and Akte side by side from 1180 px)
 ui.mode = 'phone';
+ui.icsShow = null; // 'S' | 'A': the calendar address shown as text when copying failed (022)
 ui.col = 'me'; // which of the three columns the phone shows (018 §1), kept per device
 ui.visitOpen = false; // "Seit du zuletzt da warst" unfolded (018 §6)
 ui.openGroups = new Set(); // "<col>:<group>" - time groups opened by hand (018 §2)
@@ -397,6 +399,14 @@ const isEditable = (el) => !!el && (el.tagName === 'INPUT' || el.tagName === 'TE
 
 /* ---------- events ---------- */
 const fail = (e) => e && toast('Nicht gespeichert – bitte nochmal versuchen');
+
+/** A fresh 32-byte secret for the calendar addresses (docs/changes/022). */
+async function newIcsToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const token = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+  await setSetting('ics_token', token);
+}
 // what still works without a connection: looking, folding, filtering, printing (docs/changes/009)
 const OFFLINE_OK = new Set([
   'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
@@ -902,6 +912,34 @@ function wireEvents() {
           revealTask(byId(b.dataset.ref));
           setExpanded(b.dataset.ref);
           return;
+        /* ---------- Kalender-Abo (022) ---------- */
+        case 'ics-new':
+          // the first time there is nothing to lose; later it breaks running subscriptions
+          if (icsToken()) {
+            ui.confirm = 'ics-new';
+            render();
+            return;
+          }
+          await newIcsToken();
+          toast('Abo-Adressen erzeugt');
+          return;
+        case 'ics-new-yes':
+          ui.confirm = null;
+          await newIcsToken();
+          toast('Neue Abo-Adressen – die alten gelten nicht mehr');
+          return;
+        case 'ics-copy': {
+          const url = icsUrl(b.dataset.to);
+          try {
+            await navigator.clipboard.writeText(url);
+            toast(`Adresse für ${OWN[b.dataset.to]} kopiert`);
+          } catch {
+            // no clipboard permission (or no https): show it, so it can be copied by hand
+            ui.icsShow = ui.icsShow === b.dataset.to ? null : b.dataset.to;
+            render();
+          }
+          return;
+        }
         /* ---------- Finanzen 016 ---------- */
         case 'bal-how':
           ui.balHow = !ui.balHow;

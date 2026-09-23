@@ -18,7 +18,9 @@
       "release": "2.0",
       "date": "2026-09-23",
       "title": "Zweite Runde: Finanzen, Akte, Dashboard, Timeline",
-      "new": [],
+      "new": [
+        "Fristen und Gates lassen sich als Kalender abonnieren."
+      ],
       "improved": [
         "Einheitliche Schaltflächen, ein Signal je Aufgabe, blockierte Aufgaben nicht mehr abhakbar.",
         "Finanzen beantwortet drei Fragen: was kostet es, was ist als Nächstes zu zahlen, wer schuldet wem.",
