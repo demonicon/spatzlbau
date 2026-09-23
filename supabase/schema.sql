@@ -250,9 +250,14 @@ declare
   off  int;
   anc  text;
 begin
-  -- a payment date settles the row
-  if new.paid_on is not null then
+  -- a newly set payment date settles the row; a status moved away from bezahlt clears the
+  -- payment date and payer (bugfix 2.0.3, docs/changes/014b)
+  if new.paid_on is not null
+     and (tg_op = 'INSERT' or new.paid_on is distinct from old.paid_on) then
     new.status := 'bezahlt';
+  elsif new.status is distinct from 'bezahlt' and new.paid_on is not null then
+    new.paid_on := null;
+    new.paid_by := null;
   end if;
   -- default due date = deadline of the task (anchor date + offset_days), only when both are known
   if tg_op = 'INSERT' and new.due_on is null and new.task_id is not null then

@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "version": "2.0.3",
+      "release": "2.0",
+      "date": "2026-09-23",
+      "title": "Ein bezahlter Posten lässt sich wieder zurücksetzen",
+      "new": [],
+      "improved": [],
+      "fixed": [
+        "Ein bezahlter Posten lässt sich wieder auf geschätzt setzen.",
+        "Ein bezahlter Posten zeigt in der Akte, wann er bezahlt wurde – nicht mehr das Fälligkeitsdatum."
+      ]
+    },
+    {
       "version": "2.0.2",
       "release": "2.0",
       "date": "2026-09-23",
