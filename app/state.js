@@ -52,6 +52,12 @@ export const comsOf = (taskId) =>
   state.comments.filter((c) => c.task_id === taskId).sort((a, b) => a.created_at.localeCompare(b.created_at));
 export const phases = () => (Array.isArray(state.settings.phases) && state.settings.phases.length ? state.settings.phases : []);
 export const einzug = () => (typeof state.settings.einzugstermin === 'string' && state.settings.einzugstermin) || '';
+// docs/changes/026: personen[] + wohnungen{s,a,n}, read-modify-write as one jsonb value so
+// fields the setup screens do not show (plz, hinweise, ...) survive every save
+export const stammdaten = () => {
+  const v = state.settings.stammdaten;
+  return v && typeof v === 'object' && !Array.isArray(v) ? v : { personen: [], wohnungen: {} };
+};
 // bugfix 1.1: the actual moving day, separate from the key handover date - 01.01. is a holiday,
 // nothing about the day itself was ever true for it. Falls back to einzug() while unset.
 export const umzugstag = () => (typeof state.settings.umzugstag === 'string' && state.settings.umzugstag) || '';
