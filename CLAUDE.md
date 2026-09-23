@@ -53,6 +53,7 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Testdaten werden danach entfernt und der Nachweis gezeigt (Abfrage mit Ergebnis, nicht nur die Behauptung). Das gilt auch für Nebenwirkungen: `last_seen_version`, `last_visit_at`, `seen_comments`, `done_by`, `status`, Briefing-Felder, `settings`-Schlüssel.
 - Jede Änderung am Nutzerstand steht im Bericht – auch die, die bewusst stehen bleibt, mit Begründung.
 - Sicherer Weg, wo möglich: Zustände im Browser simulieren (nur `state`/`ui` setzen, nichts schreiben) statt echte Zeilen anzufassen.
+- Eigenen Testserver nur über seine PID beenden, nie prozessweit.
 
 ## Prüftiefe, Bericht, Modell (seit Auftrag 015)
 - **Aufwand im Auftragskopf (S/M/L) steuert die Prüftiefe:** S = Akzeptanzkriterien, eine Breite (380 px), kein Pixelvergleich, Bericht ≤ 10 Zeilen. M = zwei Breiten, Pixelvergleich nur bei Layout-Änderung, Bericht ≤ 20 Zeilen. L = volle Prüfung. Die Ansage-Pflicht für Schreibtests und die Rollback-Prüfung von Migrationen gelten immer, unabhängig vom Aufwand.
