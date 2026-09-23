@@ -67,6 +67,8 @@ function commentsHTML(t) {
 
 /* ---------- Ansehen ---------- */
 
+// 014b: the payment date on a paid row, "23.09."
+const fmtDM = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 const fmtDay = (iso) => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '');
 const fmtShortDay = (iso) => (iso ? new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '');
 const today = () => new Date().toISOString().slice(0, 10);
@@ -470,7 +472,7 @@ export function costEditHTML(c) {
           .map(([k, l]) => `<button class="pill" data-act="cost-draft-set" data-ref="${c.id}" data-field="paid_by" data-to="${k}" aria-pressed="${costFieldValue(c, 'paid_by') === k}">${l}</button>`)
           .join('')}</div>
       </div>
-      <label class="lbl${cmarkCls(c, 'paid_on')}"><span class="lbl-h">Datum${cmark(c, 'paid_on')}</span>
+      <label class="lbl${cmarkCls(c, 'paid_on')}"><span class="lbl-h">${c.kind === 'rueckfluss' ? 'erhalten am' : 'bezahlt am'}${cmark(c, 'paid_on')}</span>
         <input type="date" data-cost-draft="paid_on" value="${esc(costFieldValue(c, 'paid_on') || '')}"></label>
     </div>
     <label class="lbl${cmarkCls(c, 'task_id')}"><span class="lbl-h">Aufgabe${cmark(c, 'task_id')}</span>
@@ -508,7 +510,8 @@ export function costHTML(c) {
     </div>
     <div class="cost-meta">
       ${ladderHTML(c)}
-      ${c.due_on && !open && !setting && !paying ? dateFieldHTML(c) : ''}
+      ${c.status === 'bezahlt' && c.paid_on ? `<span class="cost-paid">· ${fmtDM(c.paid_on)}</span>` : ''}
+      ${c.due_on && c.status !== 'bezahlt' && !open && !setting && !paying ? dateFieldHTML(c) : ''}
       ${c.apartment ? `<span class="tag">${APARTMENT[c.apartment]}</span>` : ''}
       ${c.tax_relevant ? `<span class="tag">steuerrelevant</span>` : ''}
       ${c.paid_by && c.status === 'bezahlt' ? `<span class="own ${c.paid_by}">${PAID_BY[c.paid_by] || c.paid_by}</span>` : ''}

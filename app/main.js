@@ -251,7 +251,18 @@ function setCostDraft(c, key, raw) {
 /** The draft as one patch, ready for updateCost. */
 function costPatch(c) {
   const fields = costDraftOf(c);
-  return Object.keys(fields).length ? { ...fields } : null;
+  if (!Object.keys(fields).length) return null;
+  const patch = { ...fields };
+  // 014b: moving the ladder back clears the payment explicitly, moving it to bezahlt without a
+  // date books it today - the trigger does the same, the app does not rely on it
+  if ('status' in patch && patch.status !== 'bezahlt') {
+    patch.paid_on = null;
+    patch.paid_by = null;
+  } else if (patch.status === 'bezahlt') {
+    if (!('paid_on' in patch) && !c.paid_on) patch.paid_on = new Date().toISOString().slice(0, 10);
+    if (!('paid_by' in patch) && !c.paid_by) patch.paid_by = state.person;
+  }
+  return patch;
 }
 
 function closeCostEdit() {
