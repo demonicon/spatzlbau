@@ -15,6 +15,7 @@ import { summary, eurShort } from '../costs.js';
 import { isHit, term } from '../search.js';
 import { printHTML } from './print.js';
 import { timelineHTML } from './timeline.js';
+import { gateHTML } from '../ui/gate.js';
 
 const DAY = 86400000;
 const CAP = 8; // rows per column before "alle n zeigen"
@@ -37,9 +38,6 @@ function daysToMoveIn() {
 function headHTML() {
   const base = einzug();
   const days = daysToMoveIn();
-  const total = state.tasks.length;
-  const done = state.tasks.filter((t) => t.done).length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
   const d = base ? new Date(base + 'T00:00:00') : null;
   const dateLong = d ? d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : '';
   const dateShort = d ? d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
@@ -61,29 +59,37 @@ function headHTML() {
     <div class="countdown">
       ${count}
       ${base ? `<button class="btn-text" data-act="date-toggle" aria-expanded="${showDate}" aria-label="Einzugstermin ändern"><span class="long">${esc(dateLong)}</span><span class="short">${esc(dateShort)}</span></button>` : ''}
-      <span class="spacer"></span>
-      <span class="pct">${pct} % erledigt</span>
     </div>
     ${showDate ? `<div class="date-edit"><label class="hint" for="einzug">Schlüsselübergabe neue Wohnung</label><input type="date" id="einzug" value="${esc(base)}"></div>` : ''}
-    ${gatesHTML()}
+    ${phaseStripHTML()}
   </header>`;
 }
 
-// the phases stay visible as progress, they are no longer the ordering principle (docs/changes/009)
-function gatesHTML() {
+/* ---------- the phase strip (docs/changes/021, idea 4o) ----------
+   Five labelled segments instead of a percentage: as wide as the phase has tasks, filled by how
+   much of it is done, outlined while it is the one being worked on. A tap is the phase filter -
+   the phase tabs from 009 are gone. Widths are set via CSSOM in render(), because CSP forbids
+   style attributes (008). */
+function phaseStripHTML() {
   const list = phases();
-  const firstOpen = (state.tasks.filter((t) => !t.done).sort((a, b) => a.phase - b.phase)[0] || {}).phase;
-  return `<div class="gates" role="group" aria-label="Phasen">${list
-    .map((p) => {
-      const all = state.tasks.filter((t) => t.phase === p.id);
-      const dn = all.filter((t) => t.done).length;
-      const pct = all.length ? Math.round((dn / all.length) * 100) : 0;
-      const complete = all.length > 0 && dn === all.length;
-      const cls = ['gate', complete ? 'complete' : '', p.id === firstOpen ? 'current' : ''].join(' ');
-      // docs/changes/013 A1: the count moved into the label for screen readers and the tooltip
-      return `<button class="${cls}" data-phase="${p.id}" aria-pressed="${ui.phase === p.id}" aria-label="Phase ${p.id} – ${esc(p.name)}, ${dn} von ${all.length} erledigt" title="Phase ${p.id} · ${esc(p.name)} · ${dn}/${all.length}">
-        <span class="lbl" aria-hidden="true">${p.id}</span>
-        <span class="bar"><i data-pct="${pct}"></i></span>
+  if (!list.length) return '';
+  const rows = list.map((p) => {
+    const all = state.tasks.filter((t) => t.phase === p.id);
+    const dn = all.filter((t) => t.done).length;
+    return { p, all: all.length, dn, pct: all.length ? Math.round((dn / all.length) * 100) : 0, complete: all.length > 0 && dn === all.length };
+  });
+  const firstOpen = (rows.find((r) => !r.complete) || {}).p;
+  const total = rows.reduce((n, r) => n + r.all, 0) || 1;
+  return `<div class="pstrip" role="group" aria-label="Phasen">${rows
+    .map((r) => {
+      const cls = ['pseg-ph', r.complete ? 'complete' : '', firstOpen && r.p.id === firstOpen.id ? 'current' : ''].join(' ');
+      // the share of the whole, as a number for the CSSOM step in render()
+      const share = Math.round((r.all / total) * 1000) / 10;
+      return `<button class="${cls}" data-phase="${r.p.id}" data-share="${share}" aria-pressed="${ui.phase === r.p.id}"
+        aria-label="Phase ${r.p.id} – ${esc(r.p.name)}, ${r.dn} von ${r.all} erledigt" title="Phase ${r.p.id} · ${esc(r.p.name)} · ${r.dn}/${r.all}">
+        <span class="lbl"><span class="n">${r.p.id}</span> <span class="s">${esc(r.p.short || r.p.name)}</span></span>
+        <span class="bar"><i data-pct="${r.pct}"></i></span>
+        ${r.complete ? `<span class="gate-mark" aria-hidden="true">◆</span>` : ''}
       </button>`;
     })
     .join('')}</div>`;
@@ -238,15 +244,10 @@ function viewChipsHTML() {
 
 export const currentView = () => (VIEWS.some(([k]) => k === ui.view) ? ui.view : 'personen');
 
-function phaseChipsHTML() {
-  const list = phases();
-  const chip = (val, label, on) => `<button class="pill" data-phase="${val}" aria-pressed="${on}">${esc(label)}</button>`;
-  const ph = list.find((p) => p.id === ui.phase);
-  return `<div class="chips-row">
-    <span class="chips-label">Phase</span>
-    <div class="pchips" role="group" aria-label="Phase">${chip('all', 'alle', ui.phase === null)}${list.map((p) => chip(p.id, p.id + ' ' + (p.short || p.name), ui.phase === p.id)).join('')}</div>
-  </div>
-  ${ph?.gate ? `<p class="gate-text">${esc(ph.gate)}</p>` : ''}`;
+/** The gate sentence of the chosen phase - the strip has no room for it (021). */
+function phaseNoteHTML() {
+  const ph = phases().find((p) => p.id === ui.phase);
+  return ph?.gate ? `<p class="gate-text">${esc(ph.gate)}</p>` : '';
 }
 
 /* ---------- the columns: who has to act (docs/changes/009) ---------- */
@@ -480,7 +481,8 @@ export function dashboardView() {
     headHTML() +
     searchHTML() +
     viewChipsHTML() +
-    (tl ? '' : visitHTML() + signalsHTML() + phaseChipsHTML()) +
+    (tl ? '' : visitHTML() + signalsHTML()) +
+    phaseNoteHTML() +
     filterRow +
     (tl ? timelineHTML() : '') +
     (isSignal && !tl ? signalListHTML(filter) : '') +
@@ -493,6 +495,7 @@ export function dashboardView() {
     (ui.mode === 'panel' ? panelHTML(panelTask) : '') +
     `</div>` +
     (ui.mode === 'overlay' ? overlayHTML(open) : '') +
+    (ui.gate !== null && ui.gate !== undefined ? gateHTML(ui.gate) : '') +
     (ui.printOpen ? printHTML() : '') +
     (ui.changelogOpen ? changelogHTML() : '') +
     footHTML()

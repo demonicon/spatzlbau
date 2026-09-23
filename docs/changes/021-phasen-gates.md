@@ -1,5 +1,6 @@
 # 021 – Phasenstreifen und Gate-Moment
 
+Status: umgesetzt (Branch `feat/021-phasen` → `preview`, Abweichungen in `021-abweichungen.md`)
 Stand: 23.09.2026 · Meilenstein 2.0 · Ziel-Branch: `preview` · Modell: Sonnet · Aufwand: M
 Quelle: Funktionsideen Teil E, 4o und 4p (Mockups auf der Ideen-Seite). Setzt 020 und 019 voraus.
 
@@ -22,7 +23,7 @@ Migration `NNN_a021_seen_gates.sql`: `allowlist.seen_gates`. Additiv.
 
 ## Akzeptanzkriterien
 
-- [ ] Segmentbreiten summieren auf 100 %, keines unter 44 px auf 380 px
-- [ ] Tipp auf Phase 3 filtert Liste und Timeline, Tipp erneut hebt auf
-- [ ] Letztes Häkchen Phase 1 → Gate-Moment, Weiter → nie wieder für diese Person; andere Person sieht ihn beim nächsten Öffnen einmal
-- [ ] Zwei Breiten, Bericht ≤ 15 Zeilen, Changelog: "Die Phasen stehen als Streifen im Kopf; ein Gate wird gefeiert, einmal."
+- [x] Segmentbreiten summieren auf 100 %, keines unter 44 px auf 380 px
+- [x] Tipp auf Phase 3 filtert Liste und Timeline, Tipp erneut hebt auf
+- [x] Letztes Häkchen Phase 1 → Gate-Moment, Weiter → nie wieder für diese Person; andere Person sieht ihn beim nächsten Öffnen einmal
+- [x] Zwei Breiten, Bericht ≤ 15 Zeilen, Changelog: "Die Phasen stehen als Streifen im Kopf; ein Gate wird gefeiert, einmal."

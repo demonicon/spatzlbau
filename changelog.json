@@ -20,7 +20,8 @@
       "title": "Zweite Runde: Finanzen, Akte, Dashboard, Timeline",
       "new": [
         "Fristen und Gates lassen sich als Kalender abonnieren.",
-        "Neue Ansicht Timeline: alle Aufgaben in Reihenfolge, Phasen als Schienen, Sprung zu Heute."
+        "Neue Ansicht Timeline: alle Aufgaben in Reihenfolge, Phasen als Schienen, Sprung zu Heute.",
+        "Die Phasen stehen als Streifen im Kopf; ein Gate wird gefeiert, einmal."
       ],
       "improved": [
         "Einheitliche Schaltflächen, ein Signal je Aufgabe, blockierte Aufgaben nicht mehr abhakbar.",
