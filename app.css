@@ -940,47 +940,92 @@ button.cost-amount:hover { background: var(--line); }
   .pgroup h3 { border-bottom-color: #000; color: #000; }
 }
 
-/* ---------- Timeline (docs/changes/019, Variante 3b) ----------
-   A list, not a chart: the date on the left, five phase rails in the middle, the task itself on
-   the right. The rails are drawn with borders and a dot, never with an inline style (CSP, 008). */
+/* ---------- Timeline (docs/changes/019, Variante 3b; Layout 019c gegen den Export "3b · Handy 380") ----------
+   Every entry is one row of the same grid - date 60 px, rails 67 px (7 px gap + five lanes of
+   12 px), content - so the rails run through months, today, Einzug and gates without a gap. The
+   rails are borders and pseudo elements, never an inline style (CSP, 008). */
 .view-chips { margin: 14px var(--gutter) 0; }
-.timeline { margin: 10px 0 0; }
-.tl-filters { display: flex; flex-direction: column; gap: 6px; margin: 0 var(--gutter); }
+.timeline { margin: 10px 0 0; --tl-off: color-mix(in srgb, var(--line) 70%, var(--paper)); }
+.tl-filters { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); margin: 0 var(--gutter); }
+.tl-filters .pchips { flex-wrap: nowrap; overflow: visible; }
+.tl-filters .pill { padding: 0 11px; }
+.tl-jump { white-space: nowrap; }
 .tl-note { margin: 8px var(--gutter) 0; font-size: var(--fs-micro); color: var(--ink-3); }
-.tl-month { margin: 18px var(--gutter) 0; padding-bottom: 4px; border-bottom: 1px solid var(--ink); font-size: var(--fs-micro); letter-spacing: 0.06em; font-weight: 600; color: var(--ink-2); }
-.tl-today { display: flex; align-items: center; gap: 8px; margin: 10px var(--gutter) 0; padding: 4px 0; border-top: 2px solid var(--ink); }
-.tl-today .l { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--ink); }
-.tl-today .d { font-size: var(--fs-micro); color: var(--ink-3); }
+.tl-list { margin-top: 6px; }
 
-.tl-row { display: grid; grid-template-columns: 58px auto minmax(0, 1fr); gap: 0 8px; padding: 8px var(--gutter) 8px 0; margin-left: var(--gutter); border-bottom: 1px solid var(--line); align-items: start; }
-.tl-row.open { background: var(--card); }
-.tl-when { font-size: var(--fs-small); line-height: 1.2; padding-top: 4px; }
-.tl-when b { display: block; font-size: var(--fs-meta); }
-.tl-when span { display: block; color: var(--ink-3); font-size: var(--fs-micro); }
-.tl-when .t { color: var(--ink-2); }
+.tl-row { display: grid; grid-template-columns: 60px 67px minmax(0, 1fr); align-items: stretch; }
+.tl-when { text-align: right; padding-top: 11px; }
+.tl-when b { display: block; font-size: var(--fs-small); font-weight: 600; line-height: 18px; }
+.tl-when span { display: block; font-size: var(--fs-nano); color: var(--ink-3); line-height: 14px; white-space: nowrap; }
+.tl-row.late { background: color-mix(in srgb, var(--danger-bg) 55%, #fff); }
 .tl-row.late .tl-when b { color: var(--danger); }
+.tl-row.open, .tl-row.selected { background: var(--card); }
+.tl-row.selected { box-shadow: inset 3px 0 0 var(--ink); }
 
-/* five narrow columns; a phase that runs on this day draws its line through the cell */
-.tl-rails { display: grid; grid-template-columns: repeat(5, 9px); align-self: stretch; }
+/* five lanes; a phase that runs on this day draws its line through the whole row */
+.tl-rails { display: grid; grid-template-columns: repeat(5, 12px); padding-left: 7px; }
 .rail { position: relative; }
-.rail.on::before { content: ''; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: var(--line-dash); }
-.rail .dot { position: absolute; left: 1px; top: 10px; width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--ink); }
-.rail .gate { position: absolute; left: -1px; top: 22px; font-size: 11px; line-height: 1; color: var(--ink); }
+.rail::before { content: ''; position: absolute; left: 5px; top: 0; bottom: 0; width: 2px; background: var(--tl-off); }
+.rail.on::before { background: var(--ink); }
+.rail .dot { position: absolute; left: 1px; top: 14px; width: 10px; height: 10px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: var(--r-pill); background: var(--both); z-index: 1; }
+.rail .dot.S { background: var(--seb); }
+.rail .dot.A { background: var(--anna); }
+/* the gate row: the line of its phase ends in the diamond */
+.rail.end::before { bottom: auto; height: 19px; }
+.rail.end::after { content: ''; position: absolute; left: 5px; top: 19px; bottom: 0; width: 2px; background: var(--tl-off); }
+.rail .gate { position: absolute; left: 1px; top: 14px; width: 10px; height: 10px; background: var(--ink); transform: rotate(45deg); z-index: 1; }
 
-.tl-body { display: grid; grid-template-columns: var(--tap) minmax(0, 1fr); align-items: start; margin-left: -8px; }
-.tl-body .check { width: 20px; height: 20px; margin: 10px auto 0; accent-color: var(--ok); }
-.tl-main { min-width: 0; }
-.tl-main > .t { display: block; width: 100%; text-align: left; font-size: var(--fs-body); line-height: 1.3; padding: 6px 0 2px; overflow-wrap: anywhere; }
-.tl-main > .own { display: inline-block; margin: 2px 0; }
-.tl-row .sig { margin-top: 2px; }
-.tl-row .quiet { font-size: var(--fs-micro); color: var(--ink-3); line-height: 1.35; padding-bottom: 2px; }
-.tl-row.done .tl-main > .t { color: var(--ink-3); text-decoration: line-through; }
+/* the task: title, then one line with owner, one signal and the phase */
+.tl-c { min-width: 0; padding: 10px 16px 10px 4px; border-bottom: 1px solid var(--line); }
+.tl-top { display: flex; align-items: flex-start; gap: var(--gap); }
+.tl-top .t { flex: 1 1 auto; min-width: 0; min-height: 0; padding: 0; text-align: left; font-size: var(--fs-ui); line-height: 1.35; font-weight: 400; overflow-wrap: anywhere; position: relative; }
+.tl-top .t::before { content: ''; position: absolute; left: 0; right: 0; top: -10px; bottom: -6px; }
+.tl-row.crit .tl-top .t { font-weight: 600; }
+.tl-top .check { flex: none; margin: -12px -14px -12px 0; }
+.tl-top .check::before { width: 20px; height: 20px; }
+.tl-row.blocked .check::before { border-color: var(--line-dash); border-style: dashed; background: transparent; }
+.tl-row.blocked .check { cursor: default; opacity: 1; }
+.tl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 5px; font-size: var(--fs-micro); line-height: 17px; color: var(--ink-3); }
+.tl-meta .own, .tl-sig { padding: 0 6px; line-height: 17px; border-radius: var(--r-tag); font-size: var(--fs-micro); font-weight: 600; white-space: nowrap; }
+.tl-sig.late { background: var(--danger-bg); color: var(--danger); }
+.tl-sig.crit { background: var(--mark); color: var(--ink); }
+.tl-sig.waitme { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.tl-wait { position: relative; min-height: 0; padding: 0; font: inherit; color: inherit; }
+.tl-wait::before { content: ''; position: absolute; left: -4px; right: -4px; top: -13px; bottom: -13px; }
+.tl-wait:hover { color: var(--ink); text-decoration: underline; }
+.tl-waitlist { margin-top: 6px; font-size: var(--fs-micro); color: var(--ink-2); line-height: 1.5; }
+.tl-row.done .tl-top .t { color: var(--ink-3); text-decoration: line-through; }
 .tl-row .detail { grid-column: 1 / -1; margin-top: 8px; }
 
-.tl-gate { display: flex; gap: 6px; align-items: baseline; margin: 2px var(--gutter) 6px calc(var(--gutter) + 66px); font-size: var(--fs-micro); color: var(--ink-2); line-height: 1.4; }
-.tl-gate .d { color: var(--ink); }
+.tl-month { padding: 16px 16px 6px 4px; border-bottom: 1px solid var(--ink); font-size: var(--fs-micro); line-height: 17px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--ink); }
+.tl-today .tl-when { padding-top: 7px; }
+.tl-tc { display: flex; align-items: center; gap: 7px; padding: 14px 16px 14px 4px; }
+.tl-tc::after { content: ''; flex: 1 1 auto; border-top: 2px dashed var(--ink); }
+.tl-pill { background: var(--ink); color: #fff; font-size: var(--fs-micro); font-weight: 600; line-height: 17px; padding: 1px 7px; }
+.tl-gate { padding: 10px 16px 10px 4px; border-bottom: 1px solid var(--line); }
+.tl-gate .gh { display: block; font-size: var(--fs-micro); line-height: 17px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+.tl-gate .gt { display: block; margin-top: 3px; font-size: var(--fs-meta); line-height: 1.35; color: var(--ink); }
+.tl-einzug { background: var(--card); }
+.tl-ec { padding: 12px 16px 12px 4px; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+.tl-ec b { display: block; font-size: 20px; font-weight: 600; line-height: 1.4; }
+.tl-ec span { display: block; font-size: var(--fs-small); color: var(--ink-2); }
 .tl-done { margin-top: 8px; }
 .timeline .empty { margin: 16px var(--gutter); }
+.timeline > .btn-text.row, .tl-done > .btn-text.row { margin-left: var(--gutter); max-width: calc(100% - 2 * var(--gutter)); }
+
+/* ≥ 900 px: 3b condensed, not stretched - two lines of at most 56 px, list at most 720 px wide,
+   the Akte (or "Zwischen euch") in the panel next to it (019c §6) */
+@media (min-width: 900px) {
+  .board.mode-panel.v-timeline { grid-template-columns: minmax(0, 720px) minmax(360px, 1fr); }
+  .tl-c, .tl-gate { padding-top: 7px; padding-bottom: 7px; }
+  .tl-meta { margin-top: 4px; }
+  .tl-when { padding-top: 8px; }
+  .rail .dot, .rail .gate { top: 12px; }
+  .rail.end::before { height: 17px; }
+  .rail.end::after { top: 17px; }
+  /* one line per title - the whole title is in the tooltip and in the panel next to the list */
+  .tl-top .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
 
 /* ---------- phase strip (docs/changes/021, idea 4o): five labelled segments in the head ---------- */
 .pstrip { display: flex; gap: 4px; margin: 10px 0 0; }
