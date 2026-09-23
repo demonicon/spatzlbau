@@ -10,6 +10,23 @@ import { hasUnread } from '../changelog.js';
 
 const build = () => (BUILD.startsWith('__') ? '' : BUILD);
 
+/** docs/changes/026: the avatar opens its own small menu. `named` (016c, Finanzen head): from
+    900 px the design shows the avatar as a pill with the name next to the initial. "Abmelden"
+    sits in the menu too, since the Finanzen footer carries the status line instead (016c). */
+export function avatarHTML(named) {
+  const me = state.person;
+  return `<div class="avatar-wrap">
+      <button class="avatar ${me}${named ? ' named' : ''}" data-act="avatar-menu-toggle" aria-haspopup="true" aria-expanded="${!!ui.avatarMenu}" title="Angemeldet als ${OWN[me]}" aria-label="Menü, angemeldet als ${OWN[me]}">${
+        named ? `<span class="ai" aria-hidden="true">${me}</span><span class="an">${OWN[me]}</span>` : me
+      }</button>
+      ${
+        ui.avatarMenu
+          ? `<div class="avatar-menu" role="menu"><button class="avatar-menu-item" role="menuitem" data-act="stam-picker-open">Stammdaten & Rahmendaten</button><button class="avatar-menu-item" role="menuitem" data-act="logout">Abmelden</button></div>`
+          : ''
+      }
+    </div>`;
+}
+
 /** Avatar plus the two places the app has. `active`: 'dashboard' | 'finanzen'. */
 export function appHeadHTML(active) {
   const me = state.person;
@@ -17,16 +34,8 @@ export function appHeadHTML(active) {
     const on = active === key;
     return `<button class="pill navbtn ${on ? 'on' : ''}" data-act="${act}"${to ? ` data-to="${to}"` : ''} aria-label="${label}" title="${label}" aria-current="${on ? 'page' : 'false'}">${ICON[key === 'dashboard' ? 'home' : 'coin']}<span class="nl" aria-hidden="true">${label}</span></button>`;
   };
-  // docs/changes/026: the avatar's own small menu - one entry today, room for more later
   return `<div class="apphead">
-    <div class="avatar-wrap">
-      <button class="avatar ${me}" data-act="avatar-menu-toggle" aria-haspopup="true" aria-expanded="${!!ui.avatarMenu}" title="Angemeldet als ${OWN[me]}" aria-label="Menü, angemeldet als ${OWN[me]}">${me}</button>
-      ${
-        ui.avatarMenu
-          ? `<div class="avatar-menu" role="menu"><button class="avatar-menu-item" role="menuitem" data-act="stam-picker-open">Stammdaten & Rahmendaten</button></div>`
-          : ''
-      }
-    </div>
+    ${avatarHTML(false)}
     <nav class="mainnav" aria-label="Bereiche">
       ${nav('dashboard', 'home', '', 'Aufgaben')}
       ${nav('finanzen', 'screen', 'finanzen', 'Finanzen')}
@@ -50,8 +59,9 @@ export function updateBarHTML() {
   return `<div class="updatebar on-ink" role="status">Eine neuere Version ist da.<button class="btn-secondary" data-act="reload">Neu laden</button></div>`;
 }
 
-/** The footer of the task list: info icon, version as plain text, then the two actions. */
-export function footHTML() {
+/** The footer of the task list: info icon, version as plain text, then the two actions.
+    `status` (016c, Finanzen): version and info left, the status line right - as the design has it. */
+export function footHTML({ status = false } = {}) {
   const cur = ui.changelog?.entries?.[0] || null;
   const unseen = hasUnread();
   const info = `<button class="ico info ${unseen ? 'new' : ''}" data-act="changelog" aria-expanded="${!!ui.changelogOpen}" aria-label="Was ist neu?${unseen ? ' – neue Einträge' : ''}" title="Was ist neu?">${ICON.info}${unseen ? '<span class="ndot" aria-hidden="true"></span>' : ''}</button>`;
@@ -64,5 +74,6 @@ export function footHTML() {
   // version the live app is on (the changelog entry for 2.0 sits below 1.1 until it goes live)
   const label = ui.preview ? '2.0-preview' : cur ? esc(cur.version) : 'Version unbekannt';
   const version = `<span class="version"${tip ? ` title="${esc(tip)}"` : ''}>${label}</span>`;
+  if (status) return `<footer class="foot fin-foot">${version}${info}<span class="spacer"></span><span class="status" id="status" role="status"></span></footer>`;
   return `<footer class="foot">${info}${version}<button class="btn-text" data-act="print" aria-expanded="${!!ui.printOpen}">Umzugstag drucken</button><span class="spacer"></span><button class="btn-text" data-act="logout">Abmelden</button></footer>`;
 }

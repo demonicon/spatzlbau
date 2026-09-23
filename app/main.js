@@ -1246,6 +1246,7 @@ function wireEvents() {
           return;
         case 'post-open':
           ui.postOpen = true;
+          if (b.dataset.to) ui.postFilter = b.dataset.to; // "5 offene Posten zeigen" shows those five (016c)
           render();
           return;
         case 'fin-filter':
