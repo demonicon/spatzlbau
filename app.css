@@ -42,6 +42,7 @@
   --seb: #2e5a9c; --seb-bg: #e4ecf7; --anna: #9a3d64; --anna-bg: #f6e4ec; --both: #2f6f4e; --both-bg: #e1efe6;
   --claude: #6b4e16; --claude-bg: #f3e9d2; --claude-past: #c9b98a;
   /* signals: yellow only for critical, red only for overdue / waiting */
+  --link: #2e5a9c; /* 016c: links in the Finanzen export - 6.6:1 on paper */
   --mark: #f7de4a; --mark-deep: #8a7300; --danger: #b33a2e; --danger-bg: #f8e3e0; --ok: #2f6f4e;
   /* type scale */
   --fs-hero: 60px; --fs-kpi: 28px; --fs-tile: 24px; --fs-title: 22px; --fs-body: 16px; --fs-ui: 15px;
@@ -158,8 +159,8 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* docs/changes/013 A6: who is logged in, and the two places the app has */
 .apphead { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; }
 .avatar { width: 36px; height: 36px; flex: none; border-radius: var(--r-pill); background: var(--who-fg); color: #fff; font-size: var(--fs-ui); font-weight: 700; display: flex; align-items: center; justify-content: center; }
-.avatar.S { --who-fg: var(--seb); }
-.avatar.A { --who-fg: var(--anna); }
+.avatar.S { --who-fg: var(--seb); --who-bg: var(--seb-bg); }
+.avatar.A { --who-fg: var(--anna); --who-bg: var(--anna-bg); }
 .mainnav { display: flex; gap: 4px; }
 .navbtn { min-width: var(--tap); padding: 0 10px; }
 .navbtn .nl { display: none; font-size: var(--fs-small); font-weight: 600; }
@@ -495,57 +496,99 @@ button.cost-amount:hover { background: var(--line); }
 /* the amount a task carries, in its row in the list */
 .cost-badge { font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
 
-/* ---------- Finanzen view (docs/changes/007 commit 2) ----------
-   Tables and numbers, no chart. Warning colour only for overdue payments. */
-.fin { padding-bottom: 8px; }
-.fin-head { display: flex; align-items: center; gap: var(--gap); padding: 12px var(--gutter) 0; }
+/* ---------- Finanzen (docs/changes/016, layout 016c against the export "Variante B v2") ----------
+   One flat list of blocks in phone order; the aside is display: contents below 900 px and a
+   real column from there on. Values and spacing come from the Project-HTML export, measured at
+   380 and 1280 px - not from the order texts. Warning colour only for overdue payments. */
+.fin { padding-bottom: 0; }
+.fin-head { display: flex; align-items: center; gap: 6px; padding: 12px var(--gutter) 0; }
 .fin-head .back { text-decoration: none; }
-.fin-title { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 6px var(--gutter) 0; }
-/* ---------- Finanzen (docs/changes/016): one answer, then how it comes about ---------- */
-.fin-eyebrow { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
-.fin-answer { margin: 14px var(--gutter) 0; }
+.fin-title { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; display: flex; align-items: baseline; gap: 20px; min-width: 0; }
+.fin-days { display: none; font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); letter-spacing: 0; }
+.fin-nav { display: flex; gap: 6px; }
+.fin-nav .navbtn { padding: 0 12px; font-size: var(--fs-small); font-weight: 400; }
+.fin-nav .navbtn:not(.on) { background: transparent; }
+.fin-nav .navbtn.on { font-weight: 600; }
+.fin-head .avatar { width: 40px; height: 40px; }
+.fin-head .avatar-menu { left: auto; right: 0; }
+.avatar.named .an { display: none; }
+.fin-grid { display: flex; flex-direction: column; padding: 0 var(--gutter); }
+.fin-side { display: contents; }
+/* the phone order of the export: answer, Ausgleich, next, month by month, Laufend, posts, frame */
+.fin-answer { order: 1; }
+.fin-balance { order: 2; }
+.fin-next { order: 3; }
+.fin-mon { order: 4; }
+.fin-rec { order: 5; }
+.fin-postsec { order: 6; }
+.fin-rahmen { order: 7; }
+
+.fin-eyebrow { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 400; }
+.fin-answer { margin-top: 14px; }
 .fin-number { display: flex; align-items: baseline; gap: var(--gap); margin-top: 2px; }
 .fin-number .n { font-size: 44px; font-weight: 600; line-height: 1.05; letter-spacing: -0.03em; }
 .fin-number .u { font-size: var(--fs-meta); color: var(--ink-2); }
-.fin-break { margin-top: 10px; border-top: 1px solid var(--ink); }
+.fin-break { margin-top: 11px; border-top: 1px solid var(--ink); }
 .fin-break-row { width: 100%; min-height: var(--tap); display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; gap: var(--gap); align-items: center; border-bottom: 1px solid var(--line); font-size: var(--fs-ui); text-align: left; }
 .fin-break-row .s { font-size: var(--fs-micro); color: var(--ink-3); }
-.fin-break-row .v { font-weight: 600; }
+.fin-break-row .v { font-weight: 400; white-space: nowrap; }
 .fin-break-row .arr { color: var(--ink-3); }
-.fin-break-row.quiet .l, .fin-break-row.quiet .v { color: var(--ink-2); font-weight: 400; }
+.fin-break-row.paid-row .l { color: var(--ink-2); }
 .fin-break-row[aria-pressed=true] { background: var(--card); box-shadow: inset 3px 0 0 var(--ink); }
 
 /* the balance: the one card with a primary action behind it */
-.fin-balance { margin: 16px var(--gutter) 0; border: 1.5px solid var(--ink); background: var(--card); padding: 12px 14px; }
-.fin-bal { font-size: 20px; font-weight: 600; margin-top: 2px; }
+.fin-balance { margin-top: 16px; border: 1px solid var(--ink); background: var(--card); padding: 12px 14px; }
+.fin-bal { font-size: 20px; font-weight: 600; margin-top: 2px; line-height: 1.45; }
 .fin-bal-sub { font-size: var(--fs-small); color: var(--ink-2); margin-top: 2px; line-height: 1.4; }
+.fin-bal-rows { display: none; width: 100%; border-collapse: collapse; margin-top: 8px; font-size: var(--fs-small); color: var(--ink-2); }
+.fin-bal-rows th, .fin-bal-rows td { padding: 6px 0; border-top: 1px solid var(--line); font-weight: 400; text-align: right; white-space: nowrap; }
+.fin-bal-rows th { text-align: left; white-space: normal; }
+.fin-bal-rows td { padding-left: 12px; }
+.fin-balance .fin-bal-actions { margin-top: 10px; align-items: center; }
 .fin-how { margin-top: 10px; border-top: 1px solid var(--line); font-size: var(--fs-meta); }
 .fin-how > div { display: flex; justify-content: space-between; gap: var(--gap); padding: 6px 0; border-bottom: 1px solid var(--line); }
 .fin-how .fin-note { margin: 8px 0 0; }
 
-/* section heads: a line of small caps with an optional action on the right */
-.fin-h { display: flex; justify-content: space-between; align-items: baseline; gap: var(--gap); padding-bottom: 6px; border-bottom: 1px solid var(--ink); }
-.fin-h h2 { margin: 0; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
-.fin-h-note { font-weight: 400; color: var(--ink-3); text-transform: none; letter-spacing: 0; }
+/* section heads: a line of small caps with an optional action on the right; a 40 px button in
+   it keeps its tap height but does not make the line taller (as in the export) */
+.fin-h { display: flex; justify-content: space-between; align-items: center; gap: var(--gap); padding-bottom: 6px; border-bottom: 1px solid var(--ink); min-height: 24px; }
+.fin-h h2 { margin: 0; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; line-height: 17px; }
+.fin-h-note { font-weight: 400; color: var(--ink-3); }
+.fin-h .btn-text { margin: -12px 0 -11px; }
+.fin-h .sort-right { font-size: var(--fs-micro); color: var(--ink-3); }
+.sort-inline { display: none; }
 
 /* what is next to pay */
+.fin-block { margin-top: 20px; }
 .fin-pay { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: start; }
 .fin-pay.open { display: block; }
-.fin-pay-date { font-size: var(--fs-small); line-height: 1.2; }
-.fin-pay-date b { display: block; font-size: 17px; }
+.fin-pay-date { font-size: var(--fs-small); line-height: 16px; }
+.fin-pay-date b { display: block; font-size: 17px; line-height: 20px; font-weight: 700; }
 .fin-pay-date span { color: var(--ink-3); }
 .fin-pay-body { min-width: 0; }
-.fin-pay-body .quiet { padding-bottom: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.fin-pay-amount { font-size: 16px; font-weight: 600; padding-top: 2px; }
+.fin-pay-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 0 6px; margin-top: 4px; font-size: var(--fs-micro); color: var(--ink-3); }
+/* the action gets a line of its own on a phone, next to the chip from 900 px (export) */
+.fin-pay-meta::after { content: ''; flex-basis: 100%; order: 2; }
+.fin-pay-meta .btn-secondary { order: 3; margin-top: 8px; }
+.fin-pay-amount { font-size: 16px; font-weight: 600; line-height: 20px; white-space: nowrap; }
 .fin-pay.late .fin-pay-date b { color: var(--danger); }
 .sig-chip.state { background: var(--card); border-color: var(--line); color: var(--ink-2); font-weight: 400; }
+/* the state as a chip, in the three words of 016b and the colours of the export */
+.st-chip { font-size: var(--fs-micro); font-weight: 600; line-height: 17px; padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid transparent; white-space: nowrap; }
+.st-chip.geschaetzt { background: var(--card); border-color: var(--line-dash); color: var(--ink-2); }
+.st-chip.fest { background: var(--claude-bg); color: var(--claude); }
+.st-chip.bezahlt, .st-chip.erhalten { background: var(--both-bg); color: var(--both); }
+.st-chip.ausstehend { background: var(--ink); color: #fff; }
+.st-chip.late { background: var(--danger-bg); color: var(--danger); }
+/* titles and links that are smaller than a finger: the hit area grows, the line does not */
+.fin-task-title, .fp-title, .fin-link { position: relative; min-height: 0; padding: 0; font-size: 15px; line-height: 20px; text-align: left; overflow-wrap: anywhere; }
+.fin-task-title::before, .fp-title::before, .fin-link::before { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -12px; }
+.fin-task-title:hover, .fp-title:hover { text-decoration: underline; }
+.fin-link { font-size: inherit; line-height: inherit; color: var(--link); text-decoration: underline; text-underline-offset: 2px; font-weight: 400; }
 
-/* blocks, tables and small forms - kept from the first Finanzen view */
-.fin-block { margin: 22px var(--gutter) 0; }
+/* blocks, tables and small forms */
 .fin-hint { margin: 8px 0 0; font-size: var(--fs-small); color: var(--ink-2); }
-.fin-note { margin: 6px 0 0; font-size: var(--fs-micro); color: var(--ink-3); }
-.fin-task-title { min-height: var(--tap); padding: 8px 0; font-size: var(--fs-body); line-height: 1.3; text-align: left; overflow-wrap: anywhere; }
-.fin-task-title:hover { text-decoration: underline; }
+.fin-note { margin: 6px 0 0; font-size: var(--fs-micro); color: var(--ink-3); line-height: 1.45; }
 .fin .empty { margin: 8px 0 0; }
 .fin .row { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: flex-end; margin-top: 8px; }
 .fin .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); flex: 1 1 140px; min-width: 0; }
@@ -558,6 +601,11 @@ button.cost-amount:hover { background: var(--line); }
 .fin-table .calc { color: var(--ink-2); }
 .fin-table .delta { color: var(--ink-2); }
 .fin-table .sum th, .fin-table .sum td { font-weight: 600; border-top: 1px solid var(--ink); }
+.fin-table .peak, .fin-table .peak th { font-weight: 600; background: var(--card); }
+/* month by month: hairline above each row, figures without the € sign (export) */
+.fin-months th, .fin-months td { padding: 10px 4px; line-height: 18px; border-bottom: 0; border-top: 1px solid var(--line); }
+.fin-months thead th { padding: 6px 4px; border-top: 0; font-weight: 400; color: var(--ink-3); line-height: 17px; }
+.fin-months .paidcol { display: none; }
 /* monthly costs: three amounts per row, editable right in the table */
 .fin-table.rec th:first-child { width: 34%; }
 .fin-table.rec input { width: 100%; min-width: 60px; min-height: var(--tap); padding: 6px 8px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-meta); text-align: right; }
@@ -569,15 +617,38 @@ button.cost-amount:hover { background: var(--line); }
   .fin-table.rec input { min-width: 54px; padding: 6px 4px; font-size: var(--fs-small); }
   .fin-table.rec th:first-child { width: auto; }
 }
-.fin-lead { margin: 10px 0 4px; font-size: var(--fs-ui); line-height: 1.4; }
-.fin-lead b { font-size: 20px; }
-.fin-pills { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 0 4px; }
-.fin-posts { margin-top: 4px; }
-.fin-table .peak { font-weight: 600; background: var(--card); }
-.fin-table.read td { text-align: right; }
+.fin-table.read { margin-top: 10px; font-size: var(--fs-small); color: var(--ink-2); }
+.fin-table.read th, .fin-table.read td { padding: 8px 0; line-height: 17px; border-bottom: 0; border-top: 1px solid var(--line); }
+.fin-table.read th:first-child { width: auto; }
 .fin-table.read .new { color: var(--ink); }
-.fin-rahmen { margin: 16px var(--gutter) 0; }
+.fin-table.rec-wide { display: none; }
+.fin-lead { margin: 0; padding-top: 10px; font-size: var(--fs-ui); line-height: 1.4; }
+.fin-lead b { font-size: 20px; font-weight: 700; }
+.fin-lead .sm { display: none; }
+.fin-lead-sub { display: block; color: var(--ink-2); }
+
+/* all posts: filter pills, then the list (phone: at most two lines per post) */
+.fin-ph .fin-pills { padding-top: 10px; }
+.fin-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.fin-pills .pill, .fin-pills .pill[aria-pressed=true] { font-size: var(--fs-small); font-weight: 400; padding: 0 14px; }
+.fin-more { display: block; width: 100%; min-height: 40px; margin-top: 4px; font-size: var(--fs-meta); font-weight: 600; text-align: left; border-bottom: 1px solid var(--line); }
+.fin-posts { margin-top: 4px; }
+.fin-post { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.fp-l1 { display: flex; justify-content: space-between; align-items: baseline; gap: var(--gap); }
+.fp-l2 { display: flex; justify-content: space-between; align-items: center; gap: var(--gap); margin-top: 4px; min-height: 32px; }
+.fp-meta { font-size: var(--fs-micro); color: var(--ink-3); min-width: 0; }
+.fp-meta .ladder { color: var(--ink-2); }
+.fp-amt { font-size: 15px; font-weight: 600; white-space: nowrap; }
+.fin-post.paid .fp-title, .fin-post.paid .fp-amt { color: var(--ink-3); }
+.fin-post.late .fp-meta { color: var(--danger); }
+.fp-amt .tax { margin-left: 3px; font-weight: 400; color: var(--ink-3); cursor: help; }
+.fin-add { margin-top: 8px; }
+
+/* the frame data: one line on a phone, a small read block in the desktop rail */
+.fin-rahmen { margin-top: 16px; }
+.fin-rahmen-h, .fin-kv { display: none; }
 .fin-rahmen-line { margin: 0; padding: 10px 0; font-size: var(--fs-small); color: var(--ink-3); line-height: 1.45; border-top: 1px solid var(--line); }
+.fin-rahmen-line.fin-rahmen-one { padding: 0 0 10px; border-top: 0; }
 /* docs/changes/022: the calendar subscription - two addresses and the one button that replaces them */
 .fin-rahmen-line.ics { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .fin-rahmen-line.ics .l { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
@@ -585,6 +656,105 @@ button.cost-amount:hover { background: var(--line); }
 .fin-rahmen-line .fin-note { flex: 1 0 100%; margin: 0; }
 .ics-url { flex: 1 0 100%; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-small); color: var(--ink-2); }
 .head-link { text-decoration: none; font-size: var(--fs-small); }
+/* the Finanzen footer: version and info left, the status line right (export) */
+.foot.fin-foot { margin-top: 16px; padding: 2px var(--gutter); padding-bottom: max(2px, env(safe-area-inset-bottom)); gap: 6px; }
+.fin-foot .status { font-size: var(--fs-small); }
+
+/* ≥ 900 px: head bar, answer and tiles in one row, A + B side by side, the rail below them */
+@media (min-width: 900px) {
+  .fin-head { height: 64px; padding: 0 20px; border-bottom: 1px solid var(--line); gap: 12px; }
+  .fin-title { font-size: 24px; }
+  .fin-days { display: inline; }
+  .fin-nav { gap: 20px; }
+  .fin-head { gap: 20px; }
+  .fin-nav .navbtn { font-size: var(--fs-meta); padding: 0 14px; }
+  .fin-h .btn-text { margin: 0; }
+  .avatar.named { width: auto; height: 34px; padding: 0 12px 0 1px; gap: 7px; border: 1px solid var(--who-fg); background: var(--who-bg); color: var(--who-fg); font-size: var(--fs-meta); font-weight: 600; }
+  .avatar.named .ai { width: 32px; height: 32px; border-radius: var(--r-pill); background: var(--who-fg); color: #fff; display: flex; align-items: center; justify-content: center; font-size: var(--fs-ui); font-weight: 700; }
+  .avatar.named .an { display: inline; }
+  .fin-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "top top" "next mon" "side side" "posts posts"; padding: 0; }
+  .fin-grid > .fin-answer, .fin-grid > .fin-block { margin: 0; }
+  .fin-answer { grid-area: top; display: flex; align-items: stretch; gap: 20px; padding: 18px 20px 0; }
+  .fin-hero { flex: 0 0 auto; min-width: 237px; padding-top: 8px; }
+  .fin-number .n { font-size: 56px; letter-spacing: -0.035em; }
+  .fin-number .u { font-size: var(--fs-ui); }
+  .fin-break { flex: 1 1 auto; margin-top: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .fin-break-row { background: var(--card); min-height: 82px; display: flex; flex-direction: column-reverse; justify-content: center; align-items: flex-start; gap: 4px; padding: 10px 12px; border: 0; }
+  .fin-break-row .v { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; line-height: 24px; }
+  .fin-break-row .l { font-size: var(--fs-micro); color: var(--ink-2); line-height: 15px; }
+  .fin-break-row .arr { display: none; }
+  .fin-break-row[aria-pressed=true] { box-shadow: inset 0 -3px 0 var(--ink); }
+  .fin-next { grid-area: next; padding: 24px 14px 0 20px; }
+  .fin-mon { grid-area: mon; padding: 24px 20px 0 14px; }
+  .fin-months .paidcol { display: table-cell; }
+  .fin-pay-meta::after { display: none; }
+  .fin-pay-meta .btn-secondary { order: 0; margin: 0 0 0 0; }
+  .fin-side { grid-area: side; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "bal rec" "rahmen rahmen"; column-gap: 28px; padding: 24px 20px 0; align-items: start; }
+  .fin-side > .fin-balance { grid-area: bal; margin: 0; }
+  .fin-side > .fin-rec { grid-area: rec; margin: 0; }
+  .fin-side > .fin-rahmen { grid-area: rahmen; }
+  .fin-postsec { grid-area: posts; padding: 24px 20px 0; }
+  /* all posts: the pills sit in the head line, one table row per post */
+  .fin-ph { display: flex; align-items: center; gap: var(--gap); border-bottom: 1px solid var(--ink); padding-bottom: 6px; }
+  .fin-ph .fin-h { flex: 1 1 auto; border: 0; padding: 0; }
+  .fin-ph .fin-pills { padding: 0; flex-wrap: nowrap; }
+  .fin-ph .sort-right { display: none; }
+  .sort-inline { display: inline; }
+  .fin-posts-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: var(--fs-meta); }
+  .fin-posts-table th, .fin-posts-table td { height: 44px; padding: 0 10px 0 0; text-align: left; vertical-align: middle; border-top: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fin-posts-table thead th { height: 34px; border-top: 0; font-size: var(--fs-micro); font-weight: 400; color: var(--ink-3); }
+  .fin-posts-table thead th:nth-child(1) { width: 22%; }
+  .fin-posts-table thead th:nth-child(2) { width: 21%; }
+  .fin-posts-table thead th:nth-child(3) { width: 12%; }
+  .fin-posts-table thead th:nth-child(4) { width: 7%; }
+  .fin-posts-table thead th:nth-child(5) { width: 12%; }
+  .fin-posts-table thead th:nth-child(6) { width: 10%; }
+  .fin-posts-table thead th:nth-child(7) { width: 16%; }
+  .fin-posts-table .r, .fin-posts-table .fp-amt, .fin-posts-table .fp-act { text-align: right; }
+  .fin-posts-table .fp-act { padding-right: 0; }
+  /* in a table cell the title and the task link fill the whole 44 px row - that is their hit
+     area, and it lets the ellipsis cut them at the cell edge instead of under the next column */
+  .fin-posts-table .fp-title, .fin-posts-table .fin-link { display: block; max-width: 100%; height: 43px; line-height: 43px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-meta); }
+  .fin-posts-table .fp-title::before, .fin-posts-table .fin-link::before { display: none; }
+  .fin-posts-table .fp-title { font-weight: 600; }
+  .fin-posts-table .fp-due { color: var(--ink); }
+  .fin-posts-table .fp-who { color: var(--ink-2); }
+  .fin-posts-table .fp-amt { font-weight: 600; font-size: var(--fs-meta); }
+  .fin-posts-table .fin-post.paid th, .fin-posts-table .fin-post.paid td, .fin-posts-table .fin-post.paid .fp-title, .fin-posts-table .fin-post.paid .fin-link { color: var(--ink-3); }
+  .fin-posts-table .fin-post.late .fp-due { color: var(--danger); }
+  .fin-posts-table .fin-post-open td { height: auto; padding: 8px 0; white-space: normal; overflow: visible; }
+  .fin-posts-table .ladder { font-size: var(--fs-micro); color: var(--ink-2); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .foot.fin-foot { padding: 4px 20px; }
+}
+
+/* ≥ 1100 px: three columns - A, B and the rail with Ausgleich, Laufend and the frame data */
+@media (min-width: 1100px) {
+  .fin-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 400px; grid-template-areas: "top top side" "next mon side" "posts posts side"; grid-template-rows: auto auto 1fr; }
+  .fin-side { display: block; align-self: start; border-left: 1px solid var(--line); padding: 18px 20px 24px; }
+  .fin-side > .fin-rec { margin-top: 24px; }
+  .fin-side > .fin-rahmen { margin-top: 16px; }
+  .fin-balance { padding: 14px 16px; }
+  .fin-bal { font-size: 22px; }
+  .fin-bal-sub, .fin-bal-how { display: none; }
+  .fin-bal-rows { display: table; }
+  .fin-balance .fin-bal-actions { margin-top: 12px; }
+  .fin-months-note { display: none; }
+  .fin-lead b { font-size: 22px; }
+  .fin-lead .lg { display: none; }
+  .fin-lead .sm { display: inline; }
+  .fin-table.rec-narrow { display: none; }
+  .fin-table.rec-wide { display: table; font-size: var(--fs-small); }
+  .fin-table.rec-wide thead th { padding: 3px 0 4px; font-size: var(--fs-nano); font-weight: 400; color: var(--ink-3); border-top: 0; }
+  .fin-table.rec-wide th:first-child { width: 34%; }
+  .fin-rahmen-h { display: flex; }
+  .fin-kv { display: block; margin: 10px 0 0; }
+  .fin-kv > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); padding: 3px 0; font-size: var(--fs-meta); line-height: 20px; }
+  .fin-kv dt { color: var(--ink-2); }
+  .fin-kv dd { margin: 0; color: var(--ink); }
+  .fin-rahmen-line.fin-rahmen-one { display: none; }
+  .fin-rahmen .fin-rahmen-line.ics { margin-top: 14px; }
+}
 
 /* ---------- Ersteinrichtung: vier Fragen (docs/changes/016b) ----------
    The same one-quiet-page shape as the gate moment (021): one card, one primary action. */
@@ -677,12 +847,6 @@ button.cost-amount:hover { background: var(--line); }
 
 @media (min-width: 900px) {
   .wrap { max-width: 1280px; }
-  /* docs/changes/016: on a desktop the derivation sits next to the answer, four cells wide */
-  .fin-answer { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2fr); gap: 0 24px; align-items: center; }
-  .fin-break { grid-column: 2; grid-row: 1 / span 2; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-top: 1px solid var(--line); margin-top: 0; }
-  .fin-break-row { background: var(--paper); border-bottom: 0; padding: 8px 12px; min-height: 64px; grid-template-columns: minmax(0, 1fr) auto; align-items: start; align-content: center; }
-  .fin-break-row .arr { display: none; }
-  .fin-balance { max-width: 620px; }
   /* docs/changes/013 A6: the two places carry their name here */
   .navbtn .nl { display: inline; }
   /* docs/changes/013 A2/A3: the side panel only from 1180 px - below that the list uses the
