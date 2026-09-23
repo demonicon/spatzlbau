@@ -10,6 +10,7 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 | 020 Tweaks | `95f6f72` | fertig | – |
 | 020b Typografie | `0e015bc` | fertig | keine |
 | 016 Finanzen | `eb3e340` | fertig | `010_a016_finanzen.sql` – ohne sie wird „Überweisung erfassen“ abgelehnt (mit Hinweis), der Rest läuft |
+| 016b Finanzen-Einstieg | `3cfa0ab` | fertig | `014_a016b_fin_setup.sql` – ohne sie wird „Bezahlt“ mit Haushaltskonto abgelehnt (mit Hinweis), der Rest läuft |
 | 017 Akte | `54cc36d` | fertig | keine |
 | 018 Dashboard | `bcaaffb` | fertig | `011_a018_task_changes.sql` – ohne sie fehlen in „Seit du zuletzt da warst“ die verschobenen Fristen |
 | 022 Kalender-Abo | `32e5475` | fertig | `012_a022_ics_token.sql` + Edge Function `ics` ausrollen (SETUP.md §11) – ohne beides bleibt die Zeile „Abo-Adressen erzeugen“ wirkungslos |
@@ -22,6 +23,7 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 2. `011_a018_task_changes.sql` (018) – Änderungsprotokoll + Trigger + Realtime
 3. `012_a022_ics_token.sql` (022) – Schlüssel `ics_token`
 4. `013_a021_seen_gates.sql` (021) – `allowlist.seen_gates`
+5. `014_a016b_fin_setup.sql` (016b) – `settings.fin_setup_done`, `costs.paid_by` + Haushaltskonto (`H`)
 
 Dazu einmal die Edge Function: `supabase functions deploy ics --no-verify-jwt --project-ref <ref>`
 (SETUP.md §11). Die App lädt auf `/preview/` auch ohne all das – was dann fehlt, steht je Zeile
