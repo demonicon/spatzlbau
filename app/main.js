@@ -7,6 +7,7 @@ import {
   onChange,
   onStatus,
   byId,
+  blockers,
   phases,
   loadAll,
   loadSnapshot,
@@ -481,6 +482,12 @@ function wireEvents() {
       return;
     }
     if (el.dataset.act === 'done' && t) {
+      // docs/changes/020: a blocked task is not tickable - the box is disabled, and if an event
+      // arrives anyway (keyboard, stale DOM) the row is drawn again instead of written
+      if (blockers(t).length && !t.done) {
+        render();
+        return toast('Wartet noch auf eine andere Aufgabe');
+      }
       // done_by: who ticked it off – "Seit deinem letzten Besuch" must not count my own work (009)
       updateTask(t.id, { done: el.checked, ...doneBy(el.checked) }).catch(fail);
       return;

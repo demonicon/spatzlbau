@@ -57,7 +57,7 @@ function headHTML() {
     ${appHeadHTML('dashboard')}
     <div class="countdown">
       ${count}
-      ${base ? `<button class="eyebrow btn-like" data-act="date-toggle" aria-expanded="${showDate}" aria-label="Einzugstermin ändern"><span class="long">${esc(dateLong)}</span><span class="short">${esc(dateShort)}</span></button>` : ''}
+      ${base ? `<button class="btn-text" data-act="date-toggle" aria-expanded="${showDate}" aria-label="Einzugstermin ändern"><span class="long">${esc(dateLong)}</span><span class="short">${esc(dateShort)}</span></button>` : ''}
       <span class="spacer"></span>
       <span class="pct">${pct} % erledigt</span>
     </div>
@@ -126,7 +126,7 @@ function visitHTML() {
       <span class="visit-label">Seit deinem Besuch</span>
       ${parts
         .map(
-          ([key, n, label, cls]) => `<button class="vchip ${cls}" data-filter="${key}" aria-pressed="false" title="${esc(label)}">${authorDot(key)}<b>${n}</b> ${esc(shortLabel(key, label))}</button>`,
+          ([key, n, label, cls]) => `<button class="pill vchip ${cls}" data-filter="${key}" aria-pressed="false" title="${esc(label)}">${authorDot(key)}<b>${n}</b> ${esc(shortLabel(key, label))}</button>`,
         )
         .join('')}
     </section>`;
@@ -182,7 +182,7 @@ function kpisHTML() {
 
 function phaseChipsHTML() {
   const list = phases();
-  const chip = (val, label, on) => `<button class="pchip" data-phase="${val}" aria-pressed="${on}">${esc(label)}</button>`;
+  const chip = (val, label, on) => `<button class="pill" data-phase="${val}" aria-pressed="${on}">${esc(label)}</button>`;
   const ph = list.find((p) => p.id === ui.phase);
   return `<div class="chips-row">
     <span class="chips-label">Phase</span>
@@ -279,14 +279,14 @@ function columnHTML(c) {
       : `<div class="col-body" id="col-${c.key}">
         ${total ? '' : `<p class="col-empty">${esc(emptyText())}</p>`}
         ${rows.map(taskHTML).join('')}
-        ${!all && c.open.length > CAP ? `<button class="col-more" data-act="col-all" data-ref="${c.key}">weitere ${c.open.length - CAP} zeigen →</button>` : ''}
+        ${!all && c.open.length > CAP ? `<button class="btn-text row" data-act="col-all" data-ref="${c.key}">weitere ${c.open.length - CAP} zeigen →</button>` : ''}
         ${
           c.blocked.length
-            ? `<button class="col-sub" data-act="col-blocked" data-ref="${c.key}" aria-expanded="${showBlocked}" aria-controls="blocked-${c.key}">${c.blocked.length} ${c.blocked.length === 1 ? 'wartet' : 'warten'} auf einen Vorgänger<span class="chev" aria-hidden="true">${showBlocked ? '−' : '+'}</span></button>${showBlocked ? `<div id="blocked-${c.key}">${c.blocked.map(taskHTML).join('')}</div>` : ''}`
+            ? `<button class="btn-text row col-sub" data-act="col-blocked" data-ref="${c.key}" aria-expanded="${showBlocked}" aria-controls="blocked-${c.key}">${c.blocked.length} ${c.blocked.length === 1 ? 'wartet' : 'warten'} auf einen Vorgänger<span class="chev" aria-hidden="true">${showBlocked ? '−' : '+'}</span></button>${showBlocked ? `<div id="blocked-${c.key}">${c.blocked.map(taskHTML).join('')}</div>` : ''}`
             : ''
         }
         ${showDone ? c.done.map(taskHTML).join('') : ''}
-        ${c.done.length && !showDone ? `<button class="col-more" data-act="col-done" data-ref="${c.key}">${c.done.length} erledigt zeigen</button>` : ''}
+        ${c.done.length && !showDone ? `<button class="btn-text row" data-act="col-done" data-ref="${c.key}">${c.done.length} erledigt zeigen</button>` : ''}
       </div>`;
   return `<section class="col ${c.key} own-${c.cls}" data-col="${c.key}">${head}${body}</section>`;
 }
@@ -303,7 +303,7 @@ function addBoxHTML() {
       <select data-input="new-type" aria-label="Typ"><option value="self">nur ihr</option><option value="assist">Claude unterstützt</option><option value="claude" ${claude ? 'selected' : ''}>an Claude delegiert</option></select>
       <span class="row nowrap"><input type="number" inputmode="numeric" data-input="new-w" value="2" min="0" class="num" aria-label="Wochen"><select data-input="new-dir" aria-label="Richtung"><option value="-1">Wochen vorher</option><option value="1">Wochen danach</option></select></span>
       <label class="check-label"><input type="checkbox" data-input="new-c"> kritisch</label>
-      <button class="btn ${claude ? 'claude' : 'primary'}" data-act="add">Hinzufügen</button>
+      <button class="btn-primary" data-act="add">Hinzufügen</button>
     </div></div>`;
 }
 
@@ -315,7 +315,7 @@ export function dashboardView() {
   const hits = cols.reduce((n, c) => n + c.open.length + c.blocked.length + c.done.length, 0);
   const filterRow = filter
     ? `<div class="filter-row">
-        <button class="filter-chip" data-act="filter-clear" aria-label="Filter entfernen">Filter: ${FILTERS[filter].label}<span class="x" aria-hidden="true">×</span></button>
+        <button class="pill on filter-chip" data-act="filter-clear" aria-label="Filter entfernen">Filter: ${FILTERS[filter].label}<span class="x" aria-hidden="true">×</span></button>
         <span class="filter-count">${hits} ${hits === 1 ? 'Aufgabe' : 'Aufgaben'}${ui.phase ? ' in Phase ' + ui.phase : ''}</span>
       </div>`
     : '';
@@ -394,7 +394,7 @@ function changelogHTML() {
     </details>`)
     .join('');
   return `<section class="changelog" id="changelog" aria-labelledby="changelog-title">
-    <div class="changelog-head"><h2 id="changelog-title">Was ist neu?</h2><span class="spacer"></span><button class="btn small" data-act="changelog-close">Schließen</button></div>
+    <div class="changelog-head"><h2 id="changelog-title">Was ist neu?</h2><span class="spacer"></span><button class="btn-secondary" data-act="changelog-close">Schließen</button></div>
     ${body || '<p class="empty">Noch keine Einträge.</p>'}
   </section>`;
 }

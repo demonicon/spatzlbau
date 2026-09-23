@@ -26,13 +26,13 @@ function commentHTML(c) {
   const confirming = own && ui.confirm === 'comdel:' + c.id;
   const body = editing
     ? `<textarea class="com-edit" aria-label="Kommentar bearbeiten">${esc(c.body)}</textarea>
-      <div class="row pad"><button class="btn small primary" data-act="com-save" data-ref="${c.id}">Speichern</button><button class="btn small" data-act="com-cancel">Abbrechen</button></div>`
+      <div class="row pad"><button class="btn-secondary" data-act="com-save" data-ref="${c.id}">Speichern</button><button class="btn-secondary" data-act="com-cancel">Abbrechen</button></div>`
     : esc(c.body);
   const actions =
     own && !editing
       ? confirming
-        ? `<div class="com-own-actions"><span class="confirm">Kommentar löschen? <button class="btn small danger" data-act="com-del-yes" data-ref="${c.id}">Ja</button><button class="btn small" data-act="confirm-no">Nein</button></span></div>`
-        : `<div class="com-own-actions">${canEditComment(c) ? `<button class="link" data-act="com-edit" data-ref="${c.id}">Bearbeiten</button>` : ''}<button class="link" data-act="com-del" data-ref="${c.id}">Löschen</button></div>`
+        ? `<div class="com-own-actions"><span class="confirm">Kommentar löschen? <button class="btn-text danger" data-act="com-del-yes" data-ref="${c.id}">Ja</button><button class="btn-secondary" data-act="confirm-no">Nein</button></span></div>`
+        : `<div class="com-own-actions">${canEditComment(c) ? `<button class="btn-text" data-act="com-edit" data-ref="${c.id}">Bearbeiten</button>` : ''}<button class="btn-text" data-act="com-del" data-ref="${c.id}">Löschen</button></div>`
       : '';
   return `<div class="com ${c.author}" data-com="${c.id}"><div class="h"><b>${OWN[c.author] || c.author}</b> · ${fmtTime(c.created_at)}</div>${body}${actions}</div>`;
 }
@@ -42,7 +42,7 @@ function commentsHTML(t) {
   return `<h3>Kommentare ${coms.length ? `<small>${coms.length}</small>` : ''}</h3>
     ${coms.map(commentHTML).join('') || '<div class="empty">Noch keine Kommentare. Kurz notieren, woran es hängt oder was der andere wissen muss.</div>'}
     <textarea data-input="com" placeholder="Kommentar als ${OWN[state.person]}" aria-label="Neuer Kommentar"></textarea>
-    <div class="row"><button class="btn primary" data-act="com-add">Kommentar speichern</button></div>`;
+    <div class="row"><button class="btn-secondary" data-act="com-add">Kommentar speichern</button></div>`;
 }
 
 // docs/changes/013 B2: a tap on the text (or the pencil) opens the one row for editing - no more
@@ -55,11 +55,11 @@ function subtaskHTML(s) {
       <div class="row pad">
         ${
           confirming
-            ? `<span class="confirm">Teilschritt löschen? <button class="btn small danger" data-act="sub-del-yes" data-ref="${s.id}">Ja</button><button class="btn small" data-act="confirm-no">Nein</button></span>`
-            : `<button class="btn small danger" data-act="sub-del" data-ref="${s.id}">Löschen</button>`
+            ? `<span class="confirm">Teilschritt löschen? <button class="btn-text danger" data-act="sub-del-yes" data-ref="${s.id}">Ja</button><button class="btn-secondary" data-act="confirm-no">Nein</button></span>`
+            : `<button class="btn-text danger" data-act="sub-del" data-ref="${s.id}">Löschen</button>`
         }
         <span class="spacer"></span>
-        <button class="btn small primary" data-act="sub-edit-done">Fertig</button>
+        <button class="btn-secondary" data-act="sub-edit-done">Fertig</button>
       </div>
     </div>`;
   }
@@ -75,7 +75,7 @@ function subtasksHTML(t) {
   const done = subs.filter((s) => s.done).length;
   return `<h3>Teilschritte ${subs.length ? `<small>${done}/${subs.length}</small>` : ''}</h3>
     ${subs.map(subtaskHTML).join('')}
-    <div class="row"><input type="text" data-input="sub" placeholder="Neuer Teilschritt" aria-label="Neuer Teilschritt"><button class="btn small" data-act="sub-add">Hinzufügen</button></div>`;
+    <div class="row"><input type="text" data-input="sub" placeholder="Neuer Teilschritt" aria-label="Neuer Teilschritt"><button class="btn-secondary" data-act="sub-add">Hinzufügen</button></div>`;
 }
 
 // delegation: briefing -> bei Claude -> Ergebnis liegt vor (docs/changes/009)
@@ -92,9 +92,9 @@ function delegationHTML(t) {
       <label>Ergebnis von Claude<textarea data-brief="result" placeholder="Hier landet das Ergebnis – von Claude Code eingetragen oder von euch">${esc(brief.result)}</textarea></label>
       <p class="hint">Rückfragen und Antworten laufen über die Kommentare darunter.</p>
       <div class="row">
-        ${step === 'briefing' ? `<button class="btn claude" data-act="to-claude">An Claude geben</button>` : ''}
-        ${step === 'claude' ? `<button class="btn primary" data-act="accept">Ergebnis übernommen</button>` : ''}
-        ${step !== 'briefing' ? `<button class="btn small" data-act="back">Zurück auf Briefing</button>` : ''}
+        ${step === 'briefing' ? `<button class="btn-secondary" data-act="to-claude">An Claude geben</button>` : ''}
+        ${step === 'claude' ? `<button class="btn-secondary" data-act="accept">Ergebnis übernommen</button>` : ''}
+        ${step !== 'briefing' ? `<button class="btn-secondary" data-act="back">Zurück auf Briefing</button>` : ''}
       </div>
     </div>`;
 }
@@ -111,9 +111,9 @@ function adviceHTML(t) {
       ${
         editing
           ? `<textarea data-adv="${k}" aria-label="${l}">${esc(adv[k])}</textarea>
-      <div class="row pad"><button class="btn small primary" data-act="adv-save" data-ref="${k}">Speichern</button><button class="btn small" data-act="adv-cancel">Abbrechen</button></div>`
+      <div class="row pad"><button class="btn-secondary" data-act="adv-save" data-ref="${k}">Speichern</button><button class="btn-secondary" data-act="adv-cancel">Abbrechen</button></div>`
           : `<div class="body ${adv[k] ? '' : 'none'}">${adv[k] ? esc(adv[k]) : 'noch nicht ausgearbeitet'}</div>
-      <div class="row pad"><button class="btn small" data-act="adv-edit" data-ref="${k}">Bearbeiten</button></div>`
+      <div class="row pad"><button class="btn-secondary" data-act="adv-edit" data-ref="${k}">Bearbeiten</button></div>`
       }</details>`;
   };
   const editingEmpty = empty.some(([k]) => ui.editingAdvice === t.id + ':' + k);
@@ -123,7 +123,7 @@ function adviceHTML(t) {
       empty.length && (showEmpty || editingEmpty)
         ? empty.map(box).join('')
         : empty.length
-          ? `<button class="col-more" data-act="advice-add">Beratung ergänzen (${empty.length} ${empty.length === 1 ? 'Feld' : 'Felder'})</button>`
+          ? `<button class="btn-text row" data-act="advice-add">Beratung ergänzen (${empty.length} ${empty.length === 1 ? 'Feld' : 'Felder'})</button>`
           : ''
     }`;
 }
@@ -152,8 +152,8 @@ function costFormHTML(c) {
     <div class="row"><label class="lbl">Notiz<input type="text" data-cost-field="note" data-ref="${c.id}" value="${esc(c.note || '')}"></label></div>
     <div class="row">${
       ui.confirm === 'cost-del:' + c.id
-        ? `<span class="confirm">Zeile löschen? <button class="btn small danger" data-act="cost-del-yes" data-ref="${c.id}">Ja</button><button class="btn small" data-act="confirm-no">Nein</button></span>`
-        : `<button class="btn small danger" data-act="cost-del" data-ref="${c.id}">Zeile löschen</button>`
+        ? `<span class="confirm">Zeile löschen? <button class="btn-text danger" data-act="cost-del-yes" data-ref="${c.id}">Ja</button><button class="btn-secondary" data-act="confirm-no">Nein</button></span>`
+        : `<button class="btn-text danger" data-act="cost-del" data-ref="${c.id}">Zeile löschen</button>`
     }</div>
   </div>`;
 }
@@ -165,7 +165,7 @@ function costPayHTML(c) {
       <label class="lbl">von<select data-pay="by">${opts(c.paid_by || state.person, [['S', 'Sebastian'], ['A', 'Anna']])}</select></label>
     </div>
     <div class="row"><label class="lbl">Beleg (Link)${c.tax_relevant ? ' – Pflicht, weil steuerrelevant' : ''}<input type="text" inputmode="url" data-pay="receipt" value="${esc(c.receipt_url || '')}" placeholder="${c.tax_relevant ? 'https://…' : 'optional'}"></label></div>
-    <div class="row"><button class="btn small primary" data-act="cost-pay-save" data-ref="${c.id}">Speichern</button><button class="btn small" data-act="cost-pay-cancel">Abbrechen</button></div>
+    <div class="row"><button class="btn-secondary" data-act="cost-pay-save" data-ref="${c.id}">Speichern</button><button class="btn-secondary" data-act="cost-pay-cancel">Abbrechen</button></div>
   </div>`;
 }
 
@@ -195,8 +195,8 @@ function costHTML(c) {
       paying
         ? ''
         : `<div class="cost-actions">
-      ${next ? `<button class="btn small" data-act="${next === 'bezahlt' ? 'cost-pay' : 'cost-step'}" data-ref="${c.id}" data-to="${next}">${COST_NEXT[c.status]}</button>` : ''}
-      ${back ? `<button class="link back" data-act="cost-step" data-ref="${c.id}" data-to="${back}">zurück auf ${COST_LABEL[back]}</button>` : ''}
+      ${next ? `<button class="btn-secondary" data-act="${next === 'bezahlt' ? 'cost-pay' : 'cost-step'}" data-ref="${c.id}" data-to="${next}">${COST_NEXT[c.status]}</button>` : ''}
+      ${back ? `<button class="btn-text back" data-act="cost-step" data-ref="${c.id}" data-to="${back}">zurück auf ${COST_LABEL[back]}</button>` : ''}
     </div>`
     }
   </div>`;
@@ -214,9 +214,9 @@ export function costRowsHTML(t, filter = () => true) {
               <label class="lbl">Bezeichnung<input type="text" data-input="cost-label" placeholder="z. B. Umzugsunternehmen"></label>
               <label class="lbl">Betrag<input type="text" inputmode="decimal" data-input="cost-amount" placeholder="1800" aria-label="Betrag in Euro"></label>
             </div>
-            <div class="row"><button class="btn small primary" data-act="cost-add-save">Hinzufügen</button><button class="btn small" data-act="cost-add-cancel">Abbrechen</button></div>
+            <div class="row"><button class="btn-secondary" data-act="cost-add-save">Hinzufügen</button><button class="btn-secondary" data-act="cost-add-cancel">Abbrechen</button></div>
           </div>`
-        : `<button class="col-more" data-act="cost-add">${costsOf(t.id).length ? '+ Kostenzeile' : 'Kosten erfassen'}</button>`
+        : `<button class="btn-text row" data-act="cost-add">${costsOf(t.id).length ? '+ Kostenzeile' : 'Kosten erfassen'}</button>`
     }`;
 }
 
@@ -236,7 +236,7 @@ function fieldsHTML(t) {
         .map((id) => {
           const b = byId(id);
           return b
-            ? `<span class="chip">${b.done ? '✓ ' : ''}<button class="link-plain" data-act="goto" data-ref="${id}">${esc(b.title.slice(0, 36))}</button><button class="ico" data-act="unblock" data-ref="${id}" aria-label="Abhängigkeit entfernen">×</button></span>`
+            ? `<span class="chip">${b.done ? '✓ ' : ''}<a class="tlink" href="#task=${encodeURIComponent(id)}">${esc(b.title.slice(0, 36))}</a><button class="ico" data-act="unblock" data-ref="${id}" aria-label="Abhängigkeit entfernen">×</button></span>`
             : '';
         })
         .join('') || '<span class="empty">keine</span>'
@@ -269,8 +269,8 @@ export function detailHTML(t, withHead = true) {
   const dueCls = isLate(t) ? 'late' : isCritical(t) ? 'crit' : '';
   const del =
     ui.confirm === 'del:' + t.id
-      ? `<span class="confirm">Wirklich löschen? <button class="btn small danger" data-act="del-yes">Ja, löschen</button><button class="btn small" data-act="confirm-no">Nein</button></span>`
-      : `<button class="btn small danger" data-act="del">Aufgabe löschen</button>`;
+      ? `<span class="confirm">Wirklich löschen? <button class="btn-text danger" data-act="del-yes">Ja, löschen</button><button class="btn-secondary" data-act="confirm-no">Nein</button></span>`
+      : `<button class="btn-text danger" data-act="del">Aufgabe löschen</button>`;
 
   // inline the task row above is the head: checkbox, title and meta appear exactly once (A4)
   const head = !withHead
@@ -294,11 +294,11 @@ export function detailHTML(t, withHead = true) {
     ${more && claude ? commentsHTML(t) : ''}
     ${subtasksHTML(t)}
     ${more || costsOf(t.id).length ? costsHTML(t) : ''}
-    ${t.id === 'kosten' ? `<p class="row"><button class="link" data-act="fin-recurring">Laufende Kosten öffnen →</button></p>` : ''}
+    ${t.id === 'kosten' ? `<p class="row"><button class="btn-text" data-act="fin-recurring">Laufende Kosten öffnen →</button></p>` : ''}
     ${more ? adviceHTML(t) : ''}
     ${more && claude ? '' : commentsHTML(t)}
 
-    <button class="col-more akte-more" data-act="more" aria-expanded="${more}">${more ? '− Weniger anzeigen' : '+ Alle Felder anzeigen'}</button>
+    <button class="btn-text row akte-more" data-act="more" aria-expanded="${more}">${more ? '− Weniger anzeigen' : '+ Alle Felder anzeigen'}</button>
     ${more ? fieldsHTML(t) : ''}
     <div class="row akte-foot"><span class="spacer"></span>${del}</div>
   </div>`;
