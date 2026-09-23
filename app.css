@@ -36,8 +36,12 @@
 }
 :root {
   /* surfaces & ink */
-  --bg: #e9ebe6; --paper: #f4f6f2; --card: #ffffff; --line: #d9ded8; --line-dash: #b8bfb9;
-  --ink: #1e2b24; --ink-2: #4e5b54; --ink-3: #68726b; /* ink-3: ≥ 4.5:1 on paper and card (docs/changes/008b) */
+  --bg: #f3f3f3; --paper: #fafafa; --card: #ffffff; --line: #e0e0e0; --line-dash: #c7c7c7;
+  --ink: #1e2b24; --ink-2: #4d5751; --ink-3: #616161; /* ink-2/ink-3: ≥ 4.5:1 on paper and card (docs/changes/008b, 029) */
+  /* Karten, Schatten, Fokus (docs/changes/029) */
+  --r-card: 8px; --sh-card: 0 0 2px rgba(0, 0, 0, .12), 0 2px 4px rgba(0, 0, 0, .14);
+  --sh-pop: 0 0 8px rgba(0, 0, 0, .12), 0 16px 32px rgba(0, 0, 0, .14);
+  --divider: #f0f0f0; --focus: var(--ink);
   /* owner colours (semantic, values from the handoff) */
   --seb: #2e5a9c; --seb-bg: #e4ecf7; --anna: #9a3d64; --anna-bg: #f6e4ec; --both: #2f6f4e; --both-bg: #e1efe6;
   --claude: #6b4e16; --claude-bg: #f3e9d2; --claude-past: #c9b98a;
