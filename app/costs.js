@@ -87,13 +87,15 @@ export function summary(rows = state.costs) {
   const once = counted.filter((c) => c.kind === 'einmalig');
   const back = counted.filter((c) => c.kind === 'rueckfluss');
   const dr = doubleRentTotal();
+  const buf = bufferInfo(rows);
   return {
     planned_total: once.length ? sum(once) : null,
     paid: once.some((c) => c.status === 'bezahlt') ? sum(once.filter((c) => c.status === 'bezahlt')) : null,
     refunds_expected: back.length ? sum(back) : null,
-    buffer: once.some((c) => !c.task_id) ? sum(once.filter((c) => !c.task_id)) : null,
+    buffer: buf.amount,
+    buffer_mode: buf.mode,
     double_rent: dr,
-    net: once.length || dr ? sum(once) + (dr || 0) - sum(back) : null,
+    net: once.length || dr || buf.mode === 'fixed' ? sum(once) + buf.amount + (dr || 0) - sum(back) : null,
   };
 }
 
@@ -288,17 +290,23 @@ export function recurringSummary() {
   return { ...t, old: Math.round((t.s + t.a) * 100) / 100 };
 }
 
-/** The buffer row lives in costs without a task (docs/changes/004). */
-// a balance transfer (kind 'ausgleich', 016) has no task either - it is never the buffer
-export const bufferRow = () => state.costs.find((c) => !c.task_id && c.kind !== 'ausgleich') || null;
+/** The buffer is a setting, not a post (docs/changes/014c) - a rate, or a fixed amount that
+    overrides it. Mirrors costs_summary.buffer / buffer_mode exactly. */
 export const bufferPct = () => settingNum('buffer_pct', 20);
+export const bufferFixed = () => {
+  const v = state.settings.buffer_fixed;
+  return v === null || v === undefined || v === '' ? null : Number(v);
+};
+const round2 = (n) => Math.round(n * 100) / 100;
 
-/** What the buffer should be: the percentage on everything counted that belongs to a task. */
-export function suggestedBuffer() {
-  const base = state.costs
-    .filter((c) => c.task_id && c.kind === 'einmalig' && isCounted(c))
-    .reduce((n, c) => n + num(c.amount), 0);
-  return Math.round(base * bufferPct()) / 100;
+/** The buffer amount and where it came from - a rate on every counted einmalig post (paid ones
+    stay in, the buffer is on the plan, not the rest), or the fixed override. `suggested` is the
+    rate's amount even in fixed mode, for the "20 % wären …" comparison. */
+export function bufferInfo(rows = state.costs) {
+  const base = rows.filter((c) => c.kind === 'einmalig' && isCounted(c)).reduce((n, c) => n + num(c.amount), 0);
+  const suggested = round2((base * bufferPct()) / 100);
+  const fixed = bufferFixed();
+  return fixed !== null ? { amount: fixed, mode: 'fixed', suggested } : { amount: suggested, mode: 'pct', suggested };
 }
 
 /** Tasks that carry cost rows, grouped by phase - the list under the block. */

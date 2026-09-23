@@ -46,7 +46,7 @@ import { finanzenView } from './views/finanzen.js';
 import { startSetupHTML, SETUP_STEPS, SETUP_STEP_TITLES, OWNER_PROPOSAL } from './views/start.js';
 import { draftOf, draftCount, fieldValue, costDraftOf, costDraftCount, costFieldValue } from './ui/detail.js';
 import { searching } from './search.js';
-import { parseAmount, bufferRow, bufferPct, suggestedBuffer, costsOf, num, eurShort } from './costs.js';
+import { parseAmount, bufferPct, bufferFixed, costsOf, num, eurShort } from './costs.js';
 import { OWN } from './ui/labels.js';
 import { icsToken, icsUrl } from './views/finanzen.js';
 
@@ -86,7 +86,7 @@ ui.balPay = false; // the transfer form (016 F3)
 ui.recEdit = false; // monthly costs in edit mode instead of read mode (016 F4)
 ui.postFilter = 'alle'; // which posts the list shows (016 §7)
 ui.postOpen = false; // the phone shows the list only after a tap (016 §7)
-ui.bufferEdit = false;
+ui.bufferMode = null; // Satz|Betrag-Segment in den Rahmendaten, null = aus buffer_fixed ableiten (014c)
 ui.recAdd = false; // the "new monthly cost" field in the Finanzen view
 ui.printOpen = false; // "Umzugstag drucken" sheet
 ui.offline = false; // no connection: the cached state is shown read-only (009)
@@ -333,7 +333,6 @@ async function setupAufteilungSave() {
   const pct = parseAmount(setupVal('setup-puffer'));
   if (split !== null && split !== (state.settings.split_default_s ?? 50)) await setSetting('split_default_s', split).catch(fail);
   if (pct !== null && pct !== bufferPct()) await setSetting('buffer_pct', pct).catch(fail);
-  if (!bufferRow()) await addCost(null, { label: 'Puffer', amount: suggestedBuffer() }).catch(fail);
   await setSetting('fin_setup_done', true).catch(fail);
 }
 
@@ -606,7 +605,7 @@ const OFFLINE_OK = new Set([
   'view-switch', 'tl-owner', 'tl-done', 'tl-today', 'tl-wait',
   'brief-read', 'adv-open', 'akte-cancel', 'akte-discard',
   'print', 'print-close', 'print-now',
-  'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
+  'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings',
   'fin-recurring', 'q-clear', 'home', 'overlay-close', 'title-edit', 'title-done',
   'bal-how', 'post-filter', 'post-open', 'rec-edit', 'rec-done',
   'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
@@ -736,6 +735,14 @@ function wireEvents() {
     if (el.dataset.setting) {
       const key = el.dataset.setting;
       const raw = el.value.trim();
+      // 014c: buffer_fixed is a number or nothing - an emptied field means "no fixed amount",
+      // stored as jsonb null (not '' - the view casts it to numeric)
+      if (key === 'buffer_fixed') {
+        const v = raw === '' ? null : parseAmount(raw);
+        if (raw !== '' && v === null) return toast('Betrag nicht lesbar');
+        setSetting(key, v).catch(fail);
+        return;
+      }
       // settings.value is jsonb NOT NULL: an emptied field stores '', never null
       let v = '';
       if (raw !== '') {
@@ -1411,34 +1418,13 @@ function wireEvents() {
           ui.avatarMenu = !ui.avatarMenu;
           render();
           return;
-        case 'buffer-add':
-          await addCost(null, { label: 'Puffer', amount: suggestedBuffer() });
-          return;
-        case 'buffer-edit':
-          ui.bufferEdit = !ui.bufferEdit;
+        // 014c: der Puffer ist eine Einstellung, kein Posten mehr - Satz/Betrag-Segment in den
+        // Rahmendaten; "Satz" räumt einen gesetzten Festbetrag sofort ab
+        case 'buffer-mode':
+          ui.bufferMode = b.dataset.to;
+          if (b.dataset.to === 'pct' && bufferFixed() !== null) await setSetting('buffer_fixed', null).catch(fail);
           render();
           return;
-        case 'buffer-cancel':
-          ui.bufferEdit = false;
-          render();
-          return;
-        case 'buffer-save': {
-          const amount = parseAmount($('[data-buffer=amount]', $('#view')).value);
-          const pct = parseAmount($('[data-buffer=pct]', $('#view')).value);
-          if (amount === null) return toast('Betrag nicht lesbar');
-          ui.bufferEdit = false;
-          if (pct !== null && pct !== bufferPct()) await setSetting('buffer_pct', pct);
-          await updateCost(b.dataset.ref, { amount });
-          return;
-        }
-        case 'buffer-pct-apply': {
-          const pct = parseAmount($('[data-buffer=pct]', $('#view')).value);
-          if (pct === null) return toast('Prozentsatz nicht lesbar');
-          if (pct !== bufferPct()) await setSetting('buffer_pct', pct);
-          ui.bufferEdit = false;
-          await updateCost(b.dataset.ref, { amount: suggestedBuffer() });
-          return;
-        }
 
         /* ---------- cost rows: three-rung ladder (docs/changes/016b, was 007) ---------- */
         case 'cost-add':
