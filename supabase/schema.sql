@@ -435,14 +435,17 @@ $$;
 -- ---------------------------------------------------------------------
 --  costs_summary: the one counting rule for 007 and for Claude (export)
 --  counts: status beauftragt/faellig/bezahlt; geschaetzt only while no row of the same task is
---  beauftragt or further (buffer rows, task_id null, always count); angebot never counts (history).
---  planned_total = counted einmalig · paid = counted einmalig & bezahlt · refunds_expected = counted
---  rueckfluss · buffer = counted einmalig with task_id null · double_rent = the calculated double
---  rent (a016) · net = planned_total + double_rent - refunds_expected. kind 'ausgleich' (a payment
---  between the two people) never counts here - it only moves the balance.
---  security_invoker: the view runs with the caller's rights, so RLS on costs applies.
+--  beauftragt or further; angebot never counts (history). planned_total = counted einmalig ·
+--  paid = counted einmalig & bezahlt · refunds_expected = counted rueckfluss · double_rent = the
+--  calculated double rent (a016) · buffer = settings.buffer_fixed, or buffer_pct % of
+--  planned_total when no fixed amount is set (a014c - the buffer is a setting, not a post
+--  anymore; bezahlte Posten bleiben in der Summe, sie ist auf den Plan bezogen) · buffer_mode
+--  says which of the two applies · net = planned_total + buffer + double_rent - refunds_expected.
+--  kind 'ausgleich' (a payment between the two people) never counts here - it only moves the
+--  balance. security_invoker: the view runs with the caller's rights, so RLS on costs applies.
 -- ---------------------------------------------------------------------
-create or replace view public.costs_summary with (security_invoker = true) as
+drop view if exists public.costs_summary;
+create view public.costs_summary with (security_invoker = true) as
 with counted as (
   select c.*
   from public.costs c
@@ -482,16 +485,33 @@ double_rent_sum as (
            case when date_trunc('month', m.out_a) >= m.m then (select rent_a from rent) else 0 end), 0) as v,
          count(*) as n
   from months m
+),
+totals as (
+  select (select sum(amount) from counted where kind = 'einmalig') as planned_total
+),
+buffer_settings as (
+  select
+    coalesce((select nullif(value #>> '{}', '')::numeric from public.settings where key = 'buffer_pct'), 20) as pct,
+    (select nullif(value #>> '{}', '')::numeric from public.settings where key = 'buffer_fixed') as fixed
+),
+buffer_calc as (
+  select
+    case when bs.fixed is not null then bs.fixed
+         else round(coalesce(t.planned_total, 0) * bs.pct / 100, 2) end as buffer,
+    case when bs.fixed is not null then 'fixed' else 'pct' end          as buffer_mode
+  from buffer_settings bs, totals t
 )
 select
-  (select sum(amount) from counted where kind = 'einmalig')                          as planned_total,
+  t.planned_total                                                                    as planned_total,
   (select sum(amount) from counted where kind = 'einmalig' and status = 'bezahlt')   as paid,
   (select sum(amount) from counted where kind = 'rueckfluss')                        as refunds_expected,
-  (select sum(amount) from counted where kind = 'einmalig' and task_id is null)      as buffer,
+  bc.buffer                                                                          as buffer,
+  bc.buffer_mode                                                                     as buffer_mode,
   (select case when n = 0 then null else v end from double_rent_sum)                 as double_rent,
-  coalesce((select sum(amount) from counted where kind = 'einmalig'), 0)
+  coalesce(t.planned_total, 0) + coalesce(bc.buffer, 0)
     + coalesce((select case when n = 0 then null else v end from double_rent_sum), 0)
-    - coalesce((select sum(amount) from counted where kind = 'rueckfluss'), 0)       as net;
+    - coalesce((select sum(amount) from counted where kind = 'rueckfluss'), 0)       as net
+from totals t, buffer_calc bc;
 
 -- ---------------------------------------------------------------------
 --  Realtime: broadcast changes of these tables to logged-in clients
