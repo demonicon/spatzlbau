@@ -1,14 +1,18 @@
-// Timeline (docs/changes/019, variant 3b): every open task in the order it comes due, with the
-// five phases as rails beside it. It is a list, not a chart - full titles, one row per task,
-// tick it off where you read it. Dragging a deadline is not possible here on purpose: deadlines
-// change in "Bearbeiten" (017), and Ansehen and Bearbeiten stay apart.
+// Timeline (docs/changes/019, variant 3b; layout 019c against the export "3b · Handy 380"): every
+// open task in the order it comes due, with the five phases as rails beside it. It is a list, not
+// a chart - full titles, two lines per task, tick it off where you read it. Dragging a deadline is
+// not possible here on purpose: deadlines change in "Bearbeiten" (017).
+//
+// Every entry of the list - month, today, Einzug, task, gate - is one row of the same grid: date
+// on the left, the five rails in the middle, the content on the right. So the rails run through
+// all of them without a gap, and a phase's line ends in the diamond of its gate row.
 import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
-import { state, ui, phases, einzug, umzugstag, dueInfo, anchorDate } from '../state.js';
+import { state, ui, phases, einzug, umzugstag, dueInfo, anchorDate, blockers, subProgress, comsOf } from '../state.js';
 import { isLate } from '../filters.js';
-import { signalHTML, quietHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
 import { isHit, term } from '../search.js';
+import { taskAmount, eurShort } from '../costs.js';
 
 const DAY = 86400000;
 
@@ -19,14 +23,15 @@ const dayStart = (d = new Date()) => {
 };
 const fmtDay = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 const fmtWd = (d) => d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
-const fmtMonth = (d) => d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }).toUpperCase();
+const fmtMonth = (d) => d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+const fmtFull = (d) => d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/^(\w+)\./, '$1');
 
-/** T−92: days from the move-in date, whatever a task is anchored to. Null without a date. */
+/** T−92: days from the move-in date, whatever a task is anchored to; the day itself is "Tag 0". */
 export function tOffset(at) {
   const base = einzug();
   if (!base) return null;
   const n = Math.round((dayStart(at) - dayStart(new Date(base + 'T00:00:00'))) / DAY);
-  return n === 0 ? 'T±0' : n < 0 ? `T−${-n}` : `T+${n}`;
+  return n === 0 ? 'Tag 0' : n < 0 ? `T−${-n}` : `T+${n}`;
 }
 
 /** Which tasks the timeline shows: open ones (overdue included), never the ticked-off ones. */
@@ -54,57 +59,121 @@ export function rails(list = rows()) {
   return out;
 }
 
-/** The five rail cells next to one row: a line where the phase runs, a dot on its own row. */
-function railHTML(phase, at, rl, list) {
-  return phases()
+/** The five lanes of one row: a line where the phase runs on that day, a dot on the task's own
+    lane (in the owner's colour), a diamond where the phase ends (its gate row). */
+function railHTML(time, rl, { dot = null, owner = '', gate = null } = {}) {
+  return `<div class="tl-rails" aria-hidden="true">${phases()
     .map((p) => {
       const r = rl.get(p.id);
-      const time = at.getTime();
       const on = r && time >= r.from && time <= r.to;
-      const dot = p.id === phase;
-      // the diamond marks the end of a rail: the last deadline of that phase
-      const gate = r && time === r.to && list.some((x) => x.t.phase === p.id && x.at.getTime() === r.to);
-      return `<span class="rail r${p.id} ${on ? 'on' : ''}">${dot ? `<i class="dot"></i>` : ''}${gate && dot ? `<i class="gate">◆</i>` : ''}</span>`;
+      const cls = ['rail', 'r' + p.id, on ? 'on' : '', gate === p.id ? 'end' : ''].join(' ');
+      return `<span class="${cls}">${dot === p.id ? `<i class="dot ${owner}"></i>` : ''}${gate === p.id ? '<i class="gate"></i>' : ''}</span>`;
     })
-    .join('');
+    .join('')}</div>`;
 }
 
-function rowHTML({ t, at }, rl, list) {
+/** The one signal of a row (020), in the words of the export: overdue since, waiting for you,
+    due today, fristkritisch. Being blocked is not a chip here - it sits in the meta line. */
+function signalHTML(t, at) {
+  if (isLate(t)) {
+    const n = Math.round((dayStart() - dayStart(at)) / DAY);
+    return `<span class="tl-sig late">seit ${n} T. überfällig</span>`;
+  }
+  if (t.wait_on === state.person) return `<span class="tl-sig waitme">wartet auf dich</span>`;
+  if (dayStart(at).getTime() === dayStart().getTime()) return `<span class="tl-sig crit">heute</span>`;
+  if (t.critical) return `<span class="tl-sig crit">kritisch</span>`;
+  return '';
+}
+
+/** "Phase 2 · wartet auf 2 › · 0/4 Teilschritte · 1 Kommentar" - at most two quiet facts after
+    the phase, plus the amount when the task carries a cost row (019c §5). */
+function metaHTML(t) {
+  const bl = blockers(t);
+  const parts = [`Phase ${t.phase}`];
+  if (bl.length) {
+    parts.push(`<button class="tl-wait" data-act="tl-wait" data-ref="${t.id}" aria-expanded="${ui.tlWait === t.id}" title="wartet auf: ${esc(bl.map((b) => b.title).join(' · '))}">wartet auf ${bl.length} ›</button>`);
+  }
+  const quiet = [];
+  const sp = subProgress(t);
+  if (sp) quiet.push(`${sp[0]}/${sp[1]} Teilschritte`);
+  const coms = comsOf(t.id).length;
+  if (coms) quiet.push(`${coms} ${coms === 1 ? 'Kommentar' : 'Kommentare'}`);
+  parts.push(...quiet.slice(0, 2));
+  const money = taskAmount(t.id);
+  if (money) parts.push(`${money.estimated ? '≈ ' : ''}${eurShort(money.sum)}`);
+  return parts.join(' · ');
+}
+
+function whenHTML(at, { weekday = true, moved = false, date = true } = {}) {
+  const tt = tOffset(at) || '';
+  const sub = [weekday ? fmtWd(at) : '', moved ? 'Umzug' : '', tt].filter(Boolean).join(' · ');
+  return `<div class="tl-when">${date ? `<b>${esc(fmtDay(at))}</b>` : ''}<span>${esc(sub)}</span></div>`;
+}
+
+function rowHTML({ t, at }, rl) {
   const late = isLate(t);
-  const sig = signalHTML(t);
-  const quiet = quietHTML(t, { owner: false });
-  const ph = phases().find((p) => p.id === t.phase);
+  const blocked = blockers(t).length > 0;
   const open = ui.expanded === t.id;
   const moved = t.anchor === 'umzugstag' && umzugstag();
-  return `<div class="tl-row ${late ? 'late' : ''} ${open ? 'open' : ''}" data-id="${t.id}">
-    <div class="tl-when">
-      <b>${esc(fmtDay(at))}</b>
-      <span>${esc(fmtWd(at))}${moved ? ' · Umzug' : ''}</span>
-      <span class="t">${esc(tOffset(at) || '')}</span>
-    </div>
-    <div class="tl-rails" aria-hidden="true">${railHTML(t.phase, at, rl, list)}</div>
-    <div class="tl-body">
-      <input type="checkbox" class="check" ${ui.offline ? 'disabled' : ''} data-act="done" aria-label="Erledigt">
-      <div class="tl-main">
-        <button class="t" data-act="open" aria-expanded="${open}">${esc(t.title)}</button>
-        <span class="own ${t.owner}">${OWN[t.owner]}</span>
-        ${sig ? `<div class="sig">${sig}</div>` : ''}
-        <div class="quiet">Phase ${t.phase}${ph ? ' · ' + esc(ph.short || ph.name) : ''}${quiet ? ' · ' + quiet : ''}</div>
+  const sig = signalHTML(t, at);
+  const cls = ['tl-row', 'tl-task', late ? 'late' : '', t.critical ? 'crit' : '', blocked ? 'blocked' : '', open ? 'open' : '', open && ui.wide ? 'selected' : ''].join(' ');
+  const waitList =
+    ui.tlWait === t.id && blocked
+      ? `<div class="tl-waitlist">wartet auf: ${blockers(t)
+          .map((b) => `<a class="tlink" href="#task=${encodeURIComponent(b.id)}">${esc(b.title)}</a>`)
+          .join(' · ')}</div>`
+      : '';
+  return `<div class="${cls}" data-id="${t.id}">
+    ${whenHTML(at, { moved })}
+    ${railHTML(at.getTime(), rl, { dot: t.phase, owner: t.owner })}
+    <div class="tl-c">
+      <div class="tl-top">
+        <button class="t" data-act="open" aria-expanded="${open}" title="${esc(t.title)}">${esc(t.title)}</button>
+        <input type="checkbox" class="check" ${ui.offline || blocked ? 'disabled' : ''} data-act="done" aria-label="Erledigt${blocked ? ' – wartet noch auf eine andere Aufgabe' : ''}">
       </div>
+      <div class="tl-meta"><span class="own ${t.owner}">${OWN[t.owner]}</span>${sig}<span class="tl-q">${metaHTML(t)}</span></div>
+      ${waitList}
     </div>
-    ${open ? detailHTML(t, false) : ''}
+    ${open && !ui.wide ? detailHTML(t, false) : ''}
   </div>`;
 }
 
-/** The gate line under the last row of a phase: what has to be true before it is over. */
-function gateLineHTML(p) {
-  return `<div class="tl-gate"><span class="d" aria-hidden="true">◆</span><span>Gate Phase ${p.id}${p.gate ? ' · ' + esc(p.gate) : ''}</span></div>`;
+const monthHTML = (label, time, rl) =>
+  `<div class="tl-row tl-mrow"><div class="tl-when"></div>${railHTML(time, rl)}<div class="tl-month">${esc(label)}</div></div>`;
+
+/** The gate row: what has to be true before the phase is over, the diamond ends its rail. */
+function gateHTML(p, time, rl) {
+  const at = new Date(time);
+  return `<div class="tl-row tl-gaterow">
+    ${whenHTML(at, { weekday: false })}
+    ${railHTML(time, rl, { gate: p.id })}
+    <div class="tl-gate"><span class="gh">Gate Phase ${p.id}${p.name ? ' · ' + esc(p.name) : ''}</span>${p.gate ? `<span class="gt">${esc(String(p.gate).replace(/^Gate:\s*/i, ''))}</span>` : ''}</div>
+  </div>`;
+}
+
+/** Today: a pill and a dashed line over the list's width. Ink, not red - today is no deadline
+    that passed (CLAUDE.md: red only for overdue and for what cannot be undone). */
+function todayHTML(today, rl) {
+  return `<div class="tl-row tl-today" id="tl-today">
+    ${whenHTML(today, { weekday: false })}
+    ${railHTML(today.getTime(), rl)}
+    <div class="tl-tc"><span class="tl-pill">Heute</span></div>
+  </div>`;
+}
+
+function einzugHTML(day, rl) {
+  return `<div class="tl-row tl-einzug">
+    ${whenHTML(day, { weekday: false })}
+    ${railHTML(day.getTime(), rl)}
+    <div class="tl-ec"><b>Einzug</b><span>${esc(fmtFull(day))} · Tag 0</span></div>
+  </div>`;
 }
 
 export function timelineHTML() {
   const list = rows();
   const rl = rails(list);
   const today = dayStart();
+  const moveIn = einzug() ? dayStart(new Date(einzug() + 'T00:00:00')) : null;
   const doneCount = state.tasks.filter((t) => t.done).length;
   const ps = phases();
   const chip = (val, label, on, act) => `<button class="pill" data-act="${act}" data-to="${val}" aria-pressed="${on}">${esc(label)}</button>`;
@@ -112,31 +181,48 @@ export function timelineHTML() {
   let out = '';
   let month = '';
   let todayDrawn = false;
-  const lastOf = new Map(); // phase -> time of its last row, for the gate line
-  const gateDrawn = new Set();
+  let einzugDrawn = !moveIn;
+  const lastOf = new Map(); // phase -> time of its last row, for the gate row
   for (const { t, at } of list) lastOf.set(t.phase, at.getTime());
+  let pendingDay = null; // gates wait until every row of their day is out (as in the export)
+  const flushGates = () => {
+    if (pendingDay === null) return;
+    for (const p of ps) if (lastOf.get(p.id) === pendingDay) out += gateHTML(p, pendingDay, rl);
+    pendingDay = null;
+  };
 
+  const ensureMonth = (at, time) => {
+    const m = fmtMonth(at);
+    if (m === month) return;
+    month = m;
+    out += monthHTML(m, time, rl);
+  };
   for (const row of list) {
-    // the today marker sits between the last overdue row and the first coming one
+    const time = row.at.getTime();
+    if (pendingDay !== null && pendingDay !== time) flushGates();
+    // the today marker sits between the last overdue row and the first coming one - under the
+    // head of its own month (export: "SEPTEMBER 2026", overdue rows, Heute, the rest)
     if (!todayDrawn && row.at >= today) {
-      out += todayHTML(today);
+      ensureMonth(today, today.getTime());
+      out += todayHTML(today, rl);
       todayDrawn = true;
     }
-    const m = fmtMonth(row.at);
-    if (m !== month) {
-      month = m;
-      out += `<div class="tl-month">${esc(month)}</div>`;
+    // the Einzug band closes the month before it, the new month's head follows (export)
+    if (!einzugDrawn && row.at >= moveIn) {
+      out += einzugHTML(moveIn, rl);
+      einzugDrawn = true;
     }
-    out += rowHTML(row, rl, list);
-    const p = ps.find((x) => x.id === row.t.phase);
-    // the gate line comes once, under the last row of its phase - several tasks can share that day
-    if (p && !gateDrawn.has(p.id) && lastOf.get(row.t.phase) === row.at.getTime()) {
-      gateDrawn.add(p.id);
-      out += gateLineHTML(p);
-    }
+    ensureMonth(row.at, time);
+    out += rowHTML(row, rl);
+    if ([...lastOf.values()].includes(time)) pendingDay = time;
   }
-  if (!todayDrawn) out += todayHTML(today);
+  flushGates();
+  if (!todayDrawn) out += todayHTML(today, rl);
+  if (!einzugDrawn) out += einzugHTML(moveIn, rl);
 
+  const note = einzug()
+    ? `Tag 0 ist der Einzug am ${esc(fmtDay(new Date(einzug() + 'T00:00:00')))}${umzugstag() && umzugstag() !== einzug() ? ` · Umzug am ${esc(fmtDay(new Date(umzugstag() + 'T00:00:00')))}` : ''}`
+    : '';
   return `<section class="timeline" aria-label="Timeline">
     <div class="tl-filters">
       <div class="pchips" role="group" aria-label="Wessen Aufgaben">
@@ -144,18 +230,18 @@ export function timelineHTML() {
         ${chip('me', 'Du', ui.tlOwner === 'me', 'tl-owner')}
         ${chip('B', 'Gemeinsam', ui.tlOwner === 'B', 'tl-owner')}
         ${chip('you', OWN[state.person === 'S' ? 'A' : 'S'], ui.tlOwner === 'you', 'tl-owner')}
-        <button class="pill" data-act="tl-today">Heute</button>
       </div>
+      <button class="btn-text tl-jump" data-act="tl-today">↓ Heute</button>
     </div>
-    ${einzug() ? `<p class="tl-note">Tag 0 ist der Einzug am ${esc(fmtDay(new Date(einzug() + 'T00:00:00')))}${umzugstag() && umzugstag() !== einzug() ? ` · Umzug am ${esc(fmtDay(new Date(umzugstag() + 'T00:00:00')))}` : ''}.</p>` : ''}
-    ${list.length ? out : `<p class="empty">${term() ? 'Kein Treffer in dieser Auswahl.' : 'Nichts offen in dieser Auswahl.'}</p>`}
+    ${note ? `<p class="tl-note">${note}</p>` : ''}
+    <div class="tl-list">${list.length ? out : `<p class="empty">${term() ? 'Kein Treffer in dieser Auswahl.' : 'Nichts offen in dieser Auswahl.'}</p>`}</div>
     ${
       doneCount
         ? ui.tlDone
           ? `<div class="tl-done">${state.tasks
               .filter((t) => t.done && anchorDate(t))
               .sort((a, b) => dueInfo(a).sort - dueInfo(b).sort)
-              .map((t) => `<div class="tl-row done" data-id="${t.id}"><div class="tl-when"><b>${esc(fmtDay(new Date(dueInfo(t).sort)))}</b></div><div class="tl-rails" aria-hidden="true"></div><div class="tl-body"><input type="checkbox" class="check" checked ${ui.offline ? 'disabled' : ''} data-act="done" aria-label="Erledigt"><div class="tl-main"><button class="t" data-act="open">${esc(t.title)}</button></div></div></div>`)
+              .map((t) => `<div class="tl-row done" data-id="${t.id}"><div class="tl-when"><b>${esc(fmtDay(new Date(dueInfo(t).sort)))}</b></div><div class="tl-rails" aria-hidden="true"></div><div class="tl-c"><div class="tl-top"><button class="t" data-act="open">${esc(t.title)}</button><input type="checkbox" class="check" checked ${ui.offline ? 'disabled' : ''} data-act="done" aria-label="Erledigt"></div></div></div>`)
               .join('')}
             <button class="btn-text row" data-act="tl-done">erledigte ausblenden</button></div>`
           : `<button class="btn-text row" data-act="tl-done">${doneCount} erledigte zeigen</button>`
@@ -164,6 +250,3 @@ export function timelineHTML() {
   </section>`;
 }
 
-function todayHTML(today) {
-  return `<div class="tl-today" id="tl-today"><span class="l">Heute</span><span class="d">${esc(fmtDay(today))}</span></div>`;
-}
