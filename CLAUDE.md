@@ -38,6 +38,9 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Commit-Messages: Präfix `feat:`, `fix:`, `content:`, `chore:`. Kleine Commits.
 - Vor dem Push: `index.html` lokal öffnen (Live-Server) und auf ~380 px prüfen.
 
+## Design-Regeln
+- Schrift, Gewichte und Größen kommen aus dem Claude-Design-Export des jeweiligen Auftrags, nicht aus dem Bestand. Keine neue Familie, kein neues Gewicht ohne Vorlage. (Festgelegt am 23.09.2026, Auftrag 020b.)
+
 ## Preview-Deploy (Auftrag 010)
 - Zwei Ziele, ein Pages-Workflow, eine Datenbank: `main` → `/`, Branch `preview` → `/preview/`. Jeder Deploy baut beide neu (der jeweils andere Branch wird mitgecheckt, sonst würde ein Push den anderen Pfad löschen).
 - Cloud-Sitzungen (ohne direkten Kontakt zu Sebastian) mergen ihre Branches nach `preview`, nicht nach `main`. Sebastian prüft `/preview/` am Handy (erkennbar am Hinweis „Vorschau“ in der Statuszeile) und merged danach selbst `preview` → `main`.
