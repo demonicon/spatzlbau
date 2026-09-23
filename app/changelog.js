@@ -5,9 +5,12 @@ import { state, ui } from './state.js';
 // are release numbers 'Haupt.Neben' (z. B. '1.0'). A date-version has four segments and starts
 // with a year (20xx); a release number never does – so a release number always counts as newer,
 // no matter how the plain numeric segments would otherwise compare (docs/changes/015, Falle).
+// Bugfix 2.0.1: the first deploy of a day has three segments ('2026.09.22'), later ones four -
+// both are date versions; with only four counted, '2026.09.22' read as release 2026 and stayed
+// "neu" in every panel for good
 const isDateVersion = (v) => {
   const p = String(v || '').split('.');
-  return p.length === 4 && /^20\d{2}$/.test(p[0]);
+  return (p.length === 3 || p.length === 4) && /^20\d{2}$/.test(p[0]);
 };
 
 export function compareVersions(a, b) {

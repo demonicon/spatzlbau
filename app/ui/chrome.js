@@ -70,9 +70,9 @@ export function footHTML({ status = false } = {}) {
   // version (1.0, then 1.1, 1.2, ...), not its release group (which stays 1.0 across every
   // bugfix until the next milestone and only labels the changelog panel's groups, see below).
   const tip = [cur?.date, build() ? `Build ${build()}` : ''].filter(Boolean).join(' · ');
-  // docs/changes/020: /preview/ is where 2.0 is being built - it says so instead of showing the
-  // version the live app is on (the changelog entry for 2.0 sits below 1.1 until it goes live)
-  const label = ui.preview ? '2.0-preview' : cur ? esc(cur.version) : 'Version unbekannt';
+  // /preview/ shows the newest version with "-preview" behind it - the version live is on or is
+  // about to get (020 hard-coded "2.0-preview" while 2.0 was still being built)
+  const label = cur ? esc(cur.version) + (ui.preview ? '-preview' : '') : 'Version unbekannt';
   const version = `<span class="version"${tip ? ` title="${esc(tip)}"` : ''}>${label}</span>`;
   if (status) return `<footer class="foot fin-foot">${version}${info}<span class="spacer"></span><span class="status" id="status" role="status"></span></footer>`;
   return `<footer class="foot">${info}${version}<button class="btn-text" data-act="print" aria-expanded="${!!ui.printOpen}">Umzugstag drucken</button><span class="spacer"></span><button class="btn-text" data-act="logout">Abmelden</button></footer>`;

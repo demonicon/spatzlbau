@@ -1,0 +1,1496 @@
+{
+ "_hinweis": "Inhaltspaket I-2b Beratung Phase 3–5 (45 Aufgaben). Enthält alle 68 Aufgaben in Seed-Reihenfolge inkl. der bereits eingespielten Phase-1+2-Texte – geändert wird nur advice. Einspielen: node scripts/seed.mjs --file content/i2b-beratung-2.json --dry, dann scharf. Erwartet: 0 new tasks, 45 tasks updated (advice), 0 subtasks added.",
+ "tasks": [
+  {
+   "id": "kosten",
+   "phase": 1,
+   "title": "Kostenmodell klären: Miete, Nebenkosten, Anschaffungen, gemeinsames Konto",
+   "owner": "B",
+   "offset_days": -100,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Laufende Kosten in Finanzen eintragen (alt S, alt A, neu)",
+    "Aufteilung festlegen (50/50 oder nach Einkommen)",
+    "Haushaltskonto ja/nein entscheiden"
+   ],
+   "advice": {
+    "why": "Ohne Kostenmodell streitet man später über Kleinigkeiten. Jetzt, weil die neue Miete feststeht und beide Altmieten noch laufen – das ist der Moment, an dem Doppelmiete und Kautionen sichtbar werden.",
+    "how": "1. Ersteinrichtung in Finanzen durchlaufen (Termine, Mieten, Kautionen, Aufteilung). 2. Aufteilungsschlüssel festlegen: 50/50 oder nach Nettoeinkommen. 3. Entscheiden, ob ein Haushaltskonto kommt – dann zahlt jeder einen festen Betrag ein, und die Frage „wer hat bezahlt“ entfällt. 4. Puffer 20 % stehen lassen, bis die ersten Angebote da sind.",
+    "need": "Beide Gehälter (grob), Kaltmiete + Nebenkosten alt und neu, Kautionsbeträge, Auszugstermine.",
+    "law": "Innenverhältnis ist Privatsache – der Vermieter sieht nur die Gesamtmiete. Bei gemeinsamem Mietvertrag haftet jeder für die volle Miete (§ 421 BGB Gesamtschuld), unabhängig von eurer Aufteilung.",
+    "traps": "Nach Quadratmetern aufteilen klingt fair, führt aber bei einem gemeinsamen Schlafzimmer zu Diskussionen. Das Haushaltskonto nicht mit dem Sparkonto vermischen. Doppelmiete gehört ins Modell, auch wenn sie nur einen Monat trifft."
+   }
+  },
+  {
+   "id": "vertrag-pruefen",
+   "phase": 1,
+   "title": "Neuen Mietvertrag prüfen: Staffel/Index, Kaution, Renovierungsklauseln, Kündigungsausschluss, beide als Mieter",
+   "owner": "B",
+   "offset_days": -95,
+   "critical": true,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Vertrag ins Drive 01 Verträge",
+    "Claude gegenlesen lassen (Kommentar 'bitte prüfen')",
+    "Kündigungsausschluss und Staffel notieren"
+   ],
+   "advice": {
+    "why": "Ein Mietvertrag wird beim Einzug unterschrieben und beim Auszug gelesen – dann ist es zu spät. Die zehn Minuten jetzt entscheiden über Kaution, Renovierung und Kündbarkeit in fünf Jahren.",
+    "how": "1. PDF ins Drive „01 Verträge“. 2. Kommentar „@claude bitte prüfen“ an dieser Aufgabe – Claude liest Staffel/Index, Kaution, Schönheitsreparaturen, Kündigungsausschluss, Kleinreparaturen, Haustiere, Untervermietung. 3. Offene Punkte vor der Unterschrift mit dem Vermieter klären, Änderungen schriftlich in den Vertrag. 4. Beide als Mieter eintragen lassen.",
+    "need": "Vertragsentwurf, Übergabeprotokoll-Vorlage des Vermieters (falls beiliegt), Hausordnung.",
+    "law": "Kaution max. 3 Nettokaltmieten (§ 551 BGB), in drei Raten zahlbar. Kündigungsausschluss max. 4 Jahre wirksam. Starre Renovierungsfristen und Endrenovierungsklauseln sind unwirksam (BGH VIII ZR 185/14). Indexmiete: Erhöhung nur nach Verbraucherpreisindex, frühestens nach einem Jahr. Kleinreparaturklausel nur mit Obergrenze je Fall (~100 €) und Jahr (~8 % der Jahresmiete).",
+    "traps": "„Wohnung wird renoviert übergeben“ ohne Protokoll – dann tragt ihr die Beweislast beim Auszug. Nebenkostenvorauszahlung unrealistisch niedrig (Nachzahlung im Jahr 2). Staffel- und Indexmiete gleichzeitig ist unzulässig. Nur eine Person im Vertrag = die andere hat kein Wohnrecht."
+   }
+  },
+  {
+   "id": "vertrag",
+   "phase": 1,
+   "title": "Neuen Mietvertrag unterschreiben",
+   "owner": "B",
+   "offset_days": -90,
+   "critical": true,
+   "type": "self",
+   "blocked_by": [
+    "vertrag-pruefen"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Beide unterschreiben",
+    "Wohnungsgeberbestätigung direkt mit unterschreiben lassen",
+    "Kopie beider Exemplare ins Drive"
+   ],
+   "advice": {
+    "why": "Erst die Unterschrift beider Seiten macht die Zusage fest. Bis dahin kann der Vermieter anders entscheiden – und ihr könnt noch nicht kündigen.",
+    "how": "1. Termin zur Unterschrift, beide anwesend. 2. Zwei Originale, beide von allen unterschrieben. 3. Wohnungsgeberbestätigung direkt mitunterschreiben lassen (eigene Aufgabe). 4. Kopie beider Exemplare ins Drive, Original in die Dokumentenmappe. 5. Danach sofort: Kündigungen der Altwohnungen auf den Weg.",
+    "need": "Personalausweise, ggf. Bürgschaftsurkunde oder Kautionsnachweis, Bankverbindung.",
+    "law": "Mietverträge über mehr als ein Jahr brauchen Schriftform (§ 550 BGB), sonst gelten sie als unbefristet – für euch eher Vorteil. Beide Unterschriften auf demselben Dokument.",
+    "traps": "Kündigung der Altwohnung vor der Unterschrift ist ein Risiko – lieber einen Tag später kündigen als zwei Monate ohne Wohnung stehen. Vertrag mit Datum „ab 01.01.“ heißt: Schlüssel am 1.1., der ein Feiertag ist – Übergabe am 30./31.12. oder 2.1. vereinbaren."
+   }
+  },
+  {
+   "id": "innenvereinbarung",
+   "phase": 1,
+   "title": "Innenvereinbarung zwischen euch: Kautionsanteile, Kostenaufteilung, Trennungsfall – zwei Sätze, beide unterschreiben",
+   "owner": "B",
+   "offset_days": -90,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [
+    "vertrag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Ein gemeinsamer Mietvertrag ist rechtlich eine Gesamtschuld: Jeder haftet für die ganze Miete, und keiner kann allein kündigen. Zwei Sätze auf Papier ersparen im schlechtesten Fall Monate.",
+    "how": "1. Vorlage aus dem Drive „02 Vorlagen“ nehmen (Claude legt sie an). 2. Festhalten: Kautionsanteile, laufende Aufteilung, wer bei Trennung auszieht und wie die Kaution zurückfließt, Anschaffungen über 500 € als gemeinsames Eigentum oder nicht. 3. Beide unterschreiben, je eine Kopie, PDF ins Drive.",
+    "need": "Kautionsbeträge, Aufteilungsschlüssel aus dem Kostenmodell, eine Liste größerer gemeinsamer Anschaffungen.",
+    "law": "Bei gemeinsamem Vertrag kann nur gemeinsam gekündigt werden (§ 542 BGB, BGH VIII ZR 205/16). Ein Mieter allein kommt nur mit Zustimmung des Vermieters aus dem Vertrag. Die Innenvereinbarung wirkt nur zwischen euch, nicht gegenüber dem Vermieter – das reicht.",
+    "traps": "Das Thema aufschieben, weil es unromantisch ist. Es ist eine Klärung für den Fall, den keiner erwartet, nicht ein Misstrauensvotum."
+   }
+  },
+  {
+   "id": "kaution",
+   "phase": 1,
+   "title": "Kaution neue Wohnung überweisen oder Bürgschaft stellen",
+   "owner": "B",
+   "offset_days": -85,
+   "critical": true,
+   "type": "assist",
+   "blocked_by": [
+    "vertrag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Betrag und Frist aus dem Vertrag",
+    "Kostenzeile 'Kaution neu' anlegen",
+    "Zahlungsbeleg ins Drive"
+   ],
+   "advice": {
+    "why": "Zwei alte Kautionen (4.950 €) kommen erst Monate nach dem Auszug zurück, die neue ist vorher fällig. Das ist die größte Liquiditätslücke des Umzugs.",
+    "how": "1. Betrag und Fälligkeit aus dem neuen Vertrag. 2. Entscheiden: Barkaution (Überweisung in drei Raten möglich), Kautionsbürgschaft (Bank/Versicherer, ~4–5 % Jahresgebühr) oder Kautionssparbuch. 3. Zahlung so terminieren, dass sie vor Schlüsselübergabe eingeht. 4. Beleg ins Drive, Kostenzeile in Finanzen auf „bezahlt“.",
+    "need": "Neuer Vertrag mit Kautionshöhe, Kontoauszug als Nachweis, bei Bürgschaft: Antrag mit Vertragskopie.",
+    "law": "Max. 3 Nettokaltmieten (§ 551 BGB). Der Mieter darf in drei gleichen Monatsraten zahlen, erste Rate bei Mietbeginn. Vermieter muss getrennt vom eigenen Vermögen anlegen, Zinsen gehören euch.",
+    "traps": "Kaution vor Vertragsunterschrift zahlen. Bürgschaft ist bequem, aber über fünf Jahre teurer als die Barkaution. Beim Auszug dauert die Rückzahlung bis zu 6 Monate (BGH) – nicht mit der neuen Kaution verrechnen wollen."
+   }
+  },
+  {
+   "id": "auszugstermine",
+   "phase": 1,
+   "title": "Auszugstermine festlegen (beide 31.12.?) und in der App eintragen",
+   "owner": "B",
+   "offset_days": -90,
+   "critical": true,
+   "type": "self",
+   "blocked_by": [
+    "vertrag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Der Auszugstermin bestimmt Kündigungsfrist, Doppelmiete und die Übergabetermine. Er ist der zweite Nullpunkt der Planung neben dem Einzug.",
+    "how": "1. Für beide Wohnungen: Kündigungsfrist 3 Monate zum Monatsende → Auszug 31.12.2026, Kündigung bis 05.10. 2. In Finanzen → Rahmendaten beide Daten eintragen. 3. Prüfen, ob ein früherer Auszug (30.11.) bei einer Wohnung Geld spart – nur, wenn der Umzug dann schon möglich ist.",
+    "need": "Beide Mietverträge (Kündigungsfrist steht drin), Kalender.",
+    "law": "§ 573c BGB: Kündigung bis zum 3. Werktag eines Monats wirkt zum Ende des übernächsten Monats. 3. Werktag im Oktober 2026 ist Montag, der 5.10. Samstag zählt bei Zugang nicht als Werktag für Kündigungen (BGH VIII ZR 331/06).",
+    "traps": "Auszug am 31.12. und Einzug am 1.1. heißt: keine Überlappung, kein Puffer. Falls die neue Wohnung früher frei ist, lieber eine Woche Doppelmiete als ein Umzug ohne Spielraum."
+   }
+  },
+  {
+   "id": "umzugstag",
+   "phase": 1,
+   "title": "Umzugstag festlegen: Sa 2.1. oder Mo 4.1. – der 1.1. ist Feiertag – und in der App eintragen",
+   "owner": "B",
+   "offset_days": -88,
+   "critical": true,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Mit Umzugsfirma-Verfügbarkeit abgleichen",
+    "Alternative 29./30.12. mit Vorab-Schlüssel beim Vermieter anfragen?"
+   ],
+   "advice": {
+    "why": "Der 1. Januar ist ein Feiertag: keine Halteverbotsschilder, Feiertagsruhe, Umzugsfirmen mit Aufschlag oder gar nicht. Der Umzugstag muss deshalb ein eigenes Datum sein.",
+    "how": "1. Entscheiden: Samstag 2.1. (ein Tag Puffer, Nachbarn zu Hause) oder Montag 4.1. (Firmen regulär verfügbar, Urlaub nötig). 2. In Rahmendaten eintragen – alle Umzugstag-Aufgaben rechnen dann neu. 3. Alternative prüfen: Vorab-Schlüssel am 29./30.12. – dann Umzug vor Silvester, Altwohnungen am 31.12. leer übergeben.",
+    "need": "Verfügbarkeit der Umzugsfirma für KW 1, Urlaubsplanung beider, Schlüsseltermin der neuen Wohnung.",
+    "law": "Feiertagsruhe an gesetzlichen Feiertagen (HFeiertagsG): keine lärmenden Arbeiten, Halteverbote werden nicht aufgestellt. Sonntags gilt dasselbe.",
+    "traps": "Umzug am Samstag mit Firma: manche berechnen Wochenendzuschlag – im Angebot ausweisen lassen. Übergabe der Altwohnungen am 31.12. vormittags heißt: bis dahin muss alles raus – also Umzug vor dem 31.12. oder Altwohnung bis 2.1. behalten (kostet zwei Tage Nutzungsentschädigung, meist unproblematisch, wenn vereinbart)."
+   }
+  },
+  {
+   "id": "uebergabe-neu-termin",
+   "phase": 1,
+   "title": "Übergabetermin neue Wohnung schriftlich vereinbaren",
+   "owner": "S",
+   "offset_days": -85,
+   "critical": true,
+   "type": "self",
+   "blocked_by": [
+    "vertrag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Ohne festen Übergabetermin gibt es keinen Umzugstag, kein Halteverbot, keine Firma. Schriftlich, weil der 1.1. ein Feiertag ist und der Vermieter das selbst oft nicht bedenkt.",
+    "how": "1. Vermieter anschreiben: Vorschlag Mo 28.12. oder Di 29.12. für Schlüssel und Protokoll, hilfsweise Sa 2.1. 2. Bestätigung per Mail/Brief ins Drive. 3. Termin in Rahmendaten (Einzug = Schlüsseltag).",
+    "need": "Vertrag mit Mietbeginn, eure Verfügbarkeit, Kontakt des Vermieters.",
+    "law": "Mietbeginn im Vertrag ist der Tag, ab dem ihr zahlt – nicht zwingend der Schlüsseltag. Eine frühere Übergabe ist Kulanz, eine spätere als der Mietbeginn ein Mangel (Nutzungsausfall).",
+    "traps": "Übergabe „irgendwann in der ersten Januarwoche“ – dann steht der Lkw vor verschlossener Tür. Übergabeprotokoll gehört zum Termin (eigene Aufgabe in Phase 4)."
+   }
+  },
+  {
+   "id": "wgb",
+   "phase": 1,
+   "title": "Wohnungsgeberbestätigung: bei Vertragsunterschrift unterschreiben lassen, beide Namen",
+   "owner": "B",
+   "offset_days": -90,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [
+    "vertrag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Ohne Wohnungsgeberbestätigung keine Ummeldung, ohne Ummeldung Bußgeld und Ärger mit Bank, Kfz-Stelle, Finanzamt. Sie ist ein Blatt – am einfachsten bei der Vertragsunterschrift.",
+    "how": "1. Formular der Stadt Frankfurt ausdrucken (frankfurt.de → Wohnungsgeberbestätigung) oder Vorlage aus Drive „02“. 2. Beide Namen eintragen, Einzugsdatum 01.01.2027. 3. Vermieter unterschreiben lassen, Original mitnehmen. 4. Ins Drive „01 Verträge“, Original in die Dokumentenmappe für die Ummeldung.",
+    "need": "Formular, Vermieter mit Stift.",
+    "law": "§ 19 BMG: Der Wohnungsgeber muss die Bestätigung innerhalb von zwei Wochen nach Einzug ausstellen; Verweigerung ist eine Ordnungswidrigkeit (bis 1.000 €). Ummeldung binnen 14 Tagen nach Einzug (§ 17 BMG).",
+    "traps": "Nur einen Namen eintragen – dann kann sich nur einer ummelden. Elektronische Bestätigung durch den Vermieter ist möglich, aber in Frankfurt selten – auf Papier bestehen."
+   }
+  },
+  {
+   "id": "kuend-s",
+   "phase": 2,
+   "title": "Wohnung Sebastian kündigen – Zugang bis Mo 5.10.",
+   "owner": "S",
+   "offset_days": -88,
+   "critical": true,
+   "type": "assist",
+   "blocked_by": [
+    "vertrag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Kündigungsschreiben aus Vorlage (Drive 02) – Stellplatz Nr. 42/43 mitnennen",
+    "Persönlich übergeben an Eheleute Li/Zhang, Graf-von-Stauffenberg-Allee 33, mit Empfangsquittung (Alternative: Einwurf mit Zeuge)",
+    "Schriftliche Bestätigung einfordern",
+    "Bestätigung ins Drive 01"
+   ],
+   "advice": {
+    "why": "Zugang bis Montag 05.10., sonst läuft der Vertrag einen Monat länger – 1.350 € für nichts. Zwölf Tage Zeit, ein Blatt Papier.",
+    "how": "1. Vorlage im Drive „02 Vorlagen & Schreiben“ öffnen (Link im Kommentar), Stellplatznummer und Datum eintragen. 2. Drucken, eigenhändig unterschreiben. 3. Persönlich bei Dr. Li / Dr. Zhang übergeben, Empfangsabschnitt unterschreiben lassen – oder Einwurf mit Zeuge, der Datum/Uhrzeit notiert. 4. Kopie + Empfangsbestätigung ins Drive. 5. Schriftliche Bestätigung des Vermieters einfordern; kommt sie nicht binnen zwei Wochen, nachfragen.",
+    "need": "Vorlage, Drucker, Stift, 20 Minuten Weg.",
+    "law": "§ 568 BGB Schriftform: Original mit Unterschrift, keine E-Mail, kein Scan. § 573c: drei Monate zum Monatsende, Zugang bis 3. Werktag. Zugang = Brief ist im Machtbereich des Empfängers (Briefkasten) zu einer Zeit, zu der mit Leerung zu rechnen ist – Einwurf abends zählt erst am nächsten Tag. Stellplatz laut § 17.1 mit dem Wohnraummietvertrag verbunden – ein Schreiben genügt, beides nennen.",
+    "traps": "Einschreiben mit Rückschein: Wird nicht angenommen, gilt es als nicht zugegangen. Einwurf-Einschreiben ist besser, persönliche Übergabe am besten. Nur eine Unterschrift, wenn zwei Mieter im Vertrag stehen – hier nicht der Fall, aber prüfen."
+   }
+  },
+  {
+   "id": "kuend-a",
+   "phase": 2,
+   "title": "Wohnung Anna kündigen – Zugang bis Mo 5.10.",
+   "owner": "A",
+   "offset_days": -88,
+   "critical": true,
+   "type": "assist",
+   "blocked_by": [
+    "vertrag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Kündigungsschreiben aus Vorlage (Drive 02)",
+    "Persönlich übergeben an Hausverwaltung Bröker, Schlossstr. 124, mit Empfangsquittung",
+    "Schriftliche Bestätigung einfordern",
+    "Bestätigung ins Drive 01"
+   ],
+   "advice": {
+    "why": "Zugang bei der Hausverwaltung bis Montag 05.10., sonst 850 € extra für den Januar. Gleicher Ablauf wie bei Sebastian, anderer Empfänger.",
+    "how": "1. Vorlage im Drive „02“ (Link im Kommentar), Nachname und Datum eintragen. 2. Drucken, eigenhändig unterschreiben. 3. Bei Hausverwaltung Bröker, Schloßstraße 124, persönlich abgeben – Öffnungszeiten vorher prüfen –, Empfangsabschnitt stempeln lassen. 4. Kopie ins Drive. 5. Bestätigung einfordern.",
+    "need": "Vorlage, Drucker, Stift, Fahrt nach Bockenheim.",
+    "law": "§ 568, § 573c BGB wie bei Sebastian. Kündigung an die Hausverwaltung genügt, wenn sie im Vertrag als Verwalterin/Empfangsbevollmächtigte genannt ist – ist sie. Zur Sicherheit „z. Hd. Herrn Hess c/o Bröker“.",
+    "traps": "§ 1.2 verlangt eine Abmeldebestätigung binnen zwei Wochen – die gibt es bei Umzug innerhalb Deutschlands nicht mehr; die Meldebescheinigung der neuen Adresse erfüllt den Zweck. Steht so in der Vorlage."
+   }
+  },
+  {
+   "id": "protokolle-alt",
+   "phase": 2,
+   "title": "Einzugs-Übergabeprotokolle beider Altwohnungen heraussuchen (Zustand bei Einzug, Schlüsselanzahl) – ins Drive",
+   "owner": "B",
+   "offset_days": -85,
+   "critical": true,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Wer beweisen muss, dass die Wohnung unrenoviert übernommen wurde, ist der Mieter (BGH VIII ZR 277/16). Ohne Einzugsprotokoll gilt im Zweifel: renoviert übergeben – dann muss Anna nach § 16.4 renovieren.",
+    "how": "1. Ordner, Mailpostfach, alte Umzugskartons durchsuchen: Übergabeprotokoll vom Einzug, Fotos vom Einzugstag, Mailverkehr mit dem Vermieter über Mängel. 2. Alles ins Drive „04 Protokolle & Belege“. 3. Nichts gefunden: Vermieter/Verwaltung um Kopie bitten – die haben es meist. 4. Schlüsselanzahl notieren, die ihr damals bekommen habt.",
+    "need": "Zeit zum Suchen, Zugriff auf alte Mails.",
+    "law": "Übergabeprotokoll ist keine Pflicht, aber das zentrale Beweismittel. Fehlt es, gilt für Schäden die Vermutung des vertragsgemäßen Zustands bei Übergabe – zu Lasten des Mieters.",
+    "traps": "Fotos ohne Datum sind wenig wert – Metadaten prüfen. Das Protokoll des Vermieters kann Mängel verschweigen, die ihr damals per Mail nachgemeldet habt – die Mails sind dann das Protokoll."
+   }
+  },
+  {
+   "id": "schoenheit",
+   "phase": 2,
+   "title": "Schönheitsreparaturen-Pflicht prüfen: Sebastian §7 (neu übernommen), Anna §16.4 (nur bei renovierter Übergabe)",
+   "owner": "B",
+   "offset_days": -80,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [
+    "protokolle-alt"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Sebastian: Klausel vermutlich wirksam – Renovierung einplanen, Kostenzeile geschätzt",
+    "Anna: Protokoll entscheidet – Dübellöcher, helle Wände, Endreinigung sind ohnehin Pflicht"
+   ],
+   "advice": {
+    "why": "Zwischen 0 € und 1.500 € pro Wohnung liegt die Frage, ob ihr streichen müsst. Die Antwort steht in der Klausel und im Einzugsprotokoll, nicht im Gefühl.",
+    "how": "Sebastian (§ 7): Klausel lesen – flexible Fristen („in der Regel“) sind wirksam, starre unwirksam. Bei wirksamer Klausel: nur was nach Fristen und Zustand fällig ist, meist Wände/Decken in stark genutzten Räumen. Angebot Maler oder selbst. Anna (§ 16.4): gilt nur bei renovierter Übergabe → Protokoll entscheidet. Unabhängig davon: Dübellöcher schließen, helle Farben zurück (§ 16.4), Endreinigung (§ 27.5). Beide: Kostenzeile in Finanzen anpassen.",
+    "need": "Beide Verträge, Einzugsprotokolle, ggf. Fotos vom aktuellen Zustand.",
+    "law": "Unwirksam: starre Fristen, Endrenovierungsklausel, Quotenabgeltung (BGH VIII ZR 242/13), Vorgabe bestimmter Farben während der Mietzeit. Wirksam: Rückgabe in neutralen, hellen Farben; Beseitigung von Schäden über normale Abnutzung hinaus. Bei unrenoviert übernommener Wohnung ohne Ausgleich: keine Renovierungspflicht (BGH VIII ZR 185/14).",
+    "traps": "Aus Angst vor Streit „einfach alles streichen“ – oft 800 € umsonst. Umgekehrt: Bohrlöcher offen lassen, weil „normale Abnutzung“ – sind es nicht."
+   }
+  },
+  {
+   "id": "bidet",
+   "phase": 2,
+   "title": "Bidet fachmännisch wieder montieren lassen (Vertrag §17.9)",
+   "owner": "S",
+   "offset_days": -10,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Installateur anfragen, Termin vor Übergabe",
+    "Kostenzeile geschätzt"
+   ],
+   "advice": {
+    "why": "§ 17.9: Das Bidet wurde abgebaut, muss fachmännisch zurück. Ohne Rückbau behält der Vermieter Kaution ein und beauftragt selbst – teurer.",
+    "how": "1. Installateur anfragen (Anschlüsse liegen, Bidet vorhanden?), Termin vor dem 31.12., idealerweise Mitte Dezember. 2. Rechnung mit Beschreibung „Montage Bidet, Anschluss Wasser/Abwasser“ – als Handwerkerleistung steuerlich absetzbar. 3. Foto nach Montage, ins Drive. 4. Im Übergabeprotokoll erwähnen lassen.",
+    "need": "Das Bidet (falls eingelagert), Installateur, ~200–300 €.",
+    "law": "Vertragliche Rückbaupflicht ist wirksam, wenn der Umbau nur mit Zustimmung erfolgte und der Rückbau vereinbart wurde – hier ausdrücklich. Handwerkerleistungen: 20 % der Arbeitskosten bis 1.200 € Steuerermäßigung (§ 35a EStG).",
+    "traps": "Selbst montieren: bei Wasserschaden haftet ihr, und „fachmännisch“ ist eine Vertragsbedingung. Termin im Dezember zu spät suchen – Handwerker sind vor Weihnachten voll."
+   }
+  },
+  {
+   "id": "duebel",
+   "phase": 2,
+   "title": "Uhlandstr.: Dübellöcher schließen, Wände in hellen Farben zurückgeben (§16.4)",
+   "owner": "A",
+   "offset_days": -5,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "§ 16.4 verlangt geschlossene Dübellöcher und helle Wände bei Rückgabe – unabhängig davon, ob renoviert übernommen wurde. Ein Wochenende Arbeit, sonst Kautionsabzug.",
+    "how": "1. Dübel ziehen (Schraube eindrehen, mit Zange ziehen), Löcher mit Spachtelmasse füllen, schleifen. 2. Stellen überstreichen; bei vielen Löchern oder dunklen Wänden ganze Wand. 3. Vorher-Nachher-Fotos. 4. Farbe: Weiß oder das, was drin war.",
+    "need": "Spachtel, Schleifpapier, weiße Wandfarbe, Rolle, Abdeckfolie – ~60 €.",
+    "law": "Dübellöcher in üblicher Zahl sind vertragsgemäßer Gebrauch; die Pflicht zum Schließen ergibt sich hier aus dem Vertrag. Farbige Wände müssen in neutralen Farben zurückgegeben werden (BGH VIII ZR 416/12).",
+    "traps": "Nicht am letzten Tag – Spachtel muss trocknen. Fliesenlöcher im Bad zählen nicht als Dübellöcher (Silikon, nicht Spachtel)."
+   }
+  },
+  {
+   "id": "kueche",
+   "phase": 2,
+   "title": "Küche: Rückbaupflicht in beiden Altverträgen prüfen; mitnehmen / Ablöse / entsorgen entscheiden",
+   "owner": "B",
+   "offset_days": -56,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Ablöse nur mit schriftlicher Vermieterzustimmung",
+    "Sebastian: Einbauküche ist Vermietereigentum (Mietanteil 50 €) – bleibt"
+   ],
+   "advice": {
+    "why": "Sebastians Küche gehört dem Vermieter (Mietanteil 50 €) und bleibt. Annas Küche: Rückbaupflicht prüfen – eine Ablöse an den Nachmieter spart Entsorgung und bringt Geld, geht aber nur mit Vermieterzustimmung.",
+    "how": "1. Annas Vertrag: gehört die Küche zur Wohnung (dann bleibt sie) oder ist sie eigene (dann muss sie raus oder wird abgelöst)? 2. Bei eigener Küche: Vermieter fragen, ob sie bleiben darf – oft ja, wenn der Nachmieter sie will. 3. Neue Wohnung: Küche vorhanden? Wenn nein, Annas mitnehmen und Aufmaß machen (eigene Aufgabe). 4. Entscheidung in die Aufgabe kommentieren.",
+    "need": "Beide Verträge, Übergabeprotokolle, Fotos der Küchen, Grundriss neu.",
+    "law": "Ablösevereinbarungen sind erlaubt; überhöhte Ablösen (über 50 % über Zeitwert) sind unwirksam (§ 4a WoVermG). Ohne Vermieterzustimmung muss die Wohnung im Übergabezustand zurück – Küche raus.",
+    "traps": "Küche mitnehmen, die in der neuen Wohnung nicht passt (Arbeitsplatte, Anschlüsse). Ablöse mündlich vereinbaren."
+   }
+  },
+  {
+   "id": "internet",
+   "phase": 2,
+   "title": "Internet: einen Vertrag mitnehmen, der zweite läuft weiter – Umzug 6 Wochen vorher beauftragen",
+   "owner": "S",
+   "offset_days": -45,
+   "critical": true,
+   "type": "claude",
+   "blocked_by": [
+    "vertrag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Beide Verträge: Anbieter, Laufzeit, Restlaufzeit notieren",
+    "Beide Anbieter kontaktieren, bevor etwas gebucht wird",
+    "Kein Sonderkündigungsrecht beim Zusammenzug – Kostenzeile Restlaufzeit für den zweiten",
+    "Beim neuen Vermieter: liegt die Leitung vom APL zur Wohnung?",
+    "Umzugsauftrag stellen, Schalttermin bestätigen lassen"
+   ],
+   "advice": {
+    "why": "Sechs Wochen Vorlauf beim Anbieter, sonst sitzt ihr im Januar ohne Internet. Und: Beim Zusammenzug gibt es kein Sonderkündigungsrecht – einer der beiden Verträge läuft weiter.",
+    "how": "1. Beide Verträge: Anbieter, Laufzeit, Kündigungsfrist notieren (Kontext dieser Aufgabe). 2. Verfügbarkeit an der neuen Adresse prüfen (Anbieter-Check). 3. Den Vertrag mitnehmen, der länger läuft oder bessere Konditionen hat; Umzugsauftrag stellen, Schalttermin 2.–4.1. bestätigen lassen. 4. Den anderen zum nächstmöglichen Termin kündigen – Restlaufzeit als Kostenzeile. 5. Beim Vermieter fragen: Glasfaser/DSL-Leitung vom APL bis in die Wohnung vorhanden?",
+    "need": "Beide Verträge, neue Adresse, Router-Modell.",
+    "law": "§ 60 TKG: Der Anbieter muss den Vertrag am neuen Wohnort fortführen, wenn er dort leistet; kann er nicht, habt ihr ein Sonderkündigungsrecht mit 1 Monat Frist. Zusammenzug allein begründet kein Sonderkündigungsrecht. Umzugsentgelt max. die Kosten eines Neuanschlusses.",
+    "traps": "Beide kündigen und neu bestellen – Neuvertrag dauert länger als Umzug. Schalttermin am 1.1. – Feiertag, Techniker kommt nicht. Router des gekündigten Vertrags muss zurück."
+   }
+  },
+  {
+   "id": "energie",
+   "phase": 2,
+   "title": "Strom & Gas: einer nimmt mit, der andere kündigt (6 Wochen); neue Wohnung vor Einzug anmelden",
+   "owner": "B",
+   "offset_days": -42,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [
+    "vertrag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Verträge beider prüfen",
+    "Kündigung mit Umzugsdatum – Anbieter darf Fortsetzung anbieten (§41b EnWG)",
+    "Neue Wohnung: Anmeldung ab 1.1., sonst Grundversorgung",
+    "Zählernummern notieren"
+   ],
+   "advice": {
+    "why": "Strom läuft in der neuen Wohnung ab dem 1.1. über den Grundversorger, wenn niemand etwas tut – funktioniert, kostet aber mehr. Und die Altverträge enden nicht von selbst.",
+    "how": "1. Beide Verträge: Anbieter, Tarif, Laufzeit. 2. Einen mitnehmen (Umzug melden, 6 Wochen vorher), den anderen kündigen zum Auszug. 3. Neue Wohnung: Anmeldung ab 1.1. beim gewählten Anbieter, Zählernummer aus dem Übergabeprotokoll nachreichen. 4. Gas: nur, wenn die neue Wohnung Gas hat – vorher fragen. 5. Zählerstände alt und neu am Umzugstag mit Foto.",
+    "need": "Vertragsnummern, Zählernummern (alt: am Zähler, neu: bei Übergabe), Einzugsdatum.",
+    "law": "§ 41b EnWG: Bei Umzug darf der Kunde mit einer Frist von 6 Wochen kündigen, wenn der Anbieter die Belieferung an der neuen Adresse nicht zu gleichen Bedingungen fortsetzt – der Anbieter darf sie anbieten. Grundversorgung springt automatisch ein (§ 36 EnWG), kündbar mit 2 Wochen.",
+    "traps": "Vertrag kündigen, obwohl der Neuvertrag erst in 8 Wochen beginnt – dann Grundversorgung. Zählerstand nicht dokumentiert – dann schätzt der Versorger."
+   }
+  },
+  {
+   "id": "versicherung",
+   "phase": 2,
+   "title": "Hausrat/Haftpflicht zusammenlegen – vor dem Umzugstag melden",
+   "owner": "B",
+   "offset_days": -21,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Beide Hausratpolicen sichten – die jüngere kündigen (Doppelversicherung)",
+    "Bleibende Police: Summe auf gemeinsamen Hausrat heben, neue Adresse und m²",
+    "Haftpflicht: Partner namentlich aufnehmen",
+    "Kfz-Versicherung neue Adresse"
+   ],
+   "advice": {
+    "why": "Zwei Hausratversicherungen für einen Haushalt sind eine zu viel – und keine gilt automatisch für die neue Adresse. Beim Umzug ist die jüngere Police kündbar.",
+    "how": "1. Beide Policen sichten: Versicherungssumme, Beitrag, Beginn. 2. Die jüngere kündigen (Doppelversicherung, außerordentlich möglich), die ältere behalten und auf neue Adresse, m² und gemeinsamen Hausrat anpassen (Summe: ~650 €/m² Faustregel). 3. Haftpflicht: eine Familien-/Partnerpolice, Partner namentlich aufnehmen. 4. Kfz: neue Adresse melden (Regionalklasse ändert ggf. den Beitrag). 5. Umzugsgut ist während des Umzugs meist über die alte Hausrat mitversichert – Klausel prüfen.",
+    "need": "Beide Hausrat- und Haftpflichtpolicen, neue Wohnfläche.",
+    "law": "Bei Zusammenzug zweier Hausratversicherungen kann die jüngere wegen Doppelversicherung außerordentlich gekündigt werden (§ 78 VVG). Hausrat gilt bis zu zwei Monate nach Umzug in beiden Wohnungen (übliche Klausel).",
+    "traps": "Unterversicherung durch zusammengelegten Hausrat: Summe muss neu. Haftpflicht des Partners läuft weiter, obwohl er in deiner Police mitversichert ist – kündigen."
+   }
+  },
+  {
+   "id": "rundfunk",
+   "phase": 2,
+   "title": "Rundfunkbeitrag: ein Beitragskonto abmelden (mit Nachweis des anderen), das andere ummelden – VOR dem Auszug",
+   "owner": "A",
+   "offset_days": -14,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Ein Haushalt, ein Beitrag. Ohne Abmeldung zahlt ihr weiter doppelt – und der Beitragsservice erstattet nicht rückwirkend.",
+    "how": "1. Entscheiden, wessen Beitragskonto bleibt. 2. Der andere meldet ab: rundfunkbeitrag.de → Abmelden → Grund „Zusammenzug“, Beitragsnummer des bleibenden Kontos angeben. 3. Das bleibende Konto auf die neue Adresse ummelden. 4. Bestätigungen ins Drive.",
+    "need": "Beide Beitragsnummern, neue Adresse, Einzugsdatum.",
+    "law": "§ 2 RBStV: ein Beitrag je Wohnung. Abmeldung wirkt frühestens zum Ende des Monats, in dem sie eingeht (§ 8 RBStV). Die Abmeldung muss den Wegzug nachweisen – Beitragsnummer des Partners genügt.",
+    "traps": "Erst nach dem Umzug abmelden – dann zahlt ihr den Januar doppelt. Abmeldung ohne Angabe des bleibenden Kontos wird abgelehnt."
+   }
+  },
+  {
+   "id": "vertraege-sichten",
+   "phase": 2,
+   "title": "Weitere laufende Verträge sichten: Zeitungen, Fitness, Streaming, Stellplatz, Bankschließfach",
+   "owner": "B",
+   "offset_days": -30,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Zeitung, Fitness, Streaming, Stellplatz, Schließfach: Alles, was an einer Adresse oder einer Person hängt, läuft nach dem Umzug weiter – doppelt oder ins Leere.",
+    "how": "1. Jeder eine Liste: Kontoauszüge der letzten drei Monate nach Abbuchungen durchgehen. 2. Je Vertrag: mitnehmen (Adresse ändern), kündigen (Frist prüfen), zusammenlegen. 3. Adressänderungen kommen in Phase 5 – hier nur entscheiden. 4. Liste als Kommentar an diese Aufgabe.",
+    "need": "Online-Banking, 30 Minuten.",
+    "law": "Seit 2022: Verträge nach der Erstlaufzeit monatlich kündbar (§ 309 Nr. 9 BGB); Kündigungsbutton bei Online-Verträgen Pflicht. Fitnessstudio: Umzug allein ist kein Sonderkündigungsgrund (BGH XII ZR 62/15).",
+    "traps": "Verträge, die per Lastschrift vom anderen Partner laufen, vergessen. Stellplatz Sebastian ist im Mietvertrag – geht mit der Kündigung, kein eigener Vertrag."
+   }
+  },
+  {
+   "id": "uebergabe-alt-termin",
+   "phase": 2,
+   "title": "Übergabetermine Altwohnungen für Do 31.12. vormittags vereinbaren (kein Feiertag)",
+   "owner": "B",
+   "offset_days": -21,
+   "critical": true,
+   "type": "self",
+   "blocked_by": [
+    "kuend-s",
+    "kuend-a"
+   ],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Ohne vereinbarten Termin kommt der Vermieter am 2.1. und rechnet zwei Tage Nutzungsentschädigung – oder gar nicht, und ihr habt keinen Nachweis der Rückgabe.",
+    "how": "1. Nach Kündigungsbestätigung: Termin Do 31.12. vormittags vorschlagen, für beide Wohnungen zeitlich versetzt (9 Uhr Uhlandstr., 11 Uhr Eugen-Kaufmann). 2. Schriftlich bestätigen lassen (Mail reicht). 3. Wer kommt: Vermieter selbst oder Verwaltung? Zeuge auf eurer Seite einplanen. 4. Zwischenablesung Heizung für Sebastian anmelden (§ 3.6).",
+    "need": "Kündigungsbestätigungen, Kalender beider, einen Zeugen.",
+    "law": "Mietende 31.12. – die Rückgabe muss bis dahin erfolgen, fällt das Ende auf einen Feiertag, gilt der nächste Werktag (§ 193 BGB). Der 31.12. ist kein Feiertag. Vermieter kann Übergabe nicht auf den 1.1. verlegen.",
+    "traps": "Beide Übergaben zur gleichen Zeit – einer allein ohne Zeuge. Schlüssel in den Briefkasten werfen ist keine Rückgabe."
+   }
+  },
+  {
+   "id": "adresse-vermieter",
+   "phase": 2,
+   "title": "Neue Adresse beiden Altvermietern schriftlich mitteilen (Kaution, NK-Abrechnung)",
+   "owner": "B",
+   "offset_days": 3,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Kautionsabrechnung und letzte Nebenkostenabrechnung gehen an die Adresse, die der Vermieter kennt. Ohne neue Adresse landet die Abrechnung im leeren Briefkasten – und Fristen laufen trotzdem.",
+    "how": "1. Kurzes Schreiben oder Mail an beide Altvermieter: neue Anschrift, Bankverbindung für die Kautionsrückzahlung, Bitte um Abrechnung. 2. Ins Drive. 3. Nachsendeauftrag fängt den Rest, aber nicht Behördenpost.",
+    "need": "Neue Adresse, IBAN, zwei Minuten.",
+    "law": "Keine gesetzliche Pflicht, aber Obliegenheit: Zugang von Erklärungen des Vermieters (Abrechnung, Nachforderung) gilt bei bekannter alter Adresse als bewirkt.",
+    "traps": "Nur mündlich beim Übergabetermin sagen. Bankverbindung vergessen – dann kommt die Kaution per Rückfrage drei Wochen später."
+   }
+  },
+  {
+   "id": "inventur",
+   "phase": 3,
+   "title": "Inventur beider Wohnungen: was bleibt, was ist doppelt – nach Funktion, Zustand, Platz",
+   "owner": "B",
+   "offset_days": -63,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Grundriss neue Wohnung mit Möbelmaßen abgleichen",
+    "Doubletten vergleichen, nicht nach Besitz entscheiden",
+    "Vor Kartonbestellung und Firmenbesichtigung fertig"
+   ],
+   "advice": {
+    "why": "Umzugsfirmen kalkulieren nach Volumen, und Doubletten kosten doppelt Platz in einer Wohnung, die für einen Haushalt geschnitten ist. Die Inventur entscheidet, was der Lkw überhaupt fährt.",
+    "how": "1. Grundriss der neuen Wohnung mit Maßen (aus dem Exposé oder bei der Übergabe messen). 2. Große Möbel beider Wohnungen mit Maßen listen, auf den Grundriss legen – was nicht passt, geht nicht mit. 3. Doubletten (Sofa, Bett, Kühlschrank, Waschmaschine, Küche) nach Zustand und Passung entscheiden, nicht nach Besitz. 4. Volumen schätzen: Faustregel 10 m³ je Zimmer, bei euch ~35–45 m³. 5. Ergebnis als Kommentar an diese Aufgabe – die Umzugsfirma fragt danach.",
+    "need": "Zollstock, Grundriss, eine Stunde je Wohnung, die Entscheidung, wer bei Doubletten das letzte Wort hat.",
+    "law": "Keine. Bei Doubletten, die beide mitgebracht haben, lohnt ein Satz in der Innenvereinbarung (Phase 1).",
+    "traps": "Volumen zu klein schätzen – die Firma kommt mit dem falschen Lkw und rechnet nach. Sofa, das durchs alte Treppenhaus kam, passt nicht automatisch durchs neue: Treppenhausbreite und Aufzugmaße bei der Übergabe messen."
+   }
+  },
+  {
+   "id": "umzugsfirma",
+   "phase": 3,
+   "title": "Umzugsunternehmen: Angebote einholen und buchen – bis Mitte Oktober",
+   "owner": "B",
+   "offset_days": -77,
+   "critical": true,
+   "type": "claude",
+   "blocked_by": [
+    "inventur",
+    "umzugstag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Rahmendaten: ~35–45 m³, 3 Adressen, Etagen ohne Aufzug, 2 Beladestellen mit Reihenfolge, selbst gepackt",
+    "Verfügbarkeit KW 1 explizit erfragen, Feiertagsaufschlag ausschließen",
+    "Shortlist 3–5 Firmen (Claude)",
+    "Angebote mit ausgewiesenem Arbeitsanteil, Festpreis nach Besichtigung, 3–4 Träger",
+    "Haftungsgrenze 620 €/m³ – Transportversicherung zum Neuwert prüfen",
+    "Treppenhausschutz im Vertrag",
+    "Entscheiden, buchen, Überweisung (nie bar)"
+   ],
+   "advice": {
+    "why": "KW 1 ist für Umzugsfirmen Randzeit: viele im Urlaub, wenige Lkw, Aufschläge. Wer Mitte Oktober bucht, hat Auswahl; wer im Dezember anfragt, nimmt, was übrig ist.",
+    "how": "1. Rahmendaten festhalten: ~40 m³, drei Adressen (zwei Beladestellen, eine Entladestelle), Etagen und Aufzug je Adresse, selbst gepackt, Termin Sa 2.1. oder Mo 4.1. mit Alternative. 2. Claude liefert Shortlist 3–5 Firmen (Delegation starten). 3. Anfragen mit identischem Text an alle, Besichtigung vor Ort oder per Video verlangen. 4. Angebote vergleichen: Festpreis oder Stundensatz, Anzahl Träger, Haftung, Treppenhausschutz, Feiertags-/Wochenendzuschlag ausgewiesen. 5. Buchen, Bestätigung ins Drive, Kostenzeile auf „fest“. Nie bar zahlen.",
+    "need": "Inventur-Ergebnis, Adressen mit Etagen, Wunschtermin, Fotos schwerer Stücke (Klavier, Schrank).",
+    "law": "Haftung des Spediteurs bei Umzügen: 620 € je m³ Laderaum (§ 451e HGB) – bei 40 m³ also 24.800 €, unabhängig vom Wert. Transportversicherung zum Neuwert ist Zusatz. Schäden am Umzugsgut, die äußerlich erkennbar sind, sofort bei Ablieferung rügen, verdeckte binnen 14 Tagen (§ 451f HGB). Selbstgepackte Kartons: keine Haftung für den Inhalt bei unversehrtem Karton.",
+    "traps": "Angebot ohne Besichtigung ist eine Schätzung, kein Preis. „Ab 890 €“ im Netz heißt Stundensatz plus Anfahrt plus Zuschläge. Firma ohne Handelsregister/Impressum: Finger weg. Anzahlung über 20 % ist unüblich."
+   }
+  },
+  {
+   "id": "kueche-neu",
+   "phase": 3,
+   "title": "Neue Küche: Anschlüsse vermessen, Armatur prüfen, Elektriker für Herd 400 V für 2.–4.1. buchen",
+   "owner": "B",
+   "offset_days": -42,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Arbeitsplatte passt fast nie – Maß nehmen",
+    "Hoch-/Niederdruck-Armatur prüfen",
+    "Elektriker buchen (50–80 €/Anschluss)"
+   ],
+   "advice": {
+    "why": "Arbeitsplatte, Anschlüsse und Herd sind die drei Stellen, an denen eine mitgebrachte Küche scheitert – und der Elektriker für den 400-V-Anschluss ist in KW 1 nicht spontan zu haben.",
+    "how": "1. Bei der Übergabe oder einem Vorab-Termin: Küchenmaße, Position von Wasser, Abwasser, Herdanschluss, Steckdosen fotografieren und messen. 2. Armatur: Hochdruck (normal) oder Niederdruck (Boiler)? 3. Elektriker für Herdanschluss buchen, Termin 2.–4.1. 4. Falls Arbeitsplatte nicht passt: Zuschnitt beim Holzhandel (~1 Woche). 5. Küchenmonteur oder selbst – bei mitgebrachter Küche lohnt der Monteur der Umzugsfirma (Zusatzposition im Angebot).",
+    "need": "Maße der eigenen Küche, Fotos der Anschlüsse neu, Elektriker-Kontakt.",
+    "law": "Herdanschluss 400 V nur durch Elektrofachkraft (VDE 0100, Vermieterhaftung bei Eigenmontage). Kosten Handwerker als haushaltsnahe Handwerkerleistung absetzbar (§ 35a EStG).",
+    "traps": "Herd-Anschlussdose sitzt in der neuen Wohnung an anderer Stelle als der Herd – vorher prüfen. Spülmaschine ohne Aquastop am alten Schlauch: neuer Schlauch ist billiger als der Wasserschaden."
+   }
+  },
+  {
+   "id": "moebel-neu",
+   "phase": 3,
+   "title": "Neue Möbel: Lieferzeiten prüfen und bestellen",
+   "owner": "B",
+   "offset_days": -56,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [
+    "inventur"
+   ],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Lieferzeiten für Sofa, Bett, Schrank liegen bei 6–12 Wochen. Was nach Mitte November bestellt wird, kommt nach dem Einzug – dann schlaft ihr auf der Matratze.",
+    "how": "1. Aus der Inventur: was fehlt, was ist Doublette und wird ersetzt. 2. Priorität: Bett, Kleiderschrank, Esstisch – Rest kann warten. 3. Lieferung erst ab Einzug + 2 Tage terminieren, nie in die Umzugswoche. 4. Kostenzeilen anlegen, Stand geschätzt bis Bestellung.",
+    "need": "Grundriss mit Maßen, Budget aus dem Kostenmodell.",
+    "law": "Widerruf bei Online-Bestellung 14 Tage (§ 355 BGB), bei Maßanfertigung nicht. Lieferung „frei Bordsteinkante“ heißt: ihr tragt.",
+    "traps": "Große Möbel vor dem Einzug liefern lassen – kein Schlüssel, keine Annahme, Rücksendung kostet. Neue Möbel plus Umzug am selben Tag: zwei Lieferanten im selben Treppenhaus."
+   }
+  },
+  {
+   "id": "ausmisten1",
+   "phase": 3,
+   "title": "Ausmisten Runde 1 (Keller, Schränke, Papier) – vor der Inventur",
+   "owner": "B",
+   "offset_days": -70,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Alles, was jetzt geht, muss weder gepackt noch getragen noch bezahlt werden. Eine Runde Keller, Schränke und Papier vor der Inventur halbiert die Inventur.",
+    "how": "1. Je Wohnung ein Nachmittag, drei Stapel: bleibt, weg, unklar. 2. Unklar bekommt eine Frist – bis zur Inventur entschieden, sonst weg. 3. Papier: Verträge und Belege der letzten 10 Jahre bleiben, Rest in die Tonne. 4. Weg-Stapel direkt in die Aufgabe „Entsorgen“ (Verkauf, verschenken, Sperrmüll).",
+    "need": "Müllsäcke, Kartons für „weg“, ein Nachmittag je Wohnung.",
+    "law": "Aufbewahrungsfristen privat: Handwerkerrechnungen 2 Jahre (§ 14b UStG), Steuerunterlagen bis Bescheid bestandskräftig, Kontoauszüge 3 Jahre empfohlen. Verträge und Kautionsbelege bis 6 Monate nach Vertragsende plus Verjährung.",
+    "traps": "Ausmisten mit dem Partner in dessen Wohnung – jeder mistet seine eigene. „Unklar“ ohne Frist wird zum vierten Karton, der nie ausgepackt wird."
+   }
+  },
+  {
+   "id": "entsorgen",
+   "phase": 3,
+   "title": "Doppeltes verkaufen (Kleinanzeigen bis Anfang November), verschenken, Sperrmüll FES vor Weihnachten",
+   "owner": "B",
+   "offset_days": -42,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Inserate mit 'Abholung bis [Datum]'",
+    "FES online oder 0800 2008007-10, bis 10 m³ kostenlos, Termin Wochen voraus",
+    "Rest 2 Wochen vorher verschenken"
+   ],
+   "advice": {
+    "why": "Was der Lkw nicht fährt, muss vorher weg – und Sperrmüll in Frankfurt braucht Vorlauf. Verkaufen lohnt bis Anfang November, danach bleibt nur verschenken.",
+    "how": "1. Kleinanzeigen: mit „Abholung bis [Datum]“, Preis realistisch (ein Drittel Neupreis, gebraucht). 2. Verschenken: Nebenan, Kleinanzeigen „zu verschenken“, Sozialkaufhaus (holen ab). 3. Sperrmüll FES: online oder 0800 2008007-10, bis 10 m³ je Haushalt kostenlos, Termin 2–4 Wochen voraus, für beide Altwohnungen je ein Termin. 4. Elektroschrott: Wertstoffhof oder Händler (Rücknahmepflicht). 5. Zwei Wochen vor dem Umzug: Rest verschenken oder Sperrmüll.",
+    "need": "Fotos, Kleinanzeigen-Konto, FES-Termine, ein Samstag.",
+    "law": "FES Frankfurt: Sperrmüllabfuhr kostenlos bis 10 m³, Anmeldung Pflicht, Bereitstellung erst am Vorabend – wilder Sperrmüll kostet Bußgeld. Elektrogeräte müssen Händler ab 400 m² Fläche kostenlos zurücknehmen (ElektroG).",
+    "traps": "Sperrmülltermin auf den Umzugstag legen. Verkauf mit „Selbstabholung“ ohne Fristen – die Käufer kommen nach dem Auszug."
+   }
+  },
+  {
+   "id": "helfer",
+   "phase": 3,
+   "title": "Alternativ: Helfer anfragen und Transporter reservieren",
+   "owner": "S",
+   "offset_days": -42,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Der Plan B, falls die Firma absagt oder zu teuer ist – und für den Vorabend (Kartons ins Erdgeschoss) auch mit Firma sinnvoll.",
+    "how": "1. Vier bis sechs Leute fragen, mit konkretem Datum und Uhrzeit, nicht „hilfst du beim Umzug?“. 2. Transporter reservieren (3,5 t, 20 m³; für 40 m³ zwei Fahrten oder 7,5 t mit Führerschein C1). 3. Rückwärts planen: wer fährt, wer trägt, wer koordiniert. 4. Verpflegung als Kostenzeile.",
+    "need": "Kontakte, Führerschein (3,5 t mit B), Kreditkarte für die Kaution des Transporters.",
+    "law": "Privathelfer sind über die gesetzliche Unfallversicherung nicht abgedeckt; die Privathaftpflicht deckt Schäden, die Helfer verursachen, meist mit (Gefälligkeitsschaden-Klausel prüfen). Transporter: Vollkasko mit Selbstbeteiligung mieten.",
+    "traps": "40 m³ mit Freunden an einem Tag über drei Adressen und Etagen ohne Aufzug ist keine Gefälligkeit mehr, sondern ein Arbeitstag – ehrlich rechnen, ob die Firma nicht doch günstiger ist."
+   }
+  },
+  {
+   "id": "urlaub",
+   "phase": 3,
+   "title": "Urlaub für Umzugstage einreichen (kein gesetzlicher Sonderurlaub bei Privatumzug)",
+   "owner": "B",
+   "offset_days": -35,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [
+    "umzugstag"
+   ],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Umzug ist kein gesetzlicher Sonderurlaubsgrund; was der Arbeitgeber gibt, steht im Tarif- oder Arbeitsvertrag. Zwei Tage (Umzugstag + Folgetag) sind das Minimum, drei sind entspannt.",
+    "how": "1. Arbeits-/Tarifvertrag: „Sonderurlaub Umzug“ prüfen – im öffentlichen Dienst ein Tag bei dienstlich veranlasstem Umzug, sonst Kulanz. 2. Urlaub für 2.–5.1. einreichen, sobald der Umzugstag steht. 3. Übergabetermine 31.12. – halber Tag oder Gleitzeit.",
+    "need": "Umzugstag aus den Rahmendaten, Urlaubskonto.",
+    "law": "Kein Anspruch nach BGB; § 616 BGB (vorübergehende Verhinderung) wird für Privatumzüge von Gerichten überwiegend verneint. Tarifverträge regeln es einzeln.",
+    "traps": "Erst buchen, dann Urlaub beantragen – die Reihenfolge sollte umgekehrt sein, wenn der Arbeitgeber knapp ist."
+   }
+  },
+  {
+   "id": "material",
+   "phase": 3,
+   "title": "Kartons und Material besorgen: ~55 Kartons + 3 Kleiderkartons, Klebeband, Luftpolster, Marker",
+   "owner": "A",
+   "offset_days": -35,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Faustregel 1 Karton je 2 m²",
+    "Lieferzeit 5–7 Tage einplanen"
+   ],
+   "advice": {
+    "why": "Kartons sind das Einzige, was man nicht zu spät bestellen darf – Lieferzeit eine Woche, und ohne Kartons kein Packen.",
+    "how": "1. Menge: ~1 Karton je 2 m² Wohnfläche, bei euch ~55 plus 3 Kleiderkartons, 10 Bücherkartons (kleiner, stabiler). 2. Kaufen (Baumarkt, online, ~1,50–2,50 €/Stück) oder leihen (Umzugsfirma, Kleinanzeigen „gebraucht“). 3. Dazu: Klebeband (5 Rollen), Luftpolsterfolie, Packpapier (kein Zeitungspapier – färbt), Marker, Decken für Möbel, Stretchfolie für Schubladen. 4. Kostenzeile aktualisieren.",
+    "need": "Wohnfläche beider Wohnungen, Lieferadresse (welche Wohnung zuerst gepackt wird).",
+    "law": "Keine.",
+    "traps": "Zu große Kartons – Bücher in 60-l-Kartons wiegen 30 kg, keiner trägt sie. Gebrauchte Kartons feucht oder schwach: einmal Boden durch, alles kaputt."
+   }
+  },
+  {
+   "id": "waschmaschine",
+   "phase": 3,
+   "title": "Waschmaschine: Transportsicherung suchen, sonst beim Hersteller bestellen",
+   "owner": "S",
+   "offset_days": -28,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Bolzen vor dem ersten Waschgang wieder entfernen"
+   ],
+   "advice": {
+    "why": "Ohne Transportsicherung schlägt die Trommel beim Transport aus – Lager und Stoßdämpfer sind hin. Die Bolzen liegen bei den meisten seit dem Kauf im Keller oder sind weg.",
+    "how": "1. Transportsicherung suchen (2–4 Bolzen, oft in einer Tüte hinten an der Maschine oder im Handbuch). 2. Nicht da: beim Hersteller nach Modellnummer bestellen (~10–20 €, 1–2 Wochen). 3. Vor dem Umzug einsetzen (Rückwand, Schrauben), nach dem Aufstellen entfernen – sonst wandert die Maschine beim ersten Schleudern durch den Raum.",
+    "need": "Modellnummer (Typenschild an der Tür), Schraubenschlüssel.",
+    "law": "Keine. Bei Transport durch die Firma: Schäden an Geräten ohne Transportsicherung sind vom Haftungsausschluss meist erfasst.",
+    "traps": "Zwei Waschmaschinen mitnehmen – Inventur entscheidet vorher, welche bleibt. Bolzen nach dem Umzug drinlassen."
+   }
+  },
+  {
+   "id": "halteverbot",
+   "phase": 3,
+   "title": "Halteverbot für drei Adressen beantragen – Straßenverkehrsamt Gutleutstr. 191, für 2./3.1., nicht 1.1.",
+   "owner": "S",
+   "offset_days": -28,
+   "critical": true,
+   "type": "claude",
+   "blocked_by": [
+    "uebergabe-neu-termin",
+    "uebergabe-alt-termin",
+    "umzugstag"
+   ],
+   "anchor": "umzugstag",
+   "subtasks": [
+    "Mindestens 14 Tage Vorlauf, besser 3–4 Wochen",
+    "Schilder 3 volle Werktage vorher – bis 29.12.; klären, ob zwischen den Jahren aufgestellt wird",
+    "Genehmigung + Aufstellprotokoll am Umzugstag gedruckt dabei",
+    "Kostenzeile ~150 €/Adresse"
+   ],
+   "advice": {
+    "why": "Ohne Halteverbot steht der Lkw in zweiter Reihe oder 200 m entfernt – jede Trage-Minute mehr kostet bei der Firma Geld. Frankfurt braucht Vorlauf, und um Silvester stellen die Schilderdienste nicht.",
+    "how": "1. Antrag Straßenverkehrsamt Frankfurt (Gutleutstraße 191, online über frankfurt.de „Halteverbotszone für Umzug“), je Adresse einer, Datum 2.1. bzw. 4.1., Länge 15–20 m für Lkw. 2. Genehmigung ~1–2 Wochen, Gebühr ~30–60 € je Adresse. 3. Schilderdienst beauftragen (~80–120 € je Adresse) – Aufstellung mindestens 72 Stunden vorher, also bis 29./30.12.; klären, ob der Dienst zwischen den Jahren stellt. 4. Aufstellprotokoll mit Datum/Foto vom Dienst verlangen. 5. Am Umzugstag: Genehmigung gedruckt dabei, bei Falschparker Ordnungsamt (069 212-44 000) – Abschleppen nur mit Protokoll.",
+    "need": "Drei Adressen mit Hausnummern, Datum und Uhrzeit, Lkw-Länge von der Firma.",
+    "law": "§ 45 StVO, Sondernutzung. Halteverbotsschilder müssen 72 Stunden (drei volle Tage) vor Gültigkeit stehen, sonst ist Abschleppen unzulässig (BVerwG 3 C 25.16). Aufstellprotokoll ist der Nachweis.",
+    "traps": "Antrag für den 1.1. – Feiertag, wird nicht gestellt. Zone zu kurz. Aufstellung vergessen zwischen den Jahren – nachfragen, ob der Dienst am 29./30.12. arbeitet. Viele Umzugsfirmen bieten das als Paket, oft günstiger."
+   }
+  },
+  {
+   "id": "packen",
+   "phase": 3,
+   "title": "Packen: Beginn 4 Wochen vorher (Bücher, Saisonkleidung), erste Kartons fertig 1 Woche vorher",
+   "owner": "B",
+   "offset_days": -28,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [
+    "Kartonliste führen: Nummer, Raum, Inhalt, zerbrechlich (Google Sheet im Drive)",
+    "Bücherkartons halb voll, max. 20 kg",
+    "Zerbrechliches doppelt polstern, 'Glas/Oben' – Spedition haftet nicht für Bruch in selbstgepackten Kartons",
+    "Schrauben pro Möbel in beschrifteten Beutel ans Möbel tapen",
+    "Kaffeemaschine zuletzt"
+   ],
+   "advice": {
+    "why": "Vier Wochen klingen lang, sind es nicht: Wer am Wochenende vor dem Umzug noch packt, trägt am Umzugstag Tüten statt Kartons. Systematisch gepackt ist auch schnell ausgepackt.",
+    "how": "1. Reihenfolge: Bücher, Saisonkleidung, Deko, Keller zuerst; Küche und Bad zuletzt; Kaffeemaschine als allerletztes. 2. Jeder Karton: Nummer, Zielraum, Inhalt in drei Worten, „zerbrechlich/oben“ – Kartonliste als Google Sheet im Drive. 3. Bücherkartons halb voll, max. 20 kg; Zerbrechliches doppelt gepolstert, senkrecht (Teller!). 4. Schrauben je Möbel in Beutel, ans Möbel getapt. 5. Kabel fotografieren, dann abziehen. 6. Erste Kartons eine Woche vorher fertig, Rest bis zum Vorabend.",
+    "need": "Kartons, Material, Kartonliste (Vorlage von Claude), zwei Wochenenden.",
+    "law": "Selbstgepackte Kartons: Spedition haftet nicht für Bruch bei unversehrtem Karton (§ 451d HGB). Wertsachen und Dokumente sind vom Transportvertrag meist ausgeschlossen.",
+    "traps": "Kartons ohne Zielraum – am Umzugstag fragt jeder Träger „wohin?“. Zu volle Kartons. Alles Wichtige „irgendwo“ – Erstversorgungskiste ist eine eigene Aufgabe."
+   }
+  },
+  {
+   "id": "nachsende",
+   "phase": 3,
+   "title": "Nachsendeauftrag je Person direkt bei deutschepost.de (6 Monate 31,90 €), spätestens 5 Werktage vorher",
+   "owner": "B",
+   "offset_days": -10,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [
+    "Liste führen: jeder nachgesendete Absender wird sofort umgestellt",
+    "Behördenpost wird nicht nachgesendet – Finanzamt, Gerichte direkt informieren"
+   ],
+   "advice": {
+    "why": "Post, die an die alte Adresse geht, ist nach dem Auszug weg. Der Nachsendeauftrag fängt sie sechs Monate – und zeigt euch, wen ihr noch nicht umgemeldet habt.",
+    "how": "1. Je Person: deutschepost.de → Nachsendeservice → 6 Monate (31,90 €) oder 12 Monate (39,90 €), Start = Umzugstag, mindestens 5 Werktage vorher beantragen. 2. Nur direkt bei der Post – Vergleichsportale kosten mehr für dieselbe Leistung. 3. Jede nachgesendete Sendung: Absender sofort umstellen (Liste in Aufgabe „Adressänderungen“). 4. Bestätigung ins Drive.",
+    "need": "Alte und neue Adresse, Umzugsdatum, Kreditkarte/PayPal.",
+    "law": "Behördenpost (Gerichte, Finanzamt, Polizei) wird nicht nachgesendet – Finanzamt direkt informieren. Nachsendung gilt nicht für Pakete anderer Dienste (DPD, Hermes).",
+    "traps": "Zu spät beantragt – Post in der ersten Januarwoche landet im leeren Briefkasten. Nachsendung als Ersatz für Ummeldung nehmen – nach sechs Monaten ist Schluss."
+   }
+  },
+  {
+   "id": "renovierung",
+   "phase": 3,
+   "title": "Renovierung/Malerarbeiten neue Wohnung organisieren (Handwerkerleistung §35a: 20 % bis 1.200 €)",
+   "owner": "B",
+   "offset_days": -14,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [
+    "uebergabe-neu-termin"
+   ],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Streichen geht nur in der leeren Wohnung – also zwischen Schlüssel und Möbelwagen. Das Fenster ist klein, und Maler brauchen im Dezember Vorlauf.",
+    "how": "1. Bei der Übergabe neu: Zustand der Wände prüfen, Fotos. 2. Entscheiden: streichen ja/nein, selbst oder Maler. 3. Maler: Angebot bis Mitte November, Termin zwischen Schlüssel (Übergabe neu) und Umzugstag – bei Vorab-Schlüssel 28.12. realistisch. 4. Selbst: Farbe, Rollen, Abdeckung, ein Wochenende, zwei Personen. 5. Rechnung als Handwerkerleistung aufbewahren.",
+    "need": "Wandflächen (m²), Zustand, Terminfenster, Budget.",
+    "law": "Streichen der neuen Wohnung ist freiwillig – Vermieter muss renoviert oder nach Vertrag übergeben. Farbwahl während der Mietzeit frei; Rückgabe in neutralen Tönen (BGH VIII ZR 416/12). § 35a EStG: 20 % der Arbeitskosten bis 1.200 €.",
+    "traps": "Streichen mit Möbeln drin. Dunkle Wände wählen und beim Auszug zweimal streichen müssen."
+   }
+  },
+  {
+   "id": "aufzug",
+   "phase": 3,
+   "title": "Aufzug neue Wohnung (falls vorhanden) reservieren; Aushang an drei Adressen 1 Woche vorher",
+   "owner": "S",
+   "offset_days": -14,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Ein reservierter Aufzug halbiert die Tragezeit; ein Aushang verhindert, dass die Nachbarn am Umzugstag den Hausflur mit Fahrrädern verstellen oder die Polizei rufen.",
+    "how": "1. Hausverwaltung neu fragen: Aufzug für den Umzugstag reservieren, Schutzmatten? Schlüssel für Lastfahrt? 2. Aushang an drei Adressen eine Woche vorher: Datum, Uhrzeit, Halteverbot, Entschuldigung für Lärm, Handynummer. 3. Aufzug-Innenmaße für die Firma notieren.",
+    "need": "Kontakt Hausverwaltung neu, drei Aushänge (Vorlage von Claude).",
+    "law": "Umzugslärm ist tagsüber werktags zumutbar; sonntags/feiertags nicht – deshalb nicht am 1.1. Hausordnung regelt oft Umzugszeiten.",
+    "traps": "Aufzug am Umzugstag ohne Absprache blockieren – Beschwerde bei der Verwaltung noch bevor ihr eingezogen seid."
+   }
+  },
+  {
+   "id": "umzugstag-ablauf",
+   "phase": 3,
+   "title": "Umzugstag-Ablauf festlegen: Reihenfolge der drei Adressen, wer ist wo, Verpflegung",
+   "owner": "B",
+   "offset_days": -7,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [
+    "Start 8 Uhr (dunkel ab 16:30), Ende vor 22 Uhr",
+    "Wetter-Puffer 1 Tag",
+    "Streusalz + Bodenschutz an drei Adressen",
+    "Trinkgeld 5–10 €/Helfer, heiße Getränke",
+    "Möbelstellplan zum Aufhängen"
+   ],
+   "advice": {
+    "why": "Drei Adressen, eine Firma, zwei Personen: Ohne Plan steht jemand an der falschen Tür. Der Ablauf ist eine Seite Papier, die am Umzugstag jeder in der Hand hat.",
+    "how": "1. Reihenfolge: welche Altwohnung zuerst beladen (die mit den großen Möbeln zuletzt, damit sie im Lkw hinten und beim Entladen vorn sind – die Firma weiß das). 2. Wer ist wo: einer an der Beladestelle, einer an der Entladestelle mit Möbelstellplan. 3. Zeiten: 8 Uhr Start, es wird ab 16:30 dunkel. 4. Verpflegung, Trinkgeld (5–10 €/Träger), heiße Getränke, Streusalz, Bodenschutz. 5. Ablaufblatt drucken – die App hat ein Umzugstag-Druckblatt.",
+    "need": "Umzugstag, Adressen, Firmen-Kontakt, Möbelstellplan, Kartonliste.",
+    "law": "Keine.",
+    "traps": "Beide an derselben Adresse, keiner beim Entladen. Kein Möbelstellplan – „stellt es erstmal irgendwohin“ heißt zweimal tragen."
+   }
+  },
+  {
+   "id": "nachbarn",
+   "phase": 3,
+   "title": "Nachbarn/Hausverwaltung informieren",
+   "owner": "A",
+   "offset_days": -7,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Nachbarn, die Bescheid wissen, halten den Flur frei und beschweren sich nicht. Eine Woche vorher, mit Datum und Uhrzeit.",
+    "how": "1. Aushang (siehe „Aufzug“) an beiden Altadressen und der neuen. 2. Direkte Nachbarn persönlich ansprechen. 3. Hausverwaltung neu über Einzugsdatum informieren (Namensschilder, Schlüssel Müllraum).",
+    "need": "Drei Aushänge, fünf Minuten je Haus.",
+    "law": "Keine.",
+    "traps": "Vergessen, dass die neue Nachbarschaft der erste Eindruck ist – der Aushang mit Handynummer und „Entschuldigung für den Lärm“ macht ihn."
+   }
+  },
+  {
+   "id": "werkzeug",
+   "phase": 3,
+   "title": "Werkzeug, Bohrmaschine, Baustrahler, Verlängerungskabel griffbereit",
+   "owner": "S",
+   "offset_days": -7,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Am Umzugstag ist das Werkzeug im Karton 37 – und keiner weiß, welcher. Eine Kiste, die nie in den Lkw geht.",
+    "how": "1. Kiste mit: Akkuschrauber + Bits, Inbus-Satz, Schraubendreher, Zange, Hammer, Cutter, Zollstock, Wasserwaage, Kabelbinder, Klebeband, Müllsäcke, Baustrahler, Verlängerungskabel, Mehrfachsteckdose, Taschenlampe, Handschuhe. 2. Fährt im Pkw. 3. Nach dem Umzug bleibt sie zwei Wochen griffbereit.",
+    "need": "Eine Kiste, 20 Minuten.",
+    "law": "Keine.",
+    "traps": "Akkus nicht geladen. Inbus-Schlüssel des Möbelherstellers weggeworfen."
+   }
+  },
+  {
+   "id": "erstversorgung",
+   "phase": 3,
+   "title": "Erstversorgungskiste: Werkzeug, Ladegeräte, Toilettenpapier, Bettzeug, Kaffee, Medikamente",
+   "owner": "B",
+   "offset_days": -2,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Die erste Nacht in der neuen Wohnung ohne Bettzeug, Toilettenpapier und Kaffee ist die, an die man sich erinnert. Eine Kiste je Person plus eine für den Haushalt – im Pkw, nicht im Lkw.",
+    "how": "1. Haushalt: Toilettenpapier, Handseife, Küchenrolle, Müllsäcke, Kaffee/Tee + Maschine oder Kessel, zwei Tassen, Teller, Besteck, Messer, Schwamm, Spülmittel, Handtücher, Bettzeug, Ladegeräte, Verlängerungskabel, Glühbirne, Erste-Hilfe. 2. Je Person: Kleidung für drei Tage, Kulturbeutel, Medikamente, Laptop, Dokumente. 3. Packen am Vortag, deutlich markieren, zuletzt ins Auto.",
+    "need": "Zwei Kisten, eine Stunde.",
+    "law": "Keine.",
+    "traps": "Kiste im Lkw, ganz hinten. Medikamente im Kulturbeutel im Karton „Bad 3“."
+   }
+  },
+  {
+   "id": "lampen",
+   "phase": 3,
+   "title": "Lampen abnehmen, Kabel mit Lüsterklemme isolieren, Dose abdecken, pro Raum eine Fassung lassen",
+   "owner": "B",
+   "offset_days": -2,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Lampen gehören dem Mieter, die Decke dem Vermieter – und eine offene Dose mit blanken Drähten ist beim Übergabetermin ein Mangel und eine Gefahr.",
+    "how": "1. Sicherung aus, Spannungsprüfer. 2. Lampe ab, Drähte einzeln mit Lüsterklemme isolieren, Dose mit Abdeckung schließen. 3. Pro Raum eine einfache Fassung mit Birne lassen, wenn die Übergabe abends ist – oder die Deckenleuchte, die beim Einzug drin war, wieder hin. 4. Neue Wohnung: Lampen erst montieren, wenn die Möbel stehen.",
+    "need": "Lüsterklemmen, Abdeckkappen, Spannungsprüfer, Leiter.",
+    "law": "Eigene Deckenleuchten sind Mieter-Eigentum und werden mitgenommen; die Anschlussdose muss gefahrlos hinterlassen werden (Verkehrssicherungspflicht). Beim Einzug vorhandene Leuchten gehören dem Vermieter.",
+    "traps": "Sicherung an. Blanke Drähte in der Dose – der Vermieter lässt es vom Elektriker richten und zieht es von der Kaution ab."
+   }
+  },
+  {
+   "id": "dokumente",
+   "phase": 3,
+   "title": "Wertsachen, Dokumente, Pflanzen, Elektronik separat im Pkw – nicht im Lkw; Pflanzen 6 Tage vorher letztmals gießen",
+   "owner": "B",
+   "offset_days": -1,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Was im Lkw verloren geht, ersetzt die Haftung mit 620 €/m³ – ein Ordner mit Verträgen und Ausweisen ist damit nicht ersetzt. Pflanzen erfrieren im Lkw, Elektronik leidet.",
+    "how": "1. Dokumentenmappe: Ausweise, Verträge (beide alt, neu), Versicherungspolicen, Kautionsbelege, Wohnungsgeberbestätigung, Übergabeprotokolle, Umzugsfirma-Vertrag, Halteverbots-Genehmigungen. 2. Wertsachen, Schmuck, Bargeld, Laptops, Festplatten. 3. Pflanzen: sechs Tage vorher letztmals gießen, im Pkw, bei Frost in Decken. 4. Alles am Vorabend ins Auto oder in einen Raum, der als „nicht Lkw“ markiert ist.",
+    "need": "Eine Mappe, ein Autokofferraum.",
+    "law": "Wertsachen, Geld, Dokumente sind in Umzugsverträgen üblicherweise von der Haftung ausgeschlossen (AGB nach § 451g HGB).",
+    "traps": "Dokumente „zur Sicherheit“ in einen Karton – und die Genehmigung fürs Halteverbot ist im Lkw, wenn der Falschparker kommt."
+   }
+  },
+  {
+   "id": "geraete",
+   "phase": 3,
+   "title": "Kühlschrank abtauen, Waschmaschine entleeren (Flusensieb, Schläuche) und sichern, Tür tapen",
+   "owner": "B",
+   "offset_days": -1,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [
+    "Kühlschrank nach Transport 2 h stehend / 12 h liegend warten"
+   ],
+   "advice": {
+    "why": "Ein abgetauter Kühlschrank ist trocken, ein nasser tropft durch den Lkw auf eure Kartons. Die Waschmaschine hat einen Liter Wasser in Schlauch und Sieb.",
+    "how": "1. Kühlschrank/Gefrierfach 24 Stunden vorher ausschalten, abtauen, trocken wischen, Türen offen. 2. Waschmaschine: Wasser abstellen, Zulaufschlauch ab, Flusensieb leeren, Ablaufschlauch entleeren, Transportsicherung rein, Tür und Schläuche mit Tape sichern. 3. Spülmaschine: Wasser ab, Restwasser aus dem Sumpf. 4. Nach dem Transport: Kühlschrank 2 Stunden stehend warten (liegend transportiert: 12 Stunden) vor dem Einschalten.",
+    "need": "Handtücher, Eimer, Tape, Transportsicherung.",
+    "law": "Keine.",
+    "traps": "Kühlschrank liegend transportieren und sofort einschalten – Kompressoröl im Kühlkreislauf, Gerät kaputt."
+   }
+  },
+  {
+   "id": "heizung-neu",
+   "phase": 3,
+   "title": "Neue Wohnung: Heizung am Vortag anstellen lassen, Strom/Gas ab 1.1. bestätigt",
+   "owner": "B",
+   "offset_days": -1,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Eine Wohnung, die im Januar zwei Tage kalt stand, braucht einen Tag zum Aufheizen – und wer bei 12 Grad Kartons auspackt, packt schlecht. Strom muss ab dem ersten Tag laufen.",
+    "how": "1. Beim Vermieter: Heizung am Vortag anstellen (Zentralheizung) oder beim Vorab-Schlüssel selbst auf 18 Grad. 2. Stromanmeldung bestätigt (Aufgabe Energie) – Grundversorgung springt sonst ein, funktioniert aber. 3. Warmwasser prüfen.",
+    "need": "Vermieter-Kontakt, Zählernummer.",
+    "law": "Keine.",
+    "traps": "Thermostat auf 5 (Frostschutz) vom Vormieter, Heizung „geht nicht“ – erst das Thermostat prüfen, dann den Vermieter anrufen."
+   }
+  },
+  {
+   "id": "wohnung-neu-check",
+   "phase": 3,
+   "title": "Neue Wohnung vor dem Möbelwagen: Schlüssel testen, Zählerstände lesen, Fotos, Mängel notieren",
+   "owner": "B",
+   "offset_days": 0,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Zehn Minuten vor dem Möbelwagen: Was jetzt nicht auffällt, wird später euch zugerechnet. Und wenn ein Schlüssel nicht passt, muss der Vermieter kommen, nicht die Träger warten.",
+    "how": "1. Alle Schlüssel testen (Haustür, Wohnung, Keller, Briefkasten, Müllraum). 2. Zählerstände Strom/Gas/Wasser mit Zählernummer fotografieren. 3. Rundgang mit Handy-Video: jeder Raum, Böden, Wände, Fenster, Sanitär, Herd, Steckdosen. 4. Mängel in die Übergabe-Aufgabe kommentieren. 5. Möbelstellplan aufhängen.",
+    "need": "Handy mit vollem Akku, Übergabeprotokoll (falls schon da).",
+    "law": "Mängel, die bei Übergabe nicht protokolliert sind, gelten im Zweifel als vom Mieter verursacht – Beweislast liegt beim Vermieter nur, wenn ein Protokoll fehlt (BGH VIII ZR 190/11); Fotos mit Datum drehen das um.",
+    "traps": "Träger warten lassen, weil der Schlüssel klemmt. Video ohne Datum-Overlay – Metadaten reichen, aber prüfen."
+   }
+  },
+  {
+   "id": "uebergabe-neu",
+   "phase": 4,
+   "title": "Übergabe neue Wohnung: Protokoll mit allen Mängeln, Zählerstände mit Zählernummer, Schlüsselanzahl, Fotos, beide unterschreiben, Kopie",
+   "owner": "B",
+   "offset_days": 0,
+   "critical": true,
+   "type": "assist",
+   "blocked_by": [
+    "uebergabe-neu-termin"
+   ],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Das Übergabeprotokoll der neuen Wohnung ist eure Versicherung für die Kaution in fünf Jahren. Jeder Kratzer, der heute drinsteht, gehört nicht euch.",
+    "how": "1. Mit dem Vermieter durch jede Räume, Protokoll ausfüllen (Vorlage des Vermieters oder eure), jeder Mangel mit Ort und Foto. 2. Zählerstände mit Zählernummern, Schlüsselanzahl je Art. 3. Beide unterschreiben, Kopie sofort mitnehmen (Foto reicht nicht – Kopie). 4. Ins Drive „04 Protokolle“. 5. Nachmeldung: Mängel, die in den ersten Tagen auffallen, schriftlich binnen zwei Wochen nachmelden.",
+    "need": "Protokollvorlage, Handy, Stift, beide Mieter.",
+    "law": "Kein gesetzlicher Zwang zum Protokoll, aber: ohne Protokoll trägt der Vermieter die Beweislast für den Zustand bei Übergabe – mit Protokoll gilt das Protokoll. Versteckte Mängel unverzüglich anzeigen (§ 536c BGB).",
+    "traps": "„Das ist nur ein kleiner Kratzer“ nicht aufschreiben. Protokoll ohne Zählernummern. Schlüsselzahl nicht zählen – beim Auszug fehlt einer, den es nie gab."
+   }
+  },
+  {
+   "id": "rundgang",
+   "phase": 4,
+   "title": "Abschluss-Rundgang mit Vorarbeiter an allen drei Adressen gegen die Kartonliste; sichtbare Schäden auf den Ablieferbeleg",
+   "owner": "B",
+   "offset_days": 0,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Der Abschluss-Rundgang ist der letzte Moment, in dem ein Schaden noch der Firma zugeordnet werden kann. Danach heißt es „war schon so“.",
+    "how": "1. An jeder Beladestelle vor Abfahrt: alle Räume, Keller, Balkon leer? 2. An der Entladestelle mit dem Vorarbeiter: Kartonliste durchzählen, Möbel auf Kratzer prüfen, Wände und Treppenhaus auf Transportschäden. 3. Sichtbare Schäden sofort auf den Ablieferbeleg schreiben, bevor unterschrieben wird. 4. Foto vom Beleg.",
+    "need": "Kartonliste, Handy, fünf Minuten je Adresse.",
+    "law": "§ 451f HGB: Äußerlich erkennbare Schäden müssen spätestens bei Ablieferung angezeigt werden, sonst gilt Vermutung der vollständigen und unbeschädigten Ablieferung. Verdeckte Schäden: 14 Tage.",
+    "traps": "Ablieferbeleg unterschreiben, ohne hinzusehen – die Träger wollen Feierabend, ihr auch. Zwei Minuten kosten sonst 620 €/m³ Diskussion."
+   }
+  },
+  {
+   "id": "zaehler-melden",
+   "phase": 4,
+   "title": "Zählerstände alt und neu an Strom-/Gasanbieter und Vermieter melden – am Auszugstag, mit Foto",
+   "owner": "B",
+   "offset_days": 0,
+   "critical": true,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Der Zählerstand am Auszugstag trennt eure Rechnung von der des Nachmieters, der am Einzugstag eure von der des Vormieters. Ohne Meldung schätzt der Versorger – zu euren Ungunsten.",
+    "how": "1. Altwohnungen: Zählerstände (Strom, Gas, Wasser, Heizkostenverteiler) am Übergabetag fotografieren, ins Protokoll. 2. Neue Wohnung: dito am Einzugstag. 3. Meldung an Stromanbieter (Kundenportal: „Umzug melden“), Gas, und an beide Vermieter (Wasser/Heizung läuft über die Nebenkosten). 4. Fotos ins Drive.",
+    "need": "Zählernummern, Kundennummern, Fotos.",
+    "law": "Keine gesetzliche Frist, aber: Versorger nehmen bei fehlender Meldung Schätzwerte oder rechnen bis zur Abmeldung – und ihr zahlt den Nachmieter mit.",
+    "traps": "Zählerstand ohne Zählernummer – bei mehreren Zählern im Keller unklar, welcher eurer ist."
+   }
+  },
+  {
+   "id": "frostschutz",
+   "phase": 4,
+   "title": "Altwohnungen bis Übergabe: Heizung auf Frostschutz (Thermostat-Symbol prüfen), Hauptwasserhahn zu, Fenster zu",
+   "owner": "B",
+   "offset_days": -1,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Zwischen Auszug und Übergabe darf die Wohnung nicht einfrieren – bei geplatzten Leitungen haftet, wer die Wohnung noch hat. Heizung aus ist im Januar keine Sparmaßnahme.",
+    "how": "1. Thermostate auf Frostschutz (Schneeflocke, ~6 °C), nicht auf 0. 2. Hauptwasserhahn zu, wenn vorhanden. 3. Fenster geschlossen, Rollläden halb. 4. Beim Übergabetermin so lassen, Vermieter übernimmt.",
+    "need": "Fünf Minuten beim Verlassen.",
+    "law": "Obhutspflicht des Mieters bis zur Rückgabe (§ 241 Abs. 2 BGB) – Frostschäden durch abgestellte Heizung sind Mieterschaden.",
+    "traps": "Heizung ganz aus, „wir sind ja weg“. Fenster gekippt für „Lüften“ bis zur Übergabe."
+   }
+  },
+  {
+   "id": "klingel",
+   "phase": 4,
+   "title": "Klingel- und Briefkastenschild; alte Schilder ab, Briefkästen leeren",
+   "owner": "S",
+   "offset_days": 0,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Post und Paketboten finden euch nur mit Namen am Kasten – und der Nachsendeauftrag funktioniert nur, wenn der Postbote den Namen an der alten Adresse nicht mehr findet.",
+    "how": "1. Neue Wohnung: beide Namen an Klingel und Briefkasten (Hausverwaltung fragen, oft einheitliche Schilder). 2. Altwohnungen: eigene Schilder ab, Briefkästen leeren, Schlüssel dazu bei der Übergabe. 3. Paketstation/Nachbar für die ersten Tage.",
+    "need": "Zwei Schilder oder ein Etikettendrucker, fünf Minuten.",
+    "law": "Keine.",
+    "traps": "Nur ein Name am Kasten – Post für den anderen geht zurück."
+   }
+  },
+  {
+   "id": "technik",
+   "phase": 4,
+   "title": "Router, Lampen, Waschmaschine anschließen (Transportsicherung raus)",
+   "owner": "S",
+   "offset_days": 1,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [
+    "internet"
+   ],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Router, Licht, Waschmaschine: die drei Dinge, ohne die die Wohnung am Abend nicht funktioniert. Transportsicherung raus, sonst wandert die Maschine.",
+    "how": "1. Router: Anschlussdose finden (TAE/Glasfaser), Schalttermin abwarten, Konfiguration wie gehabt. 2. Lampen: Sicherung aus, Lüsterklemme, Abdeckung. 3. Waschmaschine: Transportsicherung raus (!), Zulauf mit Aquastop, Ablauf in Siphon, waagerecht stellen (Wasserwaage), Probelauf leer. 4. Spülmaschine dito. 5. Kühlschrank erst nach Wartezeit einschalten.",
+    "need": "Werkzeugkiste, Wasserwaage, Aquastop-Schlauch.",
+    "law": "Elektroarbeiten über Lampenanschluss hinaus (Steckdosen, Herd) nur Fachkraft.",
+    "traps": "Waschmaschine mit Bolzen laufen lassen. Router am ersten Abend – Schalttermin ist oft ein Werktag, nicht der Umzugstag."
+   }
+  },
+  {
+   "id": "auspacken",
+   "phase": 4,
+   "title": "Auspacken: Tag 1 Bett/Bad/Küche · Tag 2–3 Kleidung/Arbeitsplatz · Tag 4 Wohnräume",
+   "owner": "B",
+   "offset_days": 1,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "In vier Tagen ist die Wohnung bewohnbar, in vier Wochen wohnlich. Die Reihenfolge verhindert, dass die Kartons im Weg stehen, die am dringendsten sind.",
+    "how": "Tag 1: Bett aufbauen, Bad, Küche Grundausstattung, Kühlschrank. Tag 2–3: Kleidung, Arbeitsplatz (Homeoffice!), Wohnzimmer. Tag 4: Bücher, Deko, Keller. Danach: Kartons flach falten, zurückgeben oder Kleinanzeigen. Was nach vier Wochen noch im Karton ist, hat den Umzug nicht gebraucht.",
+    "need": "Kartonliste, Werkzeugkiste, Geduld.",
+    "law": "Keine.",
+    "traps": "Alles am ersten Tag auspacken wollen. Kartons „vorläufig“ in den Keller – dort stehen sie in zwei Jahren noch."
+   }
+  },
+  {
+   "id": "reinigung",
+   "phase": 4,
+   "title": "Altwohnungen: Anna vollständige Endreinigung (§27.5), Sebastian besenrein – vor der Übergabe",
+   "owner": "B",
+   "offset_days": -1,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Annas Vertrag verlangt vollständige Endreinigung (§ 27.5), Sebastians besenrein. Der Unterschied ist ein Wochenende oder 200 €. Beides vor dem Übergabetermin, nicht danach.",
+    "how": "Sebastian (besenrein): Böden gefegt/gesaugt, grober Schmutz weg, Müll raus, Keller leer. Anna (vollständig): dazu Fenster innen, Bad und Küche gründlich, Herd/Backofen, Böden gewischt, Fettflecken, Türen/Griffe, Heizkörper abgewischt – oder Reinigungsfirma mit Rechnung (Handwerkerleistung). Beide: Fotos vom Endzustand.",
+    "need": "Putzmittel, ein Tag je Wohnung oder Firma (~150–250 €).",
+    "law": "„Besenrein“ ist der gesetzliche Standard (§ 546 BGB, BGH VIII ZR 124/05); eine Klausel zur vollständigen Endreinigung ist zulässig, wenn sie klar formuliert ist – § 27.5 ist es. Reinigungsfirma: § 35a EStG.",
+    "traps": "Am Übergabetag noch putzen. Backofen vergessen – der wird immer geöffnet."
+   }
+  },
+  {
+   "id": "uebergabe-s",
+   "phase": 4,
+   "title": "Übergabe Eugen-Kaufmann-Str. 31.12.: Zwischenablesung, alle Schlüssel persönlich (nie Briefkasten), Protokoll, Fotos, Zeuge, Kopie",
+   "owner": "S",
+   "offset_days": -1,
+   "critical": true,
+   "type": "assist",
+   "blocked_by": [
+    "reinigung",
+    "bidet"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Zwischenablesung Wärme/Wasser beantragen",
+    "Alle Schlüssel inkl. Keller, Briefkasten, Tiefgarage zählen",
+    "'Unrenoviert übernommen' ins Protokoll falls zutreffend",
+    "Spam-Ordner 4 Wochen prüfen"
+   ],
+   "advice": {
+    "why": "Der Übergabetermin ist der Moment, in dem 2.910 € Kaution gesichert oder verloren werden. Protokoll, Fotos, Zeuge, alle Schlüssel – und keine Unterschrift unter etwas, das nicht stimmt.",
+    "how": "1. Vorher: Zwischenablesung Heizung/Warmwasser beantragt (§ 3.6), Bidet montiert, besenrein, Lampen gesichert. 2. Am Termin: Protokoll des Vermieters mitlesen; nur Zustand protokollieren, keine Kostenanerkennung. Falls unrenoviert übernommen: „unrenoviert übernommen“ ins Protokoll. 3. Zählerstände mit Nummern, Fotos jeder Wand. 4. Alle Schlüssel (Wohnung, Haus, Keller, Briefkasten, Tiefgarage, Stellplatz) persönlich übergeben, Anzahl ins Protokoll. 5. Beide unterschreiben, Kopie sofort. 6. Neue Adresse und IBAN schriftlich mitgeben.",
+    "need": "Einzugsprotokoll (Vergleich!), Schlüssel gezählt, Zeuge, Handy, Stift.",
+    "law": "Rückgabe nach § 546 BGB. Kaution: Vermieter hat angemessene Prüffrist, in der Regel bis 6 Monate; Einbehalt nur für konkrete, bezifferbare Ansprüche. Nach Rückgabe verjähren Vermieteransprüche in 6 Monaten (§ 548 BGB). Schlüssel in den Briefkasten ist keine Rückgabe.",
+    "traps": "Unterschrift unter „Mieter trägt Kosten für …“ – das ist ein Schuldanerkenntnis. Ohne Zeuge gegen Vermieter und Ehepartner. Schlüssel „nachreichen“."
+   }
+  },
+  {
+   "id": "uebergabe-a",
+   "phase": 4,
+   "title": "Übergabe Uhlandstr. 31.12.: alle Schlüssel persönlich, Protokoll, Fotos, Zeuge, Kopie",
+   "owner": "A",
+   "offset_days": -1,
+   "critical": true,
+   "type": "assist",
+   "blocked_by": [
+    "reinigung",
+    "duebel"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Alle Schlüssel inkl. Keller zählen",
+    "Protokoll Kopie sofort mitnehmen",
+    "Spam-Ordner 4 Wochen prüfen"
+   ],
+   "advice": {
+    "why": "Dasselbe wie bei Sebastian, mit der Hausverwaltung statt dem Vermieter – und mit dem Einzugsprotokoll als wichtigstem Dokument, weil § 16.4 davon abhängt.",
+    "how": "1. Vorher: Dübellöcher zu, helle Wände, vollständige Endreinigung, Fotos. 2. Am Termin: Einzugsprotokoll dabei, Vergleich Raum für Raum; nur Zustand protokollieren. 3. Zählerstände mit Nummern, Fotos. 4. Alle Schlüssel (auch Keller, Briefkasten) persönlich, Anzahl ins Protokoll. 5. Unterschrift beider, Kopie sofort. 6. Neue Adresse, IBAN schriftlich; Meldebescheinigung nach Ummeldung nachreichen (§ 1.2).",
+    "need": "Einzugsprotokoll, Schlüssel gezählt, Zeuge, Handy.",
+    "law": "Wie bei Sebastian. Zusätzlich: Verwaltung handelt für den Vermieter; ihre Unterschrift auf dem Protokoll bindet ihn.",
+    "traps": "Reinigung „reicht so“ – § 27.5 ist eindeutig, die Verwaltung schickt eine Firma und die Rechnung. Ohne Einzugsprotokoll Renovierung zusagen."
+   }
+  },
+  {
+   "id": "schaeden-spedition",
+   "phase": 4,
+   "title": "Verdeckte Transportschäden binnen 14 Tagen schriftlich an die Spedition",
+   "owner": "B",
+   "offset_days": 14,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "umzugstag",
+   "subtasks": [],
+   "advice": {
+    "why": "Kratzer im Schrank, die erst beim Auspacken auffallen, sind versichert – aber nur 14 Tage lang und nur schriftlich.",
+    "how": "1. Beim Auspacken jeden Schaden fotografieren, mit Kartonnummer. 2. Binnen 14 Tagen nach Ablieferung schriftlich (E-Mail mit Fotos reicht, besser zusätzlich Brief) an die Firma: Beschreibung, Foto, Wert. 3. Transportversicherung parallel informieren, falls abgeschlossen. 4. Antwort abwarten, Frist notieren.",
+    "need": "Ablieferbeleg, Fotos, Angebot/Rechnung der Firma.",
+    "law": "§ 451f HGB: verdeckte Schäden binnen 14 Tagen nach Ablieferung anzeigen, sonst erlischt der Anspruch. Haftung 620 €/m³ (§ 451e), Neuwert nur mit Transportversicherung.",
+    "traps": "Am Telefon melden – zählt nicht. Schaden erst nach drei Wochen bemerken – vorbei."
+   }
+  },
+  {
+   "id": "ummeldung",
+   "phase": 5,
+   "title": "Ummeldung beide: online (wohnsitzanmeldung.gov.de, eID) oder Bürgeramt Zeil 3 – bis 15.1.",
+   "owner": "B",
+   "offset_days": 10,
+   "critical": true,
+   "type": "assist",
+   "blocked_by": [
+    "wgb",
+    "uebergabe-neu"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Bürgeramt-Termin Anfang Dezember buchen ODER eID-PIN bis 15.12. prüfen",
+    "Keine Abmeldung nötig",
+    "Meldebescheinigung ablegen – Anna muss sie dem alten Vermieter vorlegen (§1.2)"
+   ],
+   "advice": {
+    "why": "Zwei Wochen nach Einzug – das ist der 15.1. Frankfurter Bürgeramt-Termine sind Wochen voraus vergeben; online geht es in zehn Minuten, wenn die eID freigeschaltet ist.",
+    "how": "Weg A (online): wohnsitzanmeldung.gov.de, Ausweis mit Online-Funktion + PIN, AusweisApp, Wohnungsgeberbestätigung wird elektronisch angefragt oder hochgeladen; Adressaufkleber kommt per Post. Weg B: Termin Bürgeramt (frankfurt.de, „Anmeldung Wohnung“, Zeil 3 oder Stadtteilämter) Anfang Dezember buchen, beide Personen, Ausweise, Wohnungsgeberbestätigung, Vertrag. Danach: Meldebescheinigung ins Drive und an Annas Altvermieter.",
+    "need": "eID-PIN (Brief vom Ausweis) oder Termin, Wohnungsgeberbestätigung, Ausweise.",
+    "law": "§ 17 BMG: Anmeldung binnen 2 Wochen nach Einzug, Bußgeld bis 1.000 €, praktisch bei Verspätung selten. Keine Abmeldung nötig bei Umzug innerhalb Deutschlands.",
+    "traps": "eID-PIN nicht griffbereit – der PIN-Rücksetzbrief dauert zwei Wochen. Termin erst im Januar suchen."
+   }
+  },
+  {
+   "id": "adressen-s",
+   "phase": 5,
+   "title": "Adressänderungen Sebastian",
+   "owner": "S",
+   "offset_days": 14,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Arbeitgeber",
+    "Bank(en)",
+    "Krankenkasse",
+    "Rentenversicherung",
+    "Finanzamt (ELSTER oder Brief – Meldeamt reicht nicht)",
+    "Versicherungen",
+    "Handyvertrag",
+    "Abos und Online-Shops",
+    "Personalausweis-Adressaufkleber",
+    "Vereine, Arzt, Apotheke"
+   ],
+   "advice": {
+    "why": "Jede Stelle, die eure Adresse hat, schickt weiter an die alte – der Nachsendeauftrag fängt sechs Monate, danach nicht mehr. Die Liste abarbeiten, sobald die Meldebescheinigung da ist.",
+    "how": "Nach Teilschritten: Arbeitgeber (Personalabteilung), Banken (online), Krankenkasse, Rentenversicherung (Meldeamt meldet teilweise weiter, trotzdem prüfen), Finanzamt (ELSTER „Adresse ändern“ – Meldeamt reicht nicht), Versicherungen, Handy, Abos/Shops, Vereine, Ärzte. Jede nachgesendete Post = ein neuer Eintrag. Personalausweis: Aufkleber bei der Ummeldung.",
+    "need": "Meldebescheinigung, Kundennummern, eine Stunde.",
+    "law": "Finanzamt: Wechsel der Zuständigkeit bei Umzug in anderen Bezirk automatisch nach Meldung; Bank: Legitimation nach GwG erfordert aktuelle Adresse.",
+    "traps": "Nach zwei Wochen aufhören – die Hälfte kommt erst über die Nachsendung."
+   }
+  },
+  {
+   "id": "adressen-a",
+   "phase": 5,
+   "title": "Adressänderungen Anna",
+   "owner": "A",
+   "offset_days": 14,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [
+    "Arbeitgeber",
+    "Bank(en)",
+    "Krankenkasse",
+    "Rentenversicherung",
+    "Finanzamt (ELSTER oder Brief)",
+    "Versicherungen",
+    "Handyvertrag",
+    "Abos und Online-Shops",
+    "Personalausweis-Adressaufkleber",
+    "Vereine, Arzt, Apotheke"
+   ],
+   "advice": {
+    "why": "Wie bei Sebastian – eigene Liste, eigene Kundennummern. Dazu für Anna: Meldebescheinigung an die Hausverwaltung Bröker (§ 1.2).",
+    "how": "Nach Teilschritten: Arbeitgeber, Banken, Krankenkasse, Rentenversicherung, Finanzamt (ELSTER), Versicherungen, Handy, Abos/Shops, Vereine, Ärzte. Hausverwaltung Bröker: Meldebescheinigung + neue Adresse für Kaution.",
+    "need": "Meldebescheinigung, Kundennummern, eine Stunde.",
+    "law": "Wie bei Sebastian.",
+    "traps": "Wie bei Sebastian."
+   }
+  },
+  {
+   "id": "kfz",
+   "phase": 5,
+   "title": "Kfz-Ummeldung: Zulassungsstelle Am Römerhof 19, Termin online; Versicherer informieren",
+   "owner": "S",
+   "offset_days": 14,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [
+    "ummeldung"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "ZB I, Ausweis, Meldebestätigung, HU"
+   ],
+   "advice": {
+    "why": "Fahrzeugpapiere mit alter Adresse sind ein Bußgeld beim nächsten Kontakt mit der Polizei und ein Problem bei der Versicherung.",
+    "how": "1. Termin Zulassungsstelle Frankfurt (Am Römerhof 19) online buchen – Anfang Dezember für Mitte Januar. 2. Mitbringen: Zulassungsbescheinigung Teil I, Ausweis mit neuer Adresse oder Meldebescheinigung, HU-Nachweis, eVB nur bei Versichererwechsel. 3. Innerhalb Frankfurts bleibt das Kennzeichen; Adresse wird in Teil I geändert (~15 €). 4. Kfz-Versicherung informieren (Regionalklasse/Garage kann Beitrag ändern).",
+    "need": "Fahrzeugpapiere, Termin, 30 Minuten.",
+    "law": "§ 13 FZV: Adressänderung unverzüglich melden; Bußgeld bei Unterlassung. Innerhalb der Stadt kein neues Kennzeichen.",
+    "traps": "Versicherung vergessen – bei Schaden Diskussion über Gefahrerhöhung."
+   }
+  },
+  {
+   "id": "budget",
+   "phase": 5,
+   "title": "Nebenkosten-Vorauszahlung und Haushaltsbudget festlegen",
+   "owner": "B",
+   "offset_days": 21,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Nach dem Einzug stehen alle Zahlen: Miete, Nebenkosten, Strom, Internet, Versicherungen. Das ist der Moment, das Haushaltsbudget festzulegen und die Nebenkostenvorauszahlung zu prüfen.",
+    "how": "1. Laufende Kosten in Finanzen („Laufend ab Januar“) prüfen. 2. Nebenkostenvorauszahlung: liegt sie deutlich unter dem, was die Wohnfläche erwarten lässt (Frankfurt ~3 €/m²/Monat), Rücklage bilden. 3. Aufteilung aus der Ersteinrichtung bestätigen oder anpassen. 4. Haushaltskonto mit Dauerauftrag, falls gewählt. 5. Kautionsrückflüsse als Rücklage, nicht als Einkommen.",
+    "need": "Finanzen-Ansicht, beide Gehälter, Kontoauszug Januar.",
+    "law": "Nebenkostenvorauszahlung darf der Vermieter nur nach Abrechnung anpassen (§ 560 Abs. 4 BGB) – ihr könnt freiwillig Rücklage bilden.",
+    "traps": "Vorauszahlung als Endpreis nehmen – die erste Abrechnung kommt nach 12–18 Monaten."
+   }
+  },
+  {
+   "id": "retro",
+   "phase": 5,
+   "title": "Kurze Retro: was hat gefehlt, was war zu spät",
+   "owner": "B",
+   "offset_days": 14,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Zwanzig Minuten, drei Fragen. Nicht für den nächsten Umzug – für die App, die Claude weiter pflegt, und für das, was ihr beide über euer Zusammenarbeiten gelernt habt.",
+    "how": "1. Was hat gefehlt (Aufgabe, Info, Erinnerung)? 2. Was kam zu spät oder zu früh? 3. Was war überflüssig? 4. Als Kommentar an diese Aufgabe – Claude nimmt es ins Seed auf. 5. Danach: App weiterführen (Phase 5 läuft bis Juni) oder abschließen.",
+    "need": "Beide, ein Kaffee.",
+    "law": "Keine.",
+    "traps": "Retro überspringen, weil „es ja geklappt hat“ – dann bleibt die Erfahrung im Kopf statt im System."
+   }
+  },
+  {
+   "id": "kaution-zurueck",
+   "phase": 5,
+   "title": "Kautionen zurückfordern – Eugen-Kaufmann 2.910 €, Uhlandstr. 2.040 €",
+   "owner": "B",
+   "offset_days": 90,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [
+    "uebergabe-s",
+    "uebergabe-a"
+   ],
+   "anchor": "einzug",
+   "subtasks": [
+    "Nach 3 Monaten freundlich nachfragen",
+    "Nach 6 Monaten schriftlich mit 14-Tage-Frist",
+    "Kontoauszug und Zinsbescheinigung anfordern (§551 BGB)",
+    "Vermieter darf Teil für NK-Abrechnung einbehalten – NK-Abrechnung tagesgenau prüfen, 'Nutzerwechselgebühr' widersprechen"
+   ],
+   "advice": {
+    "why": "4.950 € liegen bei zwei Vermietern. Ohne Nachfrage kommen sie oft spät, mit Nachfrage nach drei Monaten, mit Frist nach sechs.",
+    "how": "1. Nach der Übergabe: neue Adresse und IBAN sind mitgeteilt (Phase 2). 2. Nach 3 Monaten freundlich nachfragen (Mail). 3. Nach 6 Monaten schriftlich mit 14-Tage-Frist, Verzugszinsen ankündigen. 4. Kontoauszug des Kautionskontos und Zinsen verlangen. 5. Einbehalt für Nebenkosten: nur angemessener Teil (etwa eine Vorauszahlung), Rest sofort. 6. Kostenzeilen „Kaution alt“ auf „erhalten“, Teilbetrag falls einbehalten. 7. Notfalls Mieterverein/Anwalt – ab 500 € Einbehalt lohnt es.",
+    "need": "Übergabeprotokolle, Kautionsbelege, Kontoauszug, Geduld bis Ende März.",
+    "law": "§ 551 BGB: Kaution getrennt anzulegen, mit Zinsen zurück. Angemessene Prüffrist: 3–6 Monate (BGH VIII ZR 234/05); Einbehalt für ausstehende NK-Abrechnung nur in Höhe der erwarteten Nachzahlung (BGH VIII ZR 71/05). Nach 6 Monaten verjähren Vermieteransprüche (§ 548) – dann kein Einbehalt mehr begründbar.",
+    "traps": "Nach vier Wochen ungeduldig drohen – Prüffrist ist legitim. „Nutzerwechselgebühr“ akzeptieren – unzulässig als Mieterkosten (BGH VIII ZR 143/13)."
+   }
+  },
+  {
+   "id": "verjaehrung",
+   "phase": 5,
+   "title": "Vermieteransprüche verjähren 6 Monate nach Rückgabe – 30.06.2027 notieren",
+   "owner": "B",
+   "offset_days": 180,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Sechs Monate nach der Rückgabe kann kein Vermieter mehr Schadensersatz für die Wohnung verlangen. Der 30.06.2027 ist das Datum, ab dem die Altwohnungen endgültig Vergangenheit sind.",
+    "how": "1. Datum notieren (Kalender-Abo hat es). 2. Bis dahin: Übergabeprotokolle, Fotos, Kautionsbelege aufbewahren. 3. Danach: Ansprüche des Vermieters mit Verweis auf § 548 zurückweisen; Kaution vollständig einfordern. 4. Ausnahme: Nebenkosten-Nachzahlung verjährt nicht in 6 Monaten – die kommt bis Ende 2027.",
+    "need": "Kalender, Drive-Ordner „04 Protokolle“.",
+    "law": "§ 548 Abs. 1 BGB: Ersatzansprüche des Vermieters wegen Veränderungen oder Verschlechterungen verjähren in 6 Monaten ab Rückgabe. Ansprüche des Mieters (Kaution) in 3 Jahren. Betriebskostenabrechnung: Vermieter hat 12 Monate nach Abrechnungszeitraum (§ 556 Abs. 3).",
+    "traps": "Unterlagen im Juli wegwerfen – die NK-Abrechnung 2026 kommt noch."
+   }
+  },
+  {
+   "id": "steuer",
+   "phase": 5,
+   "title": "Steuererklärung 2027: Umzugsrechnungen (§35a) zusammenstellen, Pauschale prüfen (beruflicher Anlass?)",
+   "owner": "B",
+   "offset_days": 120,
+   "critical": false,
+   "type": "assist",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Umzugsfirma, Elektriker, Maler, Reinigungsfirma – 20 % der Arbeitskosten kommen als Steuerermäßigung zurück, bis 1.200 € (Handwerker) plus 4.000 € (haushaltsnahe Dienste). Nur mit Rechnung und Überweisung.",
+    "how": "1. Alle Rechnungen mit ausgewiesenem Arbeitsanteil sammeln (Drive „04 Belege“) – Materialkosten zählen nicht. 2. Nur unbare Zahlung (Überweisung). 3. Steuererklärung 2027 (für 2026 und 2027 je nach Rechnungsdatum): Anlage „Haushaltsnahe Aufwendungen“. 4. Beruflich veranlasster Umzug (Fahrzeitverkürzung ≥ 1 Std. täglich): Umzugskostenpauschale (2026: ~965 € + 645 € je weitere Person) als Werbungskosten – prüfen, ob es bei einem von euch greift. 5. Steuerrelevante Kostenzeilen in Finanzen filtern.",
+    "need": "Rechnungen, Kontoauszüge, ELSTER.",
+    "law": "§ 35a Abs. 3 EStG: 20 % der Handwerker-Arbeitskosten, max. 1.200 €/Jahr; Abs. 2: haushaltsnahe Dienstleistungen (Umzugsfirma zählt dazu) 20 %, max. 4.000 €. Voraussetzung: Rechnung + Überweisung (Abs. 5). Umzugskostenpauschale nach BUKG bei beruflicher Veranlassung.",
+    "traps": "Bar bezahlt – kein Abzug. Rechnung ohne Trennung Arbeit/Material – nachfordern. Umzug als beruflich deklarieren, ohne dass die Fahrzeit sich halbiert."
+   }
+  },
+  {
+   "id": "nk-alt",
+   "phase": 5,
+   "title": "Letzte Nebenkostenabrechnungen der Altwohnungen im Blick behalten (bis zu 12 Monate)",
+   "owner": "B",
+   "offset_days": 180,
+   "critical": false,
+   "type": "self",
+   "blocked_by": [],
+   "anchor": "einzug",
+   "subtasks": [],
+   "advice": {
+    "why": "Zwei Nebenkostenabrechnungen kommen noch – bis zu zwölf Monate nach Jahresende. Nachzahlung oder Guthaben, beides will geprüft werden, und die Kaution hängt daran.",
+    "how": "1. Erwartung: Abrechnung 2026 bis 31.12.2027, tagesgenau anteilig bis zum Auszug. 2. Prüfen: Abrechnungszeitraum, Umlageschlüssel wie im Vertrag, nur umlagefähige Kosten (BetrKV), Zwischenablesung berücksichtigt, keine Verwaltungskosten/Reparaturen. 3. Belegeinsicht verlangen bei Zweifeln (Frist 12 Monate zum Widerspruch). 4. Guthaben mit Kautionsrest einfordern. 5. Claude prüfen lassen: PDF ins Drive, Kommentar „@claude prüfen“.",
+    "need": "Beide Verträge, Zwischenablesung, alte Abrechnungen zum Vergleich.",
+    "law": "§ 556 Abs. 3 BGB: Abrechnung spätestens 12 Monate nach Ende des Abrechnungszeitraums, sonst keine Nachforderung; Mieter-Widerspruch binnen 12 Monaten nach Zugang. Nicht umlagefähig: Verwaltung, Instandhaltung, Bankgebühren (§ 1 BetrKV). „Nutzerwechselgebühr“ unzulässig.",
+    "traps": "Abrechnung ungeprüft zahlen. Widerspruchsfrist verpassen – danach ist auch eine falsche Abrechnung bindend."
+   }
+  }
+ ]
+}
