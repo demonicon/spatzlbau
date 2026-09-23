@@ -8,7 +8,7 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 | Nr | Commit | Status | Offene Migrationen |
 |---|---|---|---|
 | 020 Tweaks | `95f6f72` | fertig | – |
-| 016 Finanzen | – | offen | – |
+| 016 Finanzen | `eb3e340` | fertig | `010_a016_finanzen.sql` – ohne sie wird „Überweisung erfassen“ abgelehnt (mit Hinweis), der Rest läuft |
 | 017 Akte | – | offen | – |
 | 018 Dashboard | – | offen | – |
 | 022 Kalender-Abo | – | offen | – |
