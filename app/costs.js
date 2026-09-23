@@ -6,7 +6,7 @@
 //   counted = beauftragt / faellig / bezahlt, plus geschaetzt as long as no row of the same task
 //   is already beauftragt or further. angebot never counts (it is history). The buffer row
 //   (task_id null) always counts.
-import { state } from './state.js';
+import { state, dueInfo } from './state.js';
 
 export const KIND = { einmalig: 'einmalig', rueckfluss: 'Rückfluss' };
 
@@ -304,7 +304,7 @@ export function suggestedBuffer() {
 /** Tasks that carry cost rows, grouped by phase - the list under the block. */
 export function tasksWithCosts(match = () => true) {
   const ids = new Set(state.costs.filter((c) => c.task_id && match(c)).map((c) => c.task_id));
-  return state.tasks.filter((t) => ids.has(t.id)).sort((a, b) => a.phase - b.phase || a.offset_days - b.offset_days || a.sort - b.sort);
+  return state.tasks.filter((t) => ids.has(t.id)).sort((a, b) => a.phase - b.phase || dueInfo(a).sort - dueInfo(b).sort || a.sort - b.sort);
 }
 
 /** The filters the five numbers and the payment line switch on. */

@@ -235,6 +235,8 @@ $$;
 drop trigger if exists tasks_log_change on public.tasks;
 create trigger tasks_log_change after update on public.tasks
   for each row execute function public.log_task_change();
+-- only the trigger runs it, as its owner - not callable via /rest/v1/rpc (docs/changes/014, b014)
+revoke execute on function public.log_task_change() from public, anon, authenticated;
 
 -- costs: paid_on settles the row; due_on defaults to the task deadline on insert (docs/changes/004),
 -- now via the task's own anchor date instead of always einzugstermin (bugfix 1.1)

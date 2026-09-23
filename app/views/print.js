@@ -3,7 +3,7 @@
 // wants to look up on a phone with cold hands: meter readings, keys, emergency numbers.
 import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
-import { state, ui, phases, einzug, umzugstag, subsOf } from '../state.js';
+import { state, ui, phases, einzug, umzugstag, subsOf, dueInfo } from '../state.js';
 
 const METERS = ['Strom', 'Gas', 'Wasser'];
 const METER_FIELDS = ['Zählernummer', 'Stand', 'Uhrzeit'];
@@ -26,7 +26,7 @@ export function printHTML() {
     ? new Date(base + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     : 'Termin steht noch nicht fest';
   const ph = phases().find((p) => p.id === 4);
-  const tasks = state.tasks.filter((t) => t.phase === 4).sort((a, b) => a.offset_days - b.offset_days || a.sort - b.sort);
+  const tasks = state.tasks.filter((t) => t.phase === 4).sort((a, b) => dueInfo(a).sort - dueInfo(b).sort || a.sort - b.sort);
   const kontakte = typeof state.settings.umzugstag_kontakte === 'string' ? state.settings.umzugstag_kontakte : '';
 
   const taskRow = (t) => `<div class="prow">${box(t.done)}<div class="pbody">

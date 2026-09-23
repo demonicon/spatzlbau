@@ -58,7 +58,7 @@ zusätzlich ohne Login geladen. Datenbank nur lesend (eine Abfrage, Advisor).
 - `task_changes` ohne Person (`changed_by` leer).
 - Ein Posten in zwei Listen („Als Nächstes zahlen“ und „Alle Posten“) öffnet sein Formular doppelt (016b, 016c).
 
-## Neue Funde aus diesem Check (Bugfix-Kandidaten für 2.0.x, nicht behoben)
+## Neue Funde aus diesem Check – behoben in 2.0.2 (docs/changes/014)
 
 1. Timeline: „wartet auf n ›“ ist 17 px hoch und liegt direkt unter dem Titel-Knopf – Fehltipp öffnet die Akte statt der Liste.
 2. Akte Bearbeiten: Teilschritt ↑/↓ je 28×22 px, nebeneinander.
