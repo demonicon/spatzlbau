@@ -16,6 +16,7 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 | 022 Kalender-Abo | `32e5475` | fertig | `012_a022_ics_token.sql` + Edge Function `ics` ausrollen (SETUP.md §11) – ohne beides bleibt die Zeile „Abo-Adressen erzeugen“ wirkungslos |
 | 019 Timeline | `780def8` | fertig (3b) | keine |
 | 021 Phasen/Gates | `0bc839c` | fertig | `013_a021_seen_gates.sql` – ohne sie merkt sich die App den gesehenen Gate-Moment nur für die Sitzung |
+| 024 Claude-Anbindung (Teil 2) | _folgt beim Merge_ | Teil 2 fertig, Teil 1+3 offen (nicht Claude Code) | `015_a024_claude_run.sql` – ohne sie fehlt in der Stand-Zeile „zuletzt HH:MM", sonst läuft alles |
 
 ## Migrationen in dieser Reihenfolge einspielen
 
@@ -24,7 +25,15 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 3. `012_a022_ics_token.sql` (022) – Schlüssel `ics_token`
 4. `013_a021_seen_gates.sql` (021) – `allowlist.seen_gates`
 5. `014_a016b_fin_setup.sql` (016b) – `settings.fin_setup_done`, `costs.paid_by` + Haushaltskonto (`H`)
+6. `015_a024_claude_run.sql` (024) – `settings.claude_last_run`
 
 Dazu einmal die Edge Function: `supabase functions deploy ics --no-verify-jwt --project-ref <ref>`
 (SETUP.md §11). Die App lädt auf `/preview/` auch ohne all das – was dann fehlt, steht je Zeile
 oben.
+
+## 024 – zwei Teile außerhalb dieses Repos, noch offen
+
+Teil 1 (Schreibrecht für Claude im Supabase-Connector abschalten) und Teil 3 (stündlicher
+Scheduled Task) sind in `docs/changes/024-claude-anbindung.md` beschrieben, aber nicht Aufgabe von
+Claude Code – siehe Rollenteilung in CLAUDE.md. Ohne beide schreibt „Claude jetzt starten" korrekt
+in die Datenbank, aber niemand holt die Aufgabe ab.
