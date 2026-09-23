@@ -14,6 +14,7 @@ import { compareVersions } from '../changelog.js';
 import { summary, eurShort } from '../costs.js';
 import { isHit, term } from '../search.js';
 import { printHTML } from './print.js';
+import { timelineHTML } from './timeline.js';
 
 const DAY = 86400000;
 const CAP = 8; // rows per column before "alle n zeigen"
@@ -227,6 +228,16 @@ function signalListHTML(key) {
   </div>`;
 }
 
+/** Personen · Phasen · Timeline - the three ways to look at the same tasks (019). */
+const VIEWS = [['personen', 'Personen'], ['phasen', 'Phasen'], ['timeline', 'Timeline']];
+function viewChipsHTML() {
+  return `<div class="pchips view-chips" role="group" aria-label="Ansicht">${VIEWS.map(
+    ([k, l]) => `<button class="pill" data-act="view-switch" data-to="${k}" aria-pressed="${currentView() === k}">${l}</button>`,
+  ).join('')}</div>`;
+}
+
+export const currentView = () => (VIEWS.some(([k]) => k === ui.view) ? ui.view : 'personen');
+
 function phaseChipsHTML() {
   const list = phases();
   const chip = (val, label, on) => `<button class="pill" data-phase="${val}" aria-pressed="${on}">${esc(label)}</button>`;
@@ -264,6 +275,10 @@ export function columns() {
   const pool = state.tasks.filter((t) => (ui.phase === null || t.phase === ui.phase) && matches(t, ui.filter) && (!q || isHit(t, q)));
   // "Bei Claude" is the one view that groups by state instead of by person (docs/changes/009)
   if (ui.filter === 'claude') return STEPS.map(([key, label]) => column('st-' + key, label, 'C', pool.filter((t) => claudeStep(t) === key)));
+  // docs/changes/019: the same list, cut by phase instead of by person
+  if (currentView() === 'phasen') {
+    return phases().map((p) => column('ph-' + p.id, `${p.id} ${p.short || p.name}`, 'B', pool.filter((t) => t.phase === p.id)));
+  }
   const all = [
     column('me', `Ich (${OWN[me]})`, me, pool.filter((t) => t.owner === me)),
     column('B', 'Gemeinsam', 'B', pool.filter((t) => t.owner === 'B')),
@@ -276,7 +291,7 @@ export function columns() {
 }
 
 /** True while the phone shows the switch: then the switch is the column head (018 §1). */
-export const switchShown = () => !ui.wide && !term() && !(ui.filter && FILTERS[ui.filter]);
+export const switchShown = () => currentView() === 'personen' && !ui.wide && !term() && !(ui.filter && FILTERS[ui.filter]);
 
 /** All three columns, whatever the phone is showing - the switch needs every counter. */
 export function allColsForSwitch() {
@@ -444,6 +459,7 @@ export function dashboardView() {
   const q = term();
   // docs/changes/018 §3: a pressed signal replaces the columns with one flat list over both people
   const isSignal = !!filter && SIGNALS.some(([k]) => k === filter);
+  const tl = currentView() === 'timeline'; // the timeline brings its own filters and list (019)
   // docs/changes/012: the sections stay, the ones without a hit go
   const allCols = columns();
   const cols = allCols.filter((c) => !q || c.open.length + c.blocked.length + c.done.length);
@@ -463,14 +479,14 @@ export function dashboardView() {
     `<div class="board mode-${ui.mode}"><div class="col-list">` +
     headHTML() +
     searchHTML() +
-    visitHTML() +
-    signalsHTML() +
-    phaseChipsHTML() +
+    viewChipsHTML() +
+    (tl ? '' : visitHTML() + signalsHTML() + phaseChipsHTML()) +
     filterRow +
-    (isSignal ? signalListHTML(filter) : '') +
-    (isSignal
+    (tl ? timelineHTML() : '') +
+    (isSignal && !tl ? signalListHTML(filter) : '') +
+    (isSignal || tl
       ? ''
-      : (!ui.wide && !q && !filter ? switchHTML(allColsForSwitch()) : '') +
+      : (switchShown() ? switchHTML(allColsForSwitch()) : '') +
         (q && !cols.length ? `<p class="empty no-hits">Kein Treffer für „${esc(q)}“ – auch nicht in den Teilschritten.</p>` : `<div class="cols">${cols.map(columnHTML).join('')}</div>`)) +
     addBoxHTML() +
     `</div>` +

@@ -19,7 +19,8 @@
       "date": "2026-09-23",
       "title": "Zweite Runde: Finanzen, Akte, Dashboard, Timeline",
       "new": [
-        "Fristen und Gates lassen sich als Kalender abonnieren."
+        "Fristen und Gates lassen sich als Kalender abonnieren.",
+        "Neue Ansicht Timeline: alle Aufgaben in Reihenfolge, Phasen als Schienen, Sprung zu Heute."
       ],
       "improved": [
         "Einheitliche Schaltflächen, ein Signal je Aufgabe, blockierte Aufgaben nicht mehr abhakbar.",

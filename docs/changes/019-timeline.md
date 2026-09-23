@@ -1,5 +1,6 @@
 # 019 – Timeline
 
+Status: umgesetzt (3b; Branch `feat/019-timeline` → `preview`, Abweichungen in `019-abweichungen.md`)
 Stand: 23.09.2026 · Meilenstein 2.0 · Branch: `feat/019-timeline` · Modell: Sonnet (3b) / Opus (3a) · Aufwand: M (3b) · +L (3a)
 Quelle: Skizze "Alle Aufgaben, vom Einzug rückwärts" (`design/handoff/2026-09-23/Timeline.pdf`, lokal). Setzt 020 (Pillen, Signal-Chip) voraus.
 
@@ -32,12 +33,12 @@ Keine Schemaänderung. Fälligkeit aus `anchor + offset_days` (1.1), Phasen und 
 
 ## Akzeptanzkriterien
 
-- [ ] 380 px: Liste öffnet auf "Heute", eine überfällige Testaufgabe steht darüber in Rot, Titel ungekürzt
-- [ ] Phasenfilter 3 zeigt nur Phase-3-Aufgaben, Schiene 3 bleibt durchgezogen, andere Schienen verschwinden
-- [ ] Mit `umzugstag = 02.01.2027`: `packen` steht am 05.12. mit `T−27`, `halteverbot` (Einzug-Anker) am 04.12. mit `T−28` – Reihenfolge nach Kalenderdatum, nicht nach Offset
-- [ ] Abhaken in der Zeile: Aufgabe verschwindet, Zähler im Text-Button steigt, Realtime beim anderen Gerät
-- [ ] Gate-◆ an fünf Schienen, Tooltip-Text = Gate aus settings
-- [ ] Zwei Breiten, Bericht ≤ 15 Zeilen, Changelog: "Neue Ansicht Timeline: alle Aufgaben in Reihenfolge, Phasen als Schienen, Sprung zu Heute."
+- [x] 380 px: Liste öffnet auf "Heute", eine überfällige Testaufgabe steht darüber in Rot, Titel ungekürzt
+- [x] Phasenfilter 3 zeigt nur Phase-3-Aufgaben, Schiene 3 bleibt durchgezogen, andere Schienen verschwinden
+- [x] Mit `umzugstag = 02.01.2027`: `packen` steht am 05.12. mit `T−27`, `halteverbot` (Einzug-Anker) am 04.12. mit `T−28` – Reihenfolge nach Kalenderdatum, nicht nach Offset
+- [x] Abhaken in der Zeile: Aufgabe verschwindet, Zähler im Text-Button steigt, Realtime beim anderen Gerät
+- [x] Gate-◆ an fünf Schienen, Tooltip-Text = Gate aus settings
+- [x] Zwei Breiten, Bericht ≤ 15 Zeilen, Changelog: "Neue Ansicht Timeline: alle Aufgaben in Reihenfolge, Phasen als Schienen, Sprung zu Heute."
 
 ## Reihenfolge 2.0 (Vorschlag)
 
