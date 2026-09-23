@@ -47,6 +47,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 /* on a dark ground the primary inverts ("Fertig" in the edit bar) */
 .on-ink .btn-primary { background: var(--card); border-color: var(--card); color: var(--ink); }
 .on-ink .btn-secondary { border-color: var(--card); color: var(--card); }
+.on-ink .btn-text { color: var(--card); }
 .on-ink .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
 .btn-secondary { padding: 0 14px; background: transparent; border-color: var(--ink); color: var(--ink); }
 .btn-secondary:hover { background: var(--line); }
@@ -313,24 +314,56 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .detail h3 { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; margin: 18px 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); color: var(--ink-2); }
 .detail h3:first-child { margin-top: 0; }
 .detail h3 small { font-weight: 400; color: var(--ink-3); text-transform: none; letter-spacing: 0; }
-/* head of the Akte: checkbox, title as a heading that is still editable, meta line */
+/* head of the Akte: checkbox, title as a heading, meta line - editing is its own mode (017) */
 .akte-top { display: grid; grid-template-columns: var(--tap) 1fr auto; align-items: start; margin-left: -10px; }
 .akte-title-text { font-size: var(--fs-title); font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; margin: 0; padding: 9px 6px; min-width: 0; overflow-wrap: anywhere; }
-.ico.pencil { color: var(--ink-3); }
-.ico.pencil:hover { color: var(--ink); background: none; }
-/* the open row is the head of the Akte: title as heading, × closes, pencil edits */
+/* the open row is the head of the Akte: title as heading, × closes */
 .task-head { display: flex; align-items: flex-start; gap: 2px; }
 .task-head .t-head { flex: 1; font-size: var(--fs-body); padding: 9px 0 4px; }
 .detail.nohead { margin-top: 0; }
-/* the title is a heading that stays editable: a textarea so long titles wrap.
-   field-sizing grows it in Chrome; elsewhere the row count from the title length carries it. */
-.akte-title { font-size: var(--fs-title); font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; width: 100%; min-height: var(--tap); padding: 8px 6px; border: 0; background: transparent; resize: none; overflow: hidden; field-sizing: content; }
-.akte-title:hover { box-shadow: inset 0 0 0 1px var(--line); }
-.akte-title:focus { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 .akte-meta { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; font-size: var(--fs-small); color: var(--ink-2); margin: 8px 0 0; padding-left: 34px; }
 .wait-banner { margin: 14px 0 0; padding: 10px 12px; background: var(--paper); color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); font-size: var(--fs-meta); font-weight: 600; }
-.akte-more { border-top: 1px solid var(--line); margin-top: 16px; }
 .akte-foot { margin-top: 16px; }
+
+/* ---------- Ansehen (docs/changes/017): text only, empty sections disappear ---------- */
+.akte-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+.akte-view .nohead-meta { padding-left: 0; margin-top: 0; }
+/* a labelled line: "Kosten  1.740 € · beauftragt · fällig 01.01." */
+.akte-line { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--gap); padding: 10px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-ui); line-height: 1.4; }
+.akte-line .l { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; padding-top: 3px; }
+.sub-read { font-size: var(--fs-ui); padding: 10px 0; line-height: 1.35; overflow-wrap: anywhere; }
+.sub.done .sub-read { color: var(--ink-3); text-decoration: line-through; }
+.stand-line { margin: 10px 0 0; font-size: var(--fs-ui); line-height: 1.45; }
+.brief.read { margin-top: 10px; }
+.brief-read { margin-top: 10px; }
+.brief-read:first-child { margin-top: 0; }
+.brief-read b { display: block; font-size: var(--fs-small); color: var(--claude); }
+.brief-read p { margin: 2px 0 0; font-size: var(--fs-ui); line-height: 1.5; white-space: pre-wrap; }
+.brief-read p.none { color: var(--ink-3); font-style: italic; }
+.adv-pills { margin-top: 8px; }
+.adv-body { margin-top: 10px; padding: 12px 14px; background: var(--card); box-shadow: inset 3px 0 0 var(--line); font-size: var(--fs-ui); line-height: 1.55; white-space: pre-wrap; }
+.com .new { color: var(--ink); font-weight: 600; }
+.akte-changed { margin: 18px 0 0; padding-top: 10px; border-top: 1px solid var(--line); font-size: var(--fs-micro); color: var(--ink-3); }
+
+/* ---------- Bearbeiten (docs/changes/017): one bar, a counter, form fields ---------- */
+.akte-edit { background: #fff; }
+.edit-bar { display: flex; align-items: center; gap: var(--gap); margin: -12px -14px 0; padding: 8px 12px; background: var(--ink); color: var(--card); }
+.edit-bar b { flex: 1; text-align: center; font-size: var(--fs-meta); font-weight: 600; }
+.edit-hint { margin: 10px 0 0; font-size: var(--fs-small); color: var(--ink-2); line-height: 1.4; }
+.edit-hint.ask { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; background: var(--danger-bg); padding: 8px 10px; color: var(--ink); }
+/* a touched field says so - in ink, not in a colour (Rot-Regel aus 015) */
+.changed { font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); border: 1px solid var(--ink); border-radius: var(--r-tag); padding: 1px 5px; margin-left: 6px; }
+.detail .lbl-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.detail .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); margin-top: 10px; flex: 1 1 140px; min-width: 0; }
+.detail .lbl.is-changed { box-shadow: inset 3px 0 0 var(--ink); padding-left: 8px; margin-left: -8px; }
+.detail .lbl > input, .detail .lbl > select { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; align-items: center; }
+.sub.sub-edit { grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px; padding: 4px 0; }
+.sub-move { display: flex; flex-direction: column; }
+.sub-move .ico { min-height: 22px; min-width: 28px; font-size: 13px; padding: 0; }
+.sub-move .ico[disabled] { color: var(--line); }
+.sub.sub-edit input[type=text] { width: 100%; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
+.row.sub-add input[type=text] { flex: 1; border-style: dashed; border-color: var(--line-dash); }
 /* an inline reference to another task: a link inside a line of text, not a button (020) */
 .tlink { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 .tlink:hover { color: var(--ink); }
@@ -365,14 +398,6 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* docs/changes/013 B5: only the own comments carry these - delete always, edit within ten minutes */
 .com-own-actions { display: flex; gap: 14px; align-items: center; white-space: normal; }
 .com-own-actions .btn-text { padding: 6px 0; }
-details.adv { border-bottom: 1px solid var(--line); }
-details.adv summary { cursor: pointer; padding: 12px 0; font-size: var(--fs-ui); font-weight: 600; min-height: 48px; display: flex; align-items: center; gap: 6px; list-style: none; }
-details.adv summary::-webkit-details-marker { display: none; }
-details.adv summary::after { content: '+'; margin-left: auto; color: var(--ink-3); font-size: 18px; width: 24px; text-align: center; }
-details.adv[open] summary::after { content: '−'; }
-details.adv summary .hint { font-weight: 400; color: var(--ink-3); }
-details.adv .body { padding: 0 0 14px; font-size: var(--fs-ui); line-height: 1.5; white-space: pre-wrap; }
-details.adv .body.none { color: var(--ink-3); font-style: italic; }
 .brief { background: var(--claude-bg); padding: 14px 14px 12px; margin-top: 6px; }
 .brief label { display: block; font-size: var(--fs-small); color: var(--claude); margin-top: 10px; }
 .brief .turn { font-size: var(--fs-small); color: var(--claude); }

@@ -1,5 +1,6 @@
 # 017 – Akte: Ansehen und Bearbeiten getrennt
 
+Status: umgesetzt (Branch `feat/017-akte` → `preview`, Abweichungen in `017-abweichungen.md`)
 Stand: 23.09.2026 · Meilenstein 2.0 · Ziel-Branch: `preview` · Modell: Sonnet · Aufwand: M
 Quelle: Review v2 Teil C, Befund B6 und Mockup 2b (Ansehen 380 volle Aufgabe, Bearbeiten 380, Ansehen kleine Aufgabe). Setzt 020 voraus, ersetzt leichte/volle Akte aus 009.
 
@@ -36,10 +37,10 @@ Dashboard-Antworten-Knöpfe (→ 018), Belege (→ 025).
 
 ## Akzeptanzkriterien
 
-- [ ] Akte einer kleinen Aufgabe zeigt genau: Kommentarfeld, Titel, Pille, Frist, Bearbeiten – keine leeren Abschnitte
-- [ ] Ansehen: Teilschritt abhaken und Kommentar senden speichern sofort, Realtime beim anderen Gerät
-- [ ] Bearbeiten: Titel ändern, Abbrechen → Titel unverändert; Titel ändern, Fertig → ein Update-Request, Realtime
-- [ ] Hinweiszeile zählt Änderungen korrekt (Titel + Frist = 2)
-- [ ] Ein Primär-Button (Fertig) nur im Bearbeiten-Modus; Ansehen hat keinen
-- [ ] Desktop 1280: Panel wechselt beide Modi ohne Overlay
-- [ ] Zwei Breiten, Bericht ≤ 15 Zeilen, Changelog: "Die Akte hat zwei Modi: Ansehen und Bearbeiten – nichts wird mehr versehentlich geändert."
+- [x] Akte einer kleinen Aufgabe zeigt genau: Kommentarfeld, Titel, Pille, Frist, Bearbeiten – keine leeren Abschnitte
+- [x] Ansehen: Teilschritt abhaken und Kommentar senden speichern sofort, Realtime beim anderen Gerät
+- [x] Bearbeiten: Titel ändern, Abbrechen → Titel unverändert; Titel ändern, Fertig → ein Update-Request, Realtime
+- [x] Hinweiszeile zählt Änderungen korrekt (Titel + Frist = 2)
+- [x] Ein Primär-Button (Fertig) nur im Bearbeiten-Modus; Ansehen hat keinen
+- [x] Desktop 1280: Panel wechselt beide Modi ohne Overlay
+- [x] Zwei Breiten, Bericht ≤ 15 Zeilen, Changelog: "Die Akte hat zwei Modi: Ansehen und Bearbeiten – nichts wird mehr versehentlich geändert."

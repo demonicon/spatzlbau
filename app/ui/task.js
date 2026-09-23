@@ -69,8 +69,10 @@ export function taskHTML(t) {
           : `<div class="t-row"><button class="t" data-act="open" aria-expanded="false">${q ? mark(t.title, q) : esc(t.title)}</button><span class="due ${dueCls}">${esc(dueShort(t))}</span></div>`
       }
       ${subHits.length ? `<div class="sub-hit">${subHits.map((s) => `<span><span class="arr" aria-hidden="true">↳</span> ${mark(s.title, q)}</span>`).join('')}</div>` : ''}
-      ${sig ? `<div class="sig">${sig}</div>` : ''}
-      ${quiet ? `<div class="quiet">${quiet}</div>` : ''}
+      ${/* docs/changes/017: open and inline, the Akte below says all of this in full - the row
+            keeps only the title, so nothing is read twice */ ''}
+      ${sig && !inlineHead ? `<div class="sig">${sig}</div>` : ''}
+      ${quiet && !inlineHead ? `<div class="quiet">${quiet}</div>` : ''}
     </div>
     ${inlineHead ? detailHTML(t, false) : ''}
   </div>`;

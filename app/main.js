@@ -19,6 +19,7 @@ import {
   addSubtask,
   deleteSubtask,
   updateSubtask,
+  subsOf,
   addComment,
   updateComment,
   deleteComment,
@@ -39,7 +40,7 @@ import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
 import { dashboardView, columns } from './views/dashboard.js';
 import { finanzenView } from './views/finanzen.js';
-import { isMoreOpen } from './ui/detail.js';
+import { draftOf, draftCount, fieldValue } from './ui/detail.js';
 import { searching } from './search.js';
 import { parseAmount, bufferRow, bufferPct, suggestedBuffer, costsOf } from './costs.js';
 import { OWN } from './ui/labels.js';
@@ -58,8 +59,6 @@ ui.openCols = new Set(); // collapsible column ("Bei Anna") that the person open
 ui.allCols = new Set(); // columns showing more than the first eight rows
 ui.doneCols = new Set(); // columns showing their done tasks as well
 ui.blockedCols = new Set(); // columns with "N warten auf einen Vorgänger" unfolded
-ui.more = {}; // Akte: task id -> "Mehr" open? (undefined = automatic, see isMoreOpen)
-ui.adviceAdd = new Set(); // Akte: tasks showing the empty advice fields
 ui.costEdit = null; // cost row with its fields open (007)
 ui.costPay = null; // cost row asking for date, person and receipt
 ui.costAdd = null; // task id showing the "new cost row" form
@@ -79,7 +78,10 @@ ui.wide = false; // ≥ 900 px: the Akte is not inline any more (006)
 // docs/changes/013 A3: three steps instead of two - 'phone' (Akte inline), 'overlay' (Akte comes
 // in from the right over the list) and 'panel' (list and Akte side by side from 1180 px)
 ui.mode = 'phone';
-ui.titleEdit = null; // task id whose title field is open (013 A4)
+ui.akteEdit = null; // task id whose Akte is in edit mode (017)
+ui.draft = null; // { id, fields } - the unsaved changes of that Akte (017)
+ui.briefOpen = null; // task id whose briefing is unfolded in Ansehen (017)
+ui.advOpen = null; // "<taskId>:<topic>" - the open advice topic in Ansehen (017)
 ui.subEdit = null; // subtask id whose row is in edit mode (013 B2)
 ui.comEdit = null; // comment id whose body field is open (013 B5)
 ui.costHint = null; // task id that shows the one-off line about the cost states (013 A5)
@@ -153,6 +155,45 @@ function render() {
   for (const el of $('#view').querySelectorAll('.gate .bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
   restoreFocus(focusKey);
   renderStatus('idle');
+}
+
+/* ---------- the draft of an Akte in edit mode (docs/changes/017) ---------- */
+
+/** Remember one changed field. A value back at the saved one drops out of the count again. */
+function setDraft(t, key, raw) {
+  if (!t || ui.akteEdit !== t.id) return;
+  if (!ui.draft || ui.draft.id !== t.id) ui.draft = { id: t.id, fields: {} };
+  let v = raw;
+  if (key === 'offset_days') v = parseInt(String(raw) || '0', 10) || 0;
+  if (key === 'title') v = String(raw).replace(/\s+/g, ' ').trim() || t.title;
+  const saved = key.startsWith('brief.') ? (t.brief || {})[key.slice(6)] ?? '' : t[key];
+  if (JSON.stringify(saved ?? '') === JSON.stringify(v ?? '')) delete ui.draft.fields[key];
+  else ui.draft.fields[key] = v;
+}
+
+/** The draft as one patch: brief.* fold back into the one jsonb column. */
+function taskPatch(t) {
+  const fields = draftOf(t);
+  const keys = Object.keys(fields);
+  if (!keys.length) return null;
+  const patch = {};
+  let brief = null;
+  for (const k of keys) {
+    if (k.startsWith('brief.')) {
+      brief = brief || { ...(t.brief || {}) };
+      brief[k.slice(6)] = fields[k];
+    } else patch[k] = fields[k];
+  }
+  if (brief) patch.brief = brief;
+  if (patch.type === 'claude' && !t.status && !patch.status) patch.status = 'briefing';
+  return patch;
+}
+
+function closeEdit() {
+  ui.akteEdit = null;
+  ui.draft = null;
+  ui.confirm = null;
+  render();
 }
 
 /* ---------- keyboard (docs/changes/006 step 3): the view is re-rendered on every change,
@@ -283,8 +324,10 @@ function setExpanded(id) {
   if (id) markCommentsSeen(id).catch(() => {}); // opening takes the "new" dot away (009)
   ui.expanded = id;
   ui.confirm = null;
-  ui.editingAdvice = null;
-  ui.titleEdit = null;
+  ui.akteEdit = null;
+  ui.draft = null;
+  ui.briefOpen = null;
+  ui.advOpen = null;
   ui.subEdit = null;
   ui.comEdit = null;
   // the cost states are explained the first time a task with costs is opened, then never again
@@ -343,7 +386,8 @@ const fail = (e) => e && toast('Nicht gespeichert – bitte nochmal versuchen');
 // what still works without a connection: looking, folding, filtering, printing (docs/changes/009)
 const OFFLINE_OK = new Set([
   'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
-  'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'more', 'advice-add',
+  'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto',
+  'brief-read', 'adv-open', 'akte-cancel', 'akte-discard',
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
   'fin-recurring', 'q-clear', 'home', 'overlay-close', 'title-edit', 'title-done',
@@ -499,6 +543,13 @@ function wireEvents() {
       updateTask(t.id, { done: el.checked, ...doneBy(el.checked) }).catch(fail);
       return;
     }
+    // docs/changes/017: in Bearbeiten nothing is written until "Fertig" - the field lands in
+    // the draft, and the counter in the hint line goes up by one the first time it is touched
+    if (el.dataset.draft && t) {
+      setDraft(t, el.dataset.draft, el.type === 'checkbox' ? el.checked : el.value);
+      render();
+      return;
+    }
     if (el.dataset.field && t) {
       const f = el.dataset.field;
       let v = el.type === 'checkbox' ? el.checked : el.value;
@@ -528,6 +579,10 @@ function wireEvents() {
       return;
     }
     if (el.dataset.act === 'block-select' && el.value && t) {
+      if (ui.akteEdit === t.id) {
+        setDraft(t, 'blocked_by', [...fieldValue(t, 'blocked_by'), el.value]);
+        return render();
+      }
       updateTask(t.id, { blocked_by: [...(t.blocked_by || []), el.value] }).catch(fail);
     }
   });
@@ -645,6 +700,10 @@ function wireEvents() {
           setExpanded(null);
           return;
         case 'unblock':
+          if (ui.akteEdit === t.id) {
+            setDraft(t, 'blocked_by', fieldValue(t, 'blocked_by').filter((id) => id !== b.dataset.ref));
+            return render();
+          }
           await updateTask(t.id, { blocked_by: (t.blocked_by || []).filter((id) => id !== b.dataset.ref) });
           return;
         case 'sub-add': {
@@ -724,15 +783,58 @@ function wireEvents() {
           setExpanded(null);
           window.scrollTo({ top: 0 });
           return;
-        case 'title-edit':
-          ui.titleEdit = b.dataset.ref;
+        /* ---------- Akte: Ansehen und Bearbeiten (017) ---------- */
+        case 'akte-edit':
+          ui.akteEdit = b.dataset.ref;
+          ui.draft = { id: b.dataset.ref, fields: {} };
+          ui.confirm = null;
+          ui.briefOpen = null;
           render();
-          $(`[data-detail="${CSS.escape(b.dataset.ref)}"] .akte-title, #view .task[data-id="${CSS.escape(b.dataset.ref)}"] .akte-title`, $('#view'))?.focus();
+          $(`[data-detail="${CSS.escape(b.dataset.ref)}"] [data-draft=title]`, $('#view'))?.focus();
           return;
-        case 'title-done':
-          ui.titleEdit = null;
+        case 'akte-cancel':
+          // without a single change there is nothing to ask about
+          if (!draftCount({ id: b.dataset.ref })) return closeEdit();
+          ui.confirm = 'akte-cancel:' + b.dataset.ref;
           render();
           return;
+        case 'akte-discard':
+          closeEdit();
+          toast('Änderungen verworfen');
+          return;
+        case 'akte-done': {
+          const patch = taskPatch(t);
+          closeEdit();
+          if (!patch) return;
+          await updateTask(t.id, patch); // every changed field in one request
+          toast('Gespeichert');
+          return;
+        }
+        case 'draft-set':
+          setDraft(t, b.dataset.field, b.dataset.to);
+          render();
+          return;
+        case 'brief-read':
+          ui.briefOpen = ui.briefOpen === b.dataset.ref ? null : b.dataset.ref;
+          render();
+          return;
+        case 'adv-open': {
+          const key = b.dataset.ref + ':' + b.dataset.to;
+          ui.advOpen = ui.advOpen === key ? null : key;
+          render();
+          return;
+        }
+        case 'sub-up':
+        case 'sub-down': {
+          const subs = subsOf(t.id);
+          const i = subs.findIndex((s) => s.id === b.dataset.ref);
+          const j = act === 'sub-up' ? i - 1 : i + 1;
+          if (i < 0 || j < 0 || j >= subs.length) return;
+          // two rows swap their place - sort is what the list is ordered by
+          await updateSubtask(subs[i].id, { sort: subs[j].sort });
+          await updateSubtask(subs[j].id, { sort: subs[i].sort });
+          return;
+        }
         case 'overlay-close': // only the dimmed area around the Akte closes it (013 A3)
           if (e.target.closest('.sheet')) return;
           setExpanded(null);
@@ -938,34 +1040,10 @@ function wireEvents() {
           await deleteCost(b.dataset.ref);
           toast('Kostenzeile gelöscht');
           return;
-        case 'adv-edit':
-          ui.editingAdvice = t.id + ':' + b.dataset.ref;
-          render();
-          $(`[data-adv=${b.dataset.ref}]`, $('#view'))?.focus();
-          return;
-        case 'adv-cancel':
-          ui.editingAdvice = null;
-          render();
-          return;
-        case 'adv-save': {
-          const k = b.dataset.ref;
-          const v = input(`[data-adv=${k}]`).value;
-          ui.editingAdvice = null;
-          await updateTask(t.id, { advice: { ...(t.advice || {}), [k]: v } });
-          return;
-        }
         // docs/changes/009: briefing -> claude -> ergebnis, nothing in between
         case 'to-claude':
           await updateTask(t.id, { status: 'claude' });
           await addComment(t.id, 'An Claude übergeben.');
-          return;
-        case 'more':
-          ui.more[t.id] = !isMoreOpen(t);
-          render();
-          return;
-        case 'advice-add':
-          ui.adviceAdd.add(t.id);
-          render();
           return;
         case 'accept':
           await updateTask(t.id, { status: 'ergebnis', done: true, ...doneBy(true) });
