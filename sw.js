@@ -37,6 +37,7 @@ const SHELL = [
   './app/views/print.js',
   './app/views/finanzen.js',
   './app/views/timeline.js',
+  './app/views/start.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   // docs/changes/020b: self-hosted, so they have to be in the shell to survive offline too

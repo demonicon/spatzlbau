@@ -599,6 +599,32 @@ button.cost-amount:hover { background: var(--line); }
 .fs-foot { margin-top: 22px; align-items: center; }
 .fin-setup-hint { margin: 10px var(--gutter) 0; }
 
+/* ---------- docs/changes/026: der gemeinsame Start, acht Schritte ----------
+   Reuses .fin-setup/.fs-card as the shared full-page card; only what 016b's four screens never
+   needed is new here (grouped fieldsets, a checklist, owner rows, the step picker). */
+.fs-note { margin: 0 0 14px; font-size: var(--fs-small); color: var(--ink-2); }
+.fs-group { border: 0; padding: 0; margin: 0 0 18px; }
+.fs-group + .fs-group { padding-top: 14px; border-top: 1px dashed var(--line-dash); }
+.fs-group legend { padding: 0; font-weight: 600; font-size: var(--fs-ui); }
+.setup-check { display: flex; align-items: center; gap: var(--gap); min-height: var(--tap); padding: 6px 0; border-bottom: 1px solid var(--line); }
+.setup-check .l { flex: 1 1 auto; }
+.setup-check .s { display: block; font-size: var(--fs-micro); }
+.setup-check.present { color: var(--ink-2); }
+.setup-check .check-dummy { color: var(--ink-2); }
+.setup-check-amount { width: 88px; min-height: var(--tap); padding: 6px 8px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); text-align: right; }
+.setup-check-amount:disabled { opacity: 0.5; }
+.setup-phase { margin: 18px 0 4px; font-size: var(--fs-small); color: var(--ink-2); font-weight: 600; }
+.setup-owner-row { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); min-height: var(--tap); padding: 6px 0; border-bottom: 1px solid var(--line); }
+.setup-owner-row .l { flex: 1 1 auto; }
+.setup-owner-row .s { display: block; font-size: var(--fs-micro); color: var(--ink-2); }
+.setup-next-list { margin: 10px 0; padding: 0; list-style: none; font-size: var(--fs-small); }
+.setup-next-list li { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.setup-picker-list { display: flex; flex-direction: column; }
+.avatar-wrap { position: relative; }
+.avatar-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 70; min-width: 220px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); padding: 6px; }
+.avatar-menu-item { display: block; width: 100%; min-height: var(--tap); padding: 8px 10px; font-size: var(--fs-small); }
+.avatar-menu-item:hover { background: var(--line); }
+
 /* ---------- page footer (utilities) ---------- */
 .foot { padding: 8px var(--gutter) 24px; padding-bottom: max(24px, env(safe-area-inset-bottom)); display: flex; gap: var(--gutter); flex-wrap: wrap; align-items: center; border-top: 1px solid var(--line); font-size: var(--fs-small); color: var(--ink-3); }
 

@@ -535,7 +535,10 @@ insert into public.settings (key, value) values
   ('buffer_pct',      '20'::jsonb),     -- Puffersatz in %
   ('ics_token',       'null'::jsonb),  -- a022: Geheimnis hinter der Kalender-Abo-Adresse, App erzeugt es
   ('fin_setup_done',  'false'::jsonb), -- a016b: die "vier Fragen" schon beantwortet? Fehlt wirkt wie false
-  ('claude_last_run', 'null'::jsonb)   -- a024: Zeitpunkt des letzten stündlichen Claude-Laufs, von Claude gesetzt
+  ('claude_last_run', 'null'::jsonb),  -- a024: Zeitpunkt des letzten stündlichen Claude-Laufs, von Claude gesetzt
+  ('setup_done',       'false'::jsonb), -- a026: der Acht-Schritte-Start schon durchlaufen?
+  ('setup_step',       '0'::jsonb),     -- a026: bei welchem Schritt (0-7) eine Unterbrechung weitermacht
+  ('stammdaten',        '{"personen":[],"wohnungen":{}}'::jsonb) -- a026: Personen + drei Wohnungen
 on conflict (key) do nothing;
 
 -- Show the result of this run.

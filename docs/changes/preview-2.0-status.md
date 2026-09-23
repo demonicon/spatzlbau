@@ -1,9 +1,10 @@
 # Meilenstein 2.0 auf `preview` – Status
 
 Reihenfolge wie beauftragt: 020 → 016 → 017 → 018 → 022 → 019 → 021. Session 2: 020b → 016b → 024.
-`main` und die Live-App bleiben unangetastet; nichts hiervon ist gemerged.
-Migrationen liegen nur als Dateien vor – **keine ist angewendet**. Die App lädt auf `/preview/`
-auch ohne sie; was dann fehlt, steht je Zeile.
+Sebastian hat `preview` (bis 024) am 23.09.2026 nach `main` gemergt (`6528454`) – Meilenstein 2.0
+ist damit eröffnet. Session 3 (026) baut auf `preview` weiter, noch **nicht** in `main`.
+Migrationen liegen nur als Dateien vor – **keine ist angewendet**, weder auf `main` noch auf
+`preview`. Die App lädt auch ohne sie; was dann fehlt, steht je Zeile.
 
 | Nr | Commit | Status | Offene Migrationen |
 |---|---|---|---|
@@ -17,6 +18,7 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 | 019 Timeline | `780def8` | fertig (3b) | keine |
 | 021 Phasen/Gates | `0bc839c` | fertig | `013_a021_seen_gates.sql` – ohne sie merkt sich die App den gesehenen Gate-Moment nur für die Sitzung |
 | 024 Claude-Anbindung (Teil 2) | `068a22f` | Teil 2 fertig, Teil 1+3 offen (nicht Claude Code) | `015_a024_claude_run.sql` – ohne sie fehlt in der Stand-Zeile „zuletzt HH:MM", sonst läuft alles |
+| 026 Gemeinsamer Start | _folgt beim Merge_ | fertig | `016_a026_setup.sql` – ohne sie startet das Setup trotzdem (liest als leer/false), `stammdaten` existiert in der Live-DB schon |
 
 ## Migrationen in dieser Reihenfolge einspielen
 
@@ -26,6 +28,7 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 4. `013_a021_seen_gates.sql` (021) – `allowlist.seen_gates`
 5. `014_a016b_fin_setup.sql` (016b) – `settings.fin_setup_done`, `costs.paid_by` + Haushaltskonto (`H`)
 6. `015_a024_claude_run.sql` (024) – `settings.claude_last_run`
+7. `016_a026_setup.sql` (026) – `settings.setup_done`, `setup_step`, `stammdaten` (Default, existiert meist schon)
 
 Dazu einmal die Edge Function: `supabase functions deploy ics --no-verify-jwt --project-ref <ref>`
 (SETUP.md §11). Die App lädt auf `/preview/` auch ohne all das – was dann fehlt, steht je Zeile
