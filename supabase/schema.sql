@@ -30,6 +30,7 @@ create table if not exists public.allowlist (
 alter table public.allowlist add column if not exists last_seen_version text;
 alter table public.allowlist add column if not exists last_visit_at timestamptz;
 alter table public.allowlist add column if not exists seen_comments jsonb not null default '[]'::jsonb;
+alter table public.allowlist add column if not exists seen_gates jsonb not null default '[]'::jsonb;   -- a021
 alter table public.allowlist enable row level security;
 
 insert into public.allowlist (email, person) values
@@ -113,14 +114,14 @@ create table if not exists public.costs (
   id            uuid primary key default gen_random_uuid(),
   task_id       text references public.tasks (id) on delete cascade,
   label         text not null,
-  kind          text not null default 'einmalig' check (kind in ('einmalig', 'rueckfluss')),
+  kind          text not null default 'einmalig' check (kind in ('einmalig', 'rueckfluss', 'ausgleich')),  -- a016
   apartment     text check (apartment in ('S', 'A', 'N')),                          -- S alt Sebastian / A alt Anna / N neu
   status        text not null default 'geschaetzt'
                 check (status in ('geschaetzt', 'angebot', 'beauftragt', 'faellig', 'bezahlt')),
   amount        numeric(10,2) not null default 0,
   due_on        date,                                                                -- default on insert: task deadline (trigger)
   paid_on       date,                                                                -- set => status bezahlt (trigger)
-  paid_by       text check (paid_by in ('S', 'A')),
+  paid_by       text check (paid_by in ('S', 'A', 'H')),                              -- H = Haushaltskonto (a016b)
   belongs_to    text not null default 'B' check (belongs_to in ('S', 'A', 'B')),     -- B = shared by split_s
   split_s       numeric(5,2) check (split_s between 0 and 100),                      -- Sebastian's share in %, null = settings.split_default_s
   tax_relevant  boolean not null default false,
@@ -132,6 +133,13 @@ create table if not exists public.costs (
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
+alter table public.costs drop constraint if exists costs_kind_check;
+alter table public.costs add constraint costs_kind_check
+  check (kind in ('einmalig', 'rueckfluss', 'ausgleich'));                            -- a016
+alter table public.costs drop constraint if exists costs_paid_by_check;
+alter table public.costs add constraint costs_paid_by_check
+  check (paid_by in ('S', 'A', 'H'));                                                 -- a016b
+
 create index if not exists costs_task_idx on public.costs (task_id);
 create index if not exists costs_due_idx  on public.costs (due_on);
 create unique index if not exists costs_seed_key_idx on public.costs (seed_key);   -- NULLs never conflict
@@ -171,6 +179,20 @@ begin
 end;
 $$;
 
+-- task_changes (a018): Aenderungsprotokoll fuer Frist, Stichtag, Zustaendigkeit und Titel.
+-- Gelesen wird es von "Seit du zuletzt da warst"; geschrieben ausschliesslich vom Trigger.
+create table if not exists public.task_changes (
+  id          bigint generated always as identity primary key,
+  task_id     text not null references public.tasks(id) on delete cascade,
+  field       text not null check (field in ('offset_days', 'anchor', 'owner', 'title')),
+  old_value   text,
+  new_value   text,
+  changed_by  text check (changed_by in ('S', 'A')),
+  changed_at  timestamptz not null default now()
+);
+create index if not exists task_changes_at_idx on public.task_changes (changed_at desc);
+create index if not exists task_changes_task_idx on public.task_changes (task_id);
+
 do $$
 declare t text;
 begin
@@ -180,6 +202,39 @@ begin
   end loop;
 end;
 $$;
+
+create or replace function public.log_task_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who text := public.current_person();
+begin
+  if new.offset_days is distinct from old.offset_days then
+    insert into public.task_changes (task_id, field, old_value, new_value, changed_by)
+    values (new.id, 'offset_days', old.offset_days::text, new.offset_days::text, who);
+  end if;
+  if new.anchor is distinct from old.anchor then
+    insert into public.task_changes (task_id, field, old_value, new_value, changed_by)
+    values (new.id, 'anchor', old.anchor, new.anchor, who);
+  end if;
+  if new.owner is distinct from old.owner then
+    insert into public.task_changes (task_id, field, old_value, new_value, changed_by)
+    values (new.id, 'owner', old.owner, new.owner, who);
+  end if;
+  if new.title is distinct from old.title then
+    insert into public.task_changes (task_id, field, old_value, new_value, changed_by)
+    values (new.id, 'title', old.title, new.title, who);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists tasks_log_change on public.tasks;
+create trigger tasks_log_change after update on public.tasks
+  for each row execute function public.log_task_change();
 
 -- costs: paid_on settles the row; due_on defaults to the task deadline on insert (docs/changes/004),
 -- now via the task's own anchor date instead of always einzugstermin (bugfix 1.1)
@@ -271,8 +326,15 @@ drop policy if exists allowlist_select on public.allowlist;
 create policy allowlist_select on public.allowlist
   for select to authenticated using (public.is_allowed());
 
+-- task_changes (a018): lesen ja, schreiben nur der Trigger.
+alter table public.task_changes enable row level security;
+drop policy if exists task_changes_select on public.task_changes;
+create policy task_changes_select on public.task_changes for select using (public.is_allowed());
+revoke insert, update, delete on table public.task_changes from authenticated;
+grant select on table public.task_changes to authenticated;
+
 revoke update on table public.allowlist from authenticated;
-grant update (last_seen_version, last_visit_at, seen_comments) on table public.allowlist to authenticated;
+grant update (last_seen_version, last_visit_at, seen_comments, seen_gates) on table public.allowlist to authenticated;
 
 drop policy if exists allowlist_update_own on public.allowlist;
 create policy allowlist_update_own on public.allowlist
@@ -368,25 +430,60 @@ $$;
 --  counts: status beauftragt/faellig/bezahlt; geschaetzt only while no row of the same task is
 --  beauftragt or further (buffer rows, task_id null, always count); angebot never counts (history).
 --  planned_total = counted einmalig · paid = counted einmalig & bezahlt · refunds_expected = counted
---  rueckfluss · buffer = counted einmalig with task_id null · net = planned_total - refunds_expected
+--  rueckfluss · buffer = counted einmalig with task_id null · double_rent = the calculated double
+--  rent (a016) · net = planned_total + double_rent - refunds_expected. kind 'ausgleich' (a payment
+--  between the two people) never counts here - it only moves the balance.
 --  security_invoker: the view runs with the caller's rights, so RLS on costs applies.
 -- ---------------------------------------------------------------------
 create or replace view public.costs_summary with (security_invoker = true) as
 with counted as (
   select c.*
   from public.costs c
-  where c.status in ('beauftragt', 'faellig', 'bezahlt')
+  where c.kind <> 'ausgleich' and (
+        c.status in ('beauftragt', 'faellig', 'bezahlt')
      or (c.status = 'geschaetzt' and (
            c.task_id is null
            or not exists (select 1 from public.costs o
-                          where o.task_id = c.task_id and o.status in ('beauftragt', 'faellig', 'bezahlt'))))
+                          where o.task_id = c.task_id and o.status in ('beauftragt', 'faellig', 'bezahlt')))))
+),
+dates as (
+  select
+    nullif(value #>> '{}', '')::date as einzug,
+    (select nullif(value #>> '{}', '')::date from public.settings where key = 'move_out_s') as out_s,
+    (select nullif(value #>> '{}', '')::date from public.settings where key = 'move_out_a') as out_a
+  from public.settings where key = 'einzugstermin'
+),
+rent as (
+  select
+    coalesce(sum(amount_s), 0) as rent_s,
+    coalesce(sum(amount_a), 0) as rent_a
+  from public.recurring
+  where label ~* '(kaltmiete|nebenkosten)'
+),
+months as (
+  select generate_series(
+           date_trunc('month', d.einzug),
+           date_trunc('month', greatest(d.out_s, d.out_a)),
+           interval '1 month') as m,
+         d.out_s, d.out_a
+  from dates d
+  where d.einzug is not null and d.out_s is not null and d.out_a is not null
+),
+double_rent_sum as (
+  select coalesce(sum(
+           case when date_trunc('month', m.out_s) >= m.m then (select rent_s from rent) else 0 end +
+           case when date_trunc('month', m.out_a) >= m.m then (select rent_a from rent) else 0 end), 0) as v,
+         count(*) as n
+  from months m
 )
 select
   (select sum(amount) from counted where kind = 'einmalig')                          as planned_total,
   (select sum(amount) from counted where kind = 'einmalig' and status = 'bezahlt')   as paid,
   (select sum(amount) from counted where kind = 'rueckfluss')                        as refunds_expected,
   (select sum(amount) from counted where kind = 'einmalig' and task_id is null)      as buffer,
-  (select sum(amount) from counted where kind = 'einmalig')
+  (select case when n = 0 then null else v end from double_rent_sum)                 as double_rent,
+  coalesce((select sum(amount) from counted where kind = 'einmalig'), 0)
+    + coalesce((select case when n = 0 then null else v end from double_rent_sum), 0)
     - coalesce((select sum(amount) from counted where kind = 'rueckfluss'), 0)       as net;
 
 -- ---------------------------------------------------------------------
@@ -413,6 +510,17 @@ alter table public.comments  replica identity full;
 alter table public.costs     replica identity full;
 alter table public.recurring replica identity full;
 
+-- task_changes (a018) is append-only: realtime carries the new row, nothing else changes.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'task_changes'
+  ) then
+    alter publication supabase_realtime add table public.task_changes;
+  end if;
+end $$;
+
 -- ---------------------------------------------------------------------
 --  Initial data
 -- ---------------------------------------------------------------------
@@ -424,7 +532,10 @@ insert into public.settings (key, value) values
   ('move_out_s',      'null'::jsonb),   -- Auszug Sebastian (date), Grundlage der berechneten Doppelmiete in 007
   ('move_out_a',      'null'::jsonb),   -- Auszug Anna
   ('split_default_s', '50'::jsonb),     -- Standardanteil Sebastian in % bei belongs_to = B
-  ('buffer_pct',      '20'::jsonb)      -- Puffersatz in %
+  ('buffer_pct',      '20'::jsonb),     -- Puffersatz in %
+  ('ics_token',       'null'::jsonb),  -- a022: Geheimnis hinter der Kalender-Abo-Adresse, App erzeugt es
+  ('fin_setup_done',  'false'::jsonb), -- a016b: die "vier Fragen" schon beantwortet? Fehlt wirkt wie false
+  ('claude_last_run', 'null'::jsonb)   -- a024: Zeitpunkt des letzten stündlichen Claude-Laufs, von Claude gesetzt
 on conflict (key) do nothing;
 
 -- Show the result of this run.

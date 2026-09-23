@@ -25,14 +25,25 @@ const SHELL = [
   './app/ui/labels.js',
   './app/ui/task.js',
   './app/ui/detail.js',
+  './app/ui/chrome.js',
+  './app/ui/gate.js',
+  './app/ui/icons.js',
   './app/filters.js',
   './app/costs.js',
   './app/changelog.js',
+  './app/search.js',
+  './app/groups.js',
   './app/views/dashboard.js',
   './app/views/print.js',
   './app/views/finanzen.js',
+  './app/views/timeline.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  // docs/changes/020b: self-hosted, so they have to be in the shell to survive offline too
+  './fonts/instrument-sans-400-normal.woff2',
+  './fonts/instrument-sans-400-italic.woff2',
+  './fonts/instrument-sans-600-normal.woff2',
+  './fonts/instrument-sans-700-normal.woff2',
 ];
 
 self.addEventListener('install', (e) => {

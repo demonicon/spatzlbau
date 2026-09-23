@@ -11,6 +11,8 @@ export const STEP_OWNER = { briefing: 'ihr', claude: 'Claude', ergebnis: 'ihr' }
 export const STEP_LABEL = Object.fromEntries(STEPS);
 // how the state reads in a task row
 export const STEP_TAG = { briefing: 'Claude · Briefing offen', claude: 'bei Claude', ergebnis: 'Ergebnis liegt vor' };
+// docs/changes/016b: who paid a cost row - the two people, or the joint account (settles nothing)
+export const PAID_BY = { S: OWN.S, A: OWN.A, H: 'Haushaltskonto' };
 export const ADV = [
   ['why', 'Ziel & warum jetzt'],
   ['how', 'Ablauf'],

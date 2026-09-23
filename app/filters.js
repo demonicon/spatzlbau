@@ -14,6 +14,10 @@ export const isWaiting = (t) => !t.done && (!!t.wait_on || (t.type === 'claude' 
 export const other = (me) => (me === 'S' ? 'A' : 'S');
 // waits for me: someone set wait_on to me, or Claude has delivered and we have to decide
 export const waitsOnMe = (t, me) => !t.done && (t.wait_on === me || (t.type === 'claude' && claudeStep(t) === 'ergebnis'));
+// docs/changes/018 §3: the other direction - I am waiting for the other person or for Claude
+export const waitsOnYou = (t, me) => !t.done && !!t.wait_on && t.wait_on !== me;
+// a comment the other person (or Claude) wrote since the last visit and this person has not opened
+export const hasNews = (t) => freshComments(t).some((c) => c.author !== state.person);
 
 // docs/changes/009: the ten tiles became four – the three owner counts are the column heads now,
 // "Offen" is the count in every column head, and "Diese Woche" is what the "Ich" column shows.
@@ -25,6 +29,9 @@ export const FILTERS = {
   late: { label: 'Überfällig', test: isLate },
   wait: { label: 'Wartet auf jemanden', test: isWaiting },
   waitme: { label: 'Wartet auf dich', test: (t) => waitsOnMe(t, state.person) },
+  // docs/changes/018 §3: the three signals of the dashboard, counted over both people
+  news: { label: 'Neue Kommentare', test: hasNews },
+  waityou: { label: 'Du wartest', test: (t) => waitsOnYou(t, state.person) },
   // done: the filter shows tasks that are already ticked off – the columns have to unfold them
   donenew: { label: 'Seit deinem Besuch erledigt', test: doneByOther, done: true },
   newS: { label: 'Neu von Sebastian', test: (t) => freshComments(t).some((c) => c.author === 'S') },

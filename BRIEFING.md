@@ -70,13 +70,13 @@ Jede Aufgabe kann auf `type = claude` gestellt werden – dynamisch, keine feste
 
 | Zustand | Am Zug | Bedeutung |
 |---|---|---|
-| briefing | Nutzer | Ziel und Kontext ausfüllen, dann „An Claude geben" |
+| briefing | Nutzer | Ziel und Kontext ausfüllen, im Bearbeiten-Modus „Claude jetzt starten" (Auftrag 024) |
 | claude | Claude | Claude klärt Anforderungen, fragt nach, liefert – alles als Kommentare |
 | ergebnis | Nutzer | Lesen, entscheiden, „Ergebnis übernommen" → done |
 
-„An Claude geben" schreibt zusätzlich den Kommentar „An Claude übergeben.". **Rückfragen und Antworten sind normale Kommentare** (Autor `C` für Claude, `S`/`A` für die Nutzer) – dafür gibt es keinen eigenen Zustand mehr. „Zurück auf Briefing" ist jederzeit möglich. Der Filter „Bei Claude" gruppiert die delegierten Aufgaben nach genau diesen drei Zuständen statt nach Personen.
+„Claude jetzt starten" (im Bearbeiten-Modus der Akte, aktiv sobald Ziel gefüllt ist) schreibt `status = claude`, `brief.requested_at`/`requested_by` und den Kommentar „<Name> hat Claude gestartet". Der Knopf startet keinen Lauf – der stündliche Takt (unten) holt die Aufgabe ab; die Stand-Zeile in Ansehen zeigt „bei Claude seit HH:MM · nächster Lauf bis hh:00". **Rückfragen und Antworten sind normale Kommentare** (Autor `C` für Claude, `S`/`A` für die Nutzer) – dafür gibt es keinen eigenen Zustand mehr. „Zurück auf Briefing" ist jederzeit möglich. Der Filter „Bei Claude" gruppiert die delegierten Aufgaben nach genau diesen drei Zuständen statt nach Personen.
 
-Ablauf technisch: Claude im Chat liest über den Supabase-Connector die Aufgaben im Zustand `claude` samt Briefing und Kommentaren, antwortet im Chat. Ergebnisse tragen die Nutzer ein oder Claude Code schreibt sie per Skript (`scripts/claude-result.mjs`, Eingabe: JSON `{tasks:[{id,status,result,comment,sub_add[]}]}`) in die Datenbank – Kommentare mit `author = 'C'`.
+Ablauf technisch (Auftrag 024, Lösung B): ein stündlicher Scheduled Task (07–22 Uhr Europe/Berlin) liest Aufgaben im Zustand `claude` mit neuem `brief.requested_at`, arbeitet sie über Supabase-, Drive- und Gmail-Connector ab und schreibt Ergebnis direkt in `brief.ergebnis`, `status = ergebnis` und einen Kommentar mit Autor `C` – ohne Umweg über den Chat. `settings.claude_last_run` hält den Zeitpunkt des letzten Laufs. Schreibrecht ist auf `comments` (Autor `C`), `tasks.brief.ergebnis`, `tasks.status` (nur `claude → ergebnis`) und `settings.claude_last_run` begrenzt (Regel, keine technische Schranke). Latenz bis 60 Minuten; die Läufe sind frische Sitzungen ohne den Chat-Verlauf.
 
 ## 5. Sichten und UI (Stand Änderungsauftrag 009, Design in design/handoff/2026-09-22-b)
 

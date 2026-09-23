@@ -9,6 +9,8 @@ export const state = {
   lastSeenVersion: undefined, // allowlist.last_seen_version of this person; undefined = could not be read (005b)
   lastVisitAt: undefined, // allowlist.last_visit_at: when this person last left; null = never here, undefined = unknown (009)
   seenComments: new Set(), // ids of new comments this person already opened (009)
+  seenGates: new Set(), // phase ids whose gate moment this person has already seen (021)
+  gatesReady: false, // true once migration 013 is applied: allowlist.seen_gates exists (021)
   visitReady: false, // true once migration 006 is applied: last_visit_at / seen_comments / done_by exist (009)
   loadedAt: null, // when the data last came from the server (009, offline notice)
   settings: {}, // key -> value (jsonb)
@@ -17,6 +19,8 @@ export const state = {
   comments: [],
   costs: [], // cost rows per task (docs/changes/007)
   recurring: [], // monthly costs old vs new, for the double rent in the cashflow (007)
+  changes: [], // task_changes rows, newest first (018) - empty while migration 011 is missing
+  hasChanges: false, // true once migration 011 is applied and the table could be read (018)
   loaded: false,
 };
 
@@ -25,7 +29,6 @@ export const ui = {
   expanded: null, // task id with open detail
   confirm: null, // 'del:<id>' | null
   phaseOpen: {}, // phase id -> bool (default open)
-  editingAdvice: null, // '<taskId>:<key>'
   // docs/changes/010: the same deploy serves "/" and "/preview/" out of the same database.
   // The preview is read-only for the per-person reading state (012 bugfix), so the flag lives
   // here, next to the three writers it stops – not only in the view layer.
@@ -104,6 +107,21 @@ export function dueLabel(t) {
   return 'bis ' + fmtShort(date);
 }
 
+/** The deadline as the row shows it since 020: a date, right-aligned, short enough to sit
+    next to the title. "heute"/"morgen" stay words, an overdue row counts days, and the chip
+    next to it already says "überfällig" - so the date itself does not repeat it. */
+export function dueShort(t) {
+  const du = dueInfo(t);
+  if (!anchorDate(t)) return du.label; // no date set at all: the offset text from dueInfo
+  const date = new Date(du.sort);
+  if (t.done) return fmtShort(date);
+  const d = du.diff;
+  if (d < 0) return `seit ${-d} T.`;
+  if (d === 0) return 'heute';
+  if (d === 1) return 'morgen';
+  return fmtShort(date);
+}
+
 // docs/changes/009: three delegation states. Tasks written before migration 007 can still
 // carry go/recherche/rueckfragen/arbeit – they all read as "bei Claude".
 export const claudeStep = (t) => (t.status === 'ergebnis' ? 'ergebnis' : t.status && t.status !== 'briefing' ? 'claude' : 'briefing');
@@ -141,6 +159,7 @@ function saveSnapshot() {
         comments: state.comments,
         costs: state.costs,
         recurring: state.recurring,
+        changes: state.changes,
       }),
     );
   } catch {} // quota or private mode: the app just has no offline copy
@@ -163,6 +182,7 @@ export function loadSnapshot() {
     state.comments = d.comments || [];
     state.costs = d.costs || [];
     state.recurring = d.recurring || [];
+    state.changes = d.changes || [];
     state.loadedAt = d.saved_at || null;
     state.loaded = true;
     notify();
@@ -190,6 +210,11 @@ export async function loadAll() {
   state.comments = comments.data;
   state.costs = costs.data;
   state.recurring = recurring.data;
+  // docs/changes/018: the change log is additive and asked for on its own. Without migration 011
+  // the table is missing, the query fails, and "Seit du zuletzt da warst" simply stays away.
+  const chg = await supabase.from('task_changes').select('*').order('changed_at', { ascending: false }).limit(200);
+  state.hasChanges = !chg.error;
+  state.changes = chg.error ? [] : chg.data;
   state.loaded = true;
   state.loadedAt = new Date().toISOString();
   notify();
@@ -209,6 +234,32 @@ export async function loadPersonRow() {
   state.visitReady = 'last_visit_at' in data; // migration 006 applied?
   state.lastVisitAt = state.visitReady ? data.last_visit_at : undefined;
   state.seenComments = new Set(Array.isArray(data.seen_comments) ? data.seen_comments : []);
+  // docs/changes/021: without migration 013 the column is missing - the moment is then shown
+  // once per session and nothing is written
+  state.gatesReady = 'seen_gates' in data;
+  state.seenGates = new Set(Array.isArray(data.seen_gates) ? data.seen_gates : []);
+}
+
+/** Remember that this person has seen the gate of a phase (021). */
+export async function markGateSeen(phase) {
+  if (state.seenGates.has(phase)) return;
+  state.seenGates.add(phase);
+  notify();
+  // the preview never writes the reading state (010), and without migration 013 there is no column
+  if (ui.preview || !state.gatesReady) return;
+  await supabase.from('allowlist').update({ seen_gates: [...state.seenGates] }).eq('person', state.person);
+}
+
+/** A phase is done when it has tasks and every one of them is ticked off (021). */
+export function phaseDone(id) {
+  const all = state.tasks.filter((t) => t.phase === id);
+  return all.length > 0 && all.every((t) => t.done);
+}
+
+/** The first finished phase whose moment this person has not had yet, or null. */
+export function unseenGate() {
+  for (const p of phases()) if (phaseDone(p.id) && !state.seenGates.has(p.id)) return p.id;
+  return null;
 }
 
 // leaving the app ends the visit; the block on the next open is measured from here.
@@ -309,6 +360,12 @@ export function applyRealtimeEvent(table, payload) {
       return deleted ? dropRow(state.costs, old?.id) : upsertRow(state.costs, row);
     case 'recurring':
       return deleted ? dropRow(state.recurring, old?.id) : upsertRow(state.recurring, row);
+    case 'task_changes': {
+      // append-only (018): a new row goes to the front, nothing is ever updated or deleted
+      if (deleted || state.changes.some((c) => c.id === row.id)) return false;
+      state.changes.unshift(row);
+      return true;
+    }
     case 'settings': {
       const key = deleted ? old?.key : row.key;
       if (!key) return false;
@@ -344,7 +401,9 @@ export function subscribeRealtime() {
 
   let wasSubscribed = false;
   const ch = supabase.channel('spatzlbau-db');
-  for (const table of ['settings', 'tasks', 'subtasks', 'comments', 'costs', 'recurring']) {
+  const tables = ['settings', 'tasks', 'subtasks', 'comments', 'costs', 'recurring'];
+  if (state.hasChanges) tables.push('task_changes'); // only when migration 011 is in (018)
+  for (const table of tables) {
     ch.on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
       let changed;
       try {
@@ -511,7 +570,8 @@ export async function deleteComment(id) {
    insert and forces status 'bezahlt' as soon as paid_on is set, so the row comes back from the
    server with those values already applied. */
 export async function addCost(taskId, fields) {
-  const row = { task_id: taskId, label: fields.label, amount: fields.amount, kind: 'einmalig', status: 'geschaetzt', belongs_to: 'B', tax_relevant: false };
+  // docs/changes/016: the balance transfer arrives here with kind/status/paid_* already set
+  const row = { task_id: taskId, label: fields.label, amount: fields.amount, kind: 'einmalig', status: 'geschaetzt', belongs_to: 'B', tax_relevant: false, ...fields };
   status('saving', 'Speichern …');
   const { data, error } = await supabase.from('costs').insert(row).select().single();
   if (error) {
@@ -539,9 +599,11 @@ export async function deleteCost(id) {
 }
 
 /* ---------- monthly costs (docs/changes/007 commit 3) ---------- */
-export async function addRecurring(label) {
+export async function addRecurring(label, fields = {}) {
   const rows = state.recurring;
-  const row = { label, amount_s: null, amount_a: null, amount_n: null, sort: rows.length ? Math.max(...rows.map((r) => r.sort)) + 1 : 0 };
+  // docs/changes/016b: the Ersteinrichtung wizard hands amounts and a seed_key straight in,
+  // instead of inserting empty and updating right after
+  const row = { label, amount_s: null, amount_a: null, amount_n: null, sort: rows.length ? Math.max(...rows.map((r) => r.sort)) + 1 : 0, ...fields };
   status('saving', 'Speichern …');
   const { data, error } = await supabase.from('recurring').insert(row).select().single();
   if (error) {

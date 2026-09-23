@@ -8,11 +8,32 @@
 //   (task_id null) always counts.
 import { state } from './state.js';
 
-export const COST_STEPS = ['geschaetzt', 'angebot', 'beauftragt', 'faellig', 'bezahlt'];
-export const COST_LABEL = { geschaetzt: 'geschätzt', angebot: 'Angebot', beauftragt: 'beauftragt', faellig: 'fällig', bezahlt: 'bezahlt' };
-// the button that moves a row one step forward; 'bezahlt' is the end of the line
-export const COST_NEXT = { geschaetzt: 'Angebot eintragen', angebot: 'Beauftragen', beauftragt: 'Fällig', faellig: 'Bezahlt am …' };
 export const KIND = { einmalig: 'einmalig', rueckfluss: 'Rückfluss' };
+
+// docs/changes/016b: three states in the interface, five in the database. angebot/beauftragt/
+// faellig all read as "fest" - only Umzugsunternehmen ever needed the difference between them,
+// and that lives in the task now (Teilschritt "Entscheiden und buchen"), not in the cost row.
+// The app writes only geschaetzt | faellig | bezahlt from here on; the other two stay in the
+// check constraint so seed-merge and the old (main-branch) app keep working untouched.
+export const LADDER = ['geschaetzt', 'fest', 'bezahlt'];
+export const LADDER_LABEL = { geschaetzt: 'geschätzt', fest: 'fest', bezahlt: 'bezahlt' };
+/** Which of the three rungs an einmalig row is on right now. */
+export function ladderState(c) {
+  if (c.status === 'bezahlt') return 'bezahlt';
+  if (c.status === 'geschaetzt') return 'geschaetzt';
+  return 'fest'; // angebot | beauftragt | faellig - a Bestandszeile from before 016b
+}
+// Rückfluss (Kautionen, Erstattungen) has its own two-rung ladder on the same status column.
+export const REFUND = ['ausstehend', 'erhalten'];
+export const REFUND_LABEL = { ausstehend: 'ausstehend', erhalten: 'erhalten' };
+export const refundState = (c) => (c.status === 'bezahlt' ? 'erhalten' : 'ausstehend');
+/** The ladder a row is actually on, whichever kind it is. */
+export const rowState = (c) => (c.kind === 'rueckfluss' ? refundState(c) : ladderState(c));
+// docs/changes/016: an 'ausgleich' row is a transfer between the two - it settles the balance
+// and counts in no other sum. It is not offered in the kind picker, only created by the button.
+export const isBalanceRow = (c) => c.kind === 'ausgleich';
+// docs/changes/016b: Haushaltskonto pays too, and settles nothing between the two of them
+export const isHousehold = (c) => c.paid_by === 'H';
 export const APARTMENT = { S: 'Wohnung Sebastian', A: 'Wohnung Anna', N: 'neue Wohnung' };
 const FIRM = ['beauftragt', 'faellig', 'bezahlt'];
 
@@ -50,6 +71,7 @@ export const costsOf = (taskId) => state.costs.filter((c) => c.task_id === taskI
 export const hasFirm = (taskId) => !!taskId && state.costs.some((c) => c.task_id === taskId && FIRM.includes(c.status));
 
 export function isCounted(c) {
+  if (c.kind === 'ausgleich') return false; // docs/changes/016: only the balance sees these
   if (FIRM.includes(c.status)) return true;
   if (c.status !== 'geschaetzt') return false; // angebot is history, never counted
   return !c.task_id || !hasFirm(c.task_id); // the buffer row always counts
@@ -58,19 +80,29 @@ export function isCounted(c) {
 /** An estimate that lost against a firm row of the same task - shown, but greyed out. */
 export const isHistory = (c) => !isCounted(c) && c.status !== 'bezahlt';
 
-/** The same five numbers as the view costs_summary. */
+/** The same numbers as the view costs_summary - including the double rent since 016. */
 export function summary(rows = state.costs) {
   const counted = rows.filter(isCounted);
   const sum = (list) => list.reduce((n, c) => n + num(c.amount), 0);
   const once = counted.filter((c) => c.kind === 'einmalig');
   const back = counted.filter((c) => c.kind === 'rueckfluss');
+  const dr = doubleRentTotal();
   return {
     planned_total: once.length ? sum(once) : null,
     paid: once.some((c) => c.status === 'bezahlt') ? sum(once.filter((c) => c.status === 'bezahlt')) : null,
     refunds_expected: back.length ? sum(back) : null,
     buffer: once.some((c) => !c.task_id) ? sum(once.filter((c) => !c.task_id)) : null,
-    net: once.length ? sum(once) - sum(back) : null,
+    double_rent: dr,
+    net: once.length || dr ? sum(once) + (dr || 0) - sum(back) : null,
   };
+}
+
+/** Every month of double rent added up - the single largest item of the move (016 F2). */
+export function doubleRentTotal() {
+  if (moveOutMissing()) return null;
+  let n = 0;
+  for (const m of cashflowMonths()) n += doubleRent(m) || 0;
+  return Math.round(n * 100) / 100;
 }
 
 /** What the task row shows as a small amount badge: null when the task has no counted costs. */
@@ -88,9 +120,14 @@ export function isCostLate(c) {
   return new Date(c.due_on + 'T00:00:00') < today;
 }
 
-export const stepOf = (c) => COST_STEPS.indexOf(c.status);
-export const nextStep = (c) => COST_STEPS[stepOf(c) + 1] || null;
-export const prevStep = (c) => COST_STEPS[stepOf(c) - 1] || null;
+/** Due within a week: the one other place yellow is allowed (fristkritisch, docs/changes/016b). */
+export function isCostSoon(c) {
+  if (isCostLate(c) || c.status === 'bezahlt' || !c.due_on) return false;
+  const in7 = new Date();
+  in7.setHours(0, 0, 0, 0);
+  in7.setDate(in7.getDate() + 7);
+  return new Date(c.due_on + 'T00:00:00') <= in7;
+}
 
 /* ---------- the numbers behind the Finanzen view (docs/changes/007 commit 2) ---------- */
 
@@ -99,18 +136,33 @@ const settingNum = (key, fallback) => {
   return v === null || v === undefined || v === '' ? fallback : Number(v);
 };
 
-/** Who owes whom. Positive = Anna owes Sebastian. Only rows that were actually paid count. */
+/** Who owes whom. Positive = Anna owes Sebastian. Only rows that were actually paid count,
+    and only by one of the two - the household account (016b) settles nothing between them. */
 export function balance() {
   const split = settingNum('split_default_s', 50);
   let n = 0;
   for (const c of state.costs) {
-    if (!c.paid_on || !c.paid_by) continue;
+    if (!c.paid_on || !c.paid_by || isHousehold(c)) continue;
     const amount = num(c.amount) * (c.kind === 'rueckfluss' ? -1 : 1); // a refund flows back to whoever received it
     const shareS = c.belongs_to === 'S' ? 1 : c.belongs_to === 'A' ? 0 : (c.split_s === null || c.split_s === undefined ? split : Number(c.split_s)) / 100;
     // the payer advanced the whole amount but owes only their own share
     n += c.paid_by === 'S' ? amount * (1 - shareS) : -amount * shareS;
   }
   return Math.round(n * 100) / 100;
+}
+
+/** How the balance came about, in the three numbers the card shows (016 F3). */
+export function balanceParts() {
+  const split = settingNum('split_default_s', 50);
+  let paidS = 0;
+  let paidA = 0;
+  for (const c of state.costs) {
+    if (!c.paid_on || !c.paid_by || isHousehold(c)) continue;
+    const amount = num(c.amount) * (c.kind === 'rueckfluss' ? -1 : 1);
+    if (c.paid_by === 'S') paidS += amount;
+    else paidA += amount;
+  }
+  return { paidS: Math.round(paidS * 100) / 100, paidA: Math.round(paidA * 100) / 100, split };
 }
 
 export function balanceText(n = balance()) {
@@ -168,11 +220,16 @@ export function doubleRent(key) {
 
 export const moveOutMissing = () => !state.settings.move_out_s || !state.settings.move_out_a;
 
-/** Month by month: what falls due, what of it is paid, plus the calculated double rent. */
-export function cashflow() {
+/** The months the cashflow spans: from this month to two after the move (or the last move-out). */
+export function cashflowMonths() {
   const einzug = typeof state.settings.einzugstermin === 'string' ? state.settings.einzugstermin : '';
   const from = dayStart();
+  const outs = [state.settings.move_out_s, state.settings.move_out_a].filter((d) => typeof d === 'string' && d);
   const last = einzug ? new Date(einzug + 'T00:00:00') : new Date(from);
+  for (const o of outs) {
+    const d = new Date(o + 'T00:00:00');
+    if (d > last) last.setTime(d.getTime());
+  }
   last.setMonth(last.getMonth() + 2);
   if (last < from) last.setTime(from.getTime());
   const months = [];
@@ -182,16 +239,52 @@ export function cashflow() {
     months.push(monthKey(cur));
     cur.setMonth(cur.getMonth() + 1);
   }
-  return months.map((key) => {
+  return months;
+}
+
+/** Month by month: what falls due, what of it is paid, plus the calculated double rent. */
+export function cashflow() {
+  return cashflowMonths().map((key) => {
     const rows = state.costs.filter((c) => c.due_on && c.due_on.slice(0, 7) === key && isCounted(c) && c.kind === 'einmalig');
+    const back = state.costs.filter((c) => c.due_on && c.due_on.slice(0, 7) === key && isCounted(c) && c.kind === 'rueckfluss');
+    const due = rows.reduce((n, c) => n + num(c.amount), 0) - back.reduce((n, c) => n + num(c.amount), 0);
+    const rent = doubleRent(key);
     return {
       key,
       label: monthName(key),
-      due: rows.reduce((n, c) => n + num(c.amount), 0),
+      due,
       paid: rows.filter((c) => c.status === 'bezahlt').reduce((n, c) => n + num(c.amount), 0),
-      rent: doubleRent(key),
+      rent,
+      total: Math.round((due + (rent || 0)) * 100) / 100,
     };
   });
+}
+
+/** The month that costs the most - the one sentence under the table (016 §5). */
+export function peakMonth(rows = cashflow()) {
+  let best = null;
+  for (const r of rows) if (r.total > 0 && (!best || r.total > best.total)) best = r;
+  return best;
+}
+
+/** The next payments that need a decision: overdue first, then by date (016 F5). */
+export function nextPayments(limit = 3) {
+  // this list asks a different question than isCounted: an offer counts in no sum (007) but it is
+  // exactly the row that needs the next step. Out go only rows a firm row of the same task replaced.
+  const live = (c) =>
+    c.kind === 'einmalig' && c.status !== 'bezahlt' && (FIRM.includes(c.status) || !c.task_id || !hasFirm(c.task_id));
+  const open = state.costs
+    .filter(live)
+    .sort((a, b) => (a.due_on || '9999').localeCompare(b.due_on || '9999') || a.sort - b.sort);
+  const late = open.filter(isCostLate);
+  const rest = open.filter((c) => !isCostLate(c));
+  return { late, next: rest.slice(0, limit), openCount: open.length };
+}
+
+/** "1.785 € im Monat für die neue Wohnung · 50 € weniger als eure beiden Wohnungen heute" (F4). */
+export function recurringSummary() {
+  const t = recurringTotals();
+  return { ...t, old: Math.round((t.s + t.a) * 100) / 100 };
 }
 
 /** The buffer row lives in costs without a task (docs/changes/004). */
