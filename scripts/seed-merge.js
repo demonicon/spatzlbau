@@ -12,7 +12,7 @@
 // - deleted tasks      -> left alone (no resurrection)
 // - ticks, comments, briefings, status, wait_on, own tasks -> never touched
 
-export const SEED_FIELDS = ['phase', 'title', 'owner', 'offset_days', 'critical', 'type', 'blocked_by', 'sort'];
+export const SEED_FIELDS = ['phase', 'title', 'owner', 'offset_days', 'anchor', 'critical', 'type', 'blocked_by', 'sort'];
 export const ADVICE_KEYS = ['why', 'how', 'need', 'law', 'traps'];
 
 // Postgres returns jsonb with its own key order, so compare canonically (sorted keys), not by
@@ -29,7 +29,10 @@ const same = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 
 function snapshotOf(seedTask, sort) {
   const snap = {};
-  for (const f of SEED_FIELDS) snap[f] = f === 'sort' ? sort : (seedTask[f] ?? null);
+  // 'anchor' has a real DB default ('einzug'), not null - the snapshot mirrors the same default
+  // the insert below uses (bugfix 1.1), otherwise every freshly-inserted task would look "touched"
+  // to the merge the moment a later package tries to set anchor: 'umzugstag' on it
+  for (const f of SEED_FIELDS) snap[f] = f === 'sort' ? sort : f === 'anchor' ? (seedTask.anchor ?? 'einzug') : (seedTask[f] ?? null);
   snap.advice = {};
   for (const k of ADVICE_KEYS) if (seedTask.advice?.[k]) snap.advice[k] = seedTask.advice[k];
   return snap;
@@ -60,6 +63,7 @@ export function planSeedMerge(seed, tasks, subtasks) {
         title: st.title,
         owner: st.owner ?? 'B',
         offset_days: st.offset_days ?? 0,
+        anchor: st.anchor ?? 'einzug', // bugfix 1.1: which date the deadline is measured from
         critical: !!st.critical,
         type: st.type ?? 'self',
         status: (st.type ?? 'self') === 'claude' ? 'briefing' : null,

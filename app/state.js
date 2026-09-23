@@ -49,6 +49,12 @@ export const comsOf = (taskId) =>
   state.comments.filter((c) => c.task_id === taskId).sort((a, b) => a.created_at.localeCompare(b.created_at));
 export const phases = () => (Array.isArray(state.settings.phases) && state.settings.phases.length ? state.settings.phases : []);
 export const einzug = () => (typeof state.settings.einzugstermin === 'string' && state.settings.einzugstermin) || '';
+// bugfix 1.1: the actual moving day, separate from the key handover date - 01.01. is a holiday,
+// nothing about the day itself was ever true for it. Falls back to einzug() while unset.
+export const umzugstag = () => (typeof state.settings.umzugstag === 'string' && state.settings.umzugstag) || '';
+// the date a task's deadline is measured from: einzug for almost everything, umzugstag for the
+// tasks a content package anchors to the day itself (tasks.anchor, bugfix 1.1)
+export const anchorDate = (t) => (t.anchor === 'umzugstag' && umzugstag()) || einzug();
 
 /* ---------- derived logic (BRIEFING §3) ---------- */
 export function blockers(t) {
@@ -103,7 +109,7 @@ export function dueLabel(t) {
 export const claudeStep = (t) => (t.status === 'ergebnis' ? 'ergebnis' : t.status && t.status !== 'briefing' ? 'claude' : 'briefing');
 
 export function dueInfo(t) {
-  const base = einzug();
+  const base = anchorDate(t);
   if (base) {
     const dt = new Date(base + 'T00:00:00');
     dt.setDate(dt.getDate() + t.offset_days);

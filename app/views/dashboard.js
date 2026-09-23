@@ -4,7 +4,7 @@
 import { esc } from '../ui/dom.js';
 import { OWN, STEPS } from '../ui/labels.js';
 import { appHeadHTML, updateBarHTML, footHTML } from '../ui/chrome.js';
-import { state, ui, byId, phases, einzug, dueInfo, freshComments, doneByOther, claudeStep } from '../state.js';
+import { state, ui, byId, phases, einzug, umzugstag, dueInfo, freshComments, doneByOther, claudeStep } from '../state.js';
 import { FILTERS, matches, count, isBlocked, isLate, isCritical, waitsOnMe, other } from '../filters.js';
 import { taskHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
@@ -15,6 +15,10 @@ import { printHTML } from './print.js';
 
 const DAY = 86400000;
 const CAP = 8; // rows per column before "alle n zeigen"
+
+// bugfix 1.1: same abbreviations as the due-date labels elsewhere ("bis Do 15.10.")
+const fmtWeekday = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
+const fmtDayMonth = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 
 function daysToMoveIn() {
   const base = einzug();
@@ -36,13 +40,18 @@ function headHTML() {
   const d = base ? new Date(base + 'T00:00:00') : null;
   const dateLong = d ? d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : '';
   const dateShort = d ? d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  // bugfix 1.1: the moving day is a second, independent date - shown only once it differs from
+  // einzug, so a device that has never seen it renders byte-identical to before
+  const move = umzugstag() && umzugstag() !== base ? umzugstag() : '';
+  // fmtDayMonth already ends in a dot (de-DE "02.01."), like fmtShort elsewhere - no second one
+  const moveSuffix = move ? ` · Umzug ${fmtWeekday(move)} ${fmtDayMonth(move)}` : '';
   const count = !base
     ? `<span class="n open">Termin offen</span><span class="t">Einzugstermin eintragen, dann zählt die App</span>`
     : days > 0
-      ? `<span class="n">${days}</span><span class="t">${days === 1 ? 'Tag' : 'Tage'} bis zur Schlüsselübergabe</span>`
+      ? `<span class="n">${days}</span><span class="t">${days === 1 ? 'Tag' : 'Tage'} bis zur Schlüsselübergabe${moveSuffix}</span>`
       : days === 0
-        ? `<span class="n">Heute</span><span class="t">ist Schlüsselübergabe</span>`
-        : `<span class="n">${-days}</span><span class="t">${-days === 1 ? 'Tag' : 'Tage'} seit der Schlüsselübergabe</span>`;
+        ? `<span class="n">Heute</span><span class="t">ist Schlüsselübergabe${moveSuffix}</span>`
+        : `<span class="n">${-days}</span><span class="t">${-days === 1 ? 'Tag' : 'Tage'} seit der Schlüsselübergabe${moveSuffix}</span>`;
   const showDate = ui.dateEdit || !base;
   return `<header class="dash-head">
     ${appHeadHTML('dashboard')}

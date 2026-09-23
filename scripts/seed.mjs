@@ -18,7 +18,7 @@ const db = restClient(env);
 const seed = JSON.parse(readFileSync(file, 'utf8'));
 
 // ---- tasks / subtasks / phases
-const tasks = await db.all('tasks', 'select=id,deleted_at,seed_snapshot,advice,phase,title,owner,offset_days,critical,type,blocked_by,sort');
+const tasks = await db.all('tasks', 'select=id,deleted_at,seed_snapshot,advice,phase,title,owner,offset_days,anchor,critical,type,blocked_by,sort');
 const subtasks = await db.all('subtasks', 'select=task_id,seed_key');
 const plan = planSeedMerge(seed, tasks, subtasks);
 console.log(`${fileArg ? 'package ' + fileArg : 'seed v' + seed.version}: ${plan.summary.newTasks} new tasks, ${plan.summary.updatedTasks} tasks updated (${plan.summary.changedFields} fields), ${plan.summary.newSubtasks} subtasks added`);

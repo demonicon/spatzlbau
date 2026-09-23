@@ -46,7 +46,7 @@ create extension if not exists pgcrypto with schema extensions;
 
 -- allowlist: exactly two rows, created in the block at the top of this file.
 
--- Key/value store: einzugstermin, seed_version, phases, umzugstag_kontakte.
+-- Key/value store: einzugstermin, umzugstag, seed_version, phases, umzugstag_kontakte.
 create table if not exists public.settings (
   key        text primary key,
   value      jsonb not null default 'null'::jsonb,
@@ -58,7 +58,8 @@ create table if not exists public.tasks (
   phase         int  not null check (phase between 1 and 5),
   title         text not null,
   owner         text not null default 'B' check (owner in ('S', 'A', 'B')),
-  offset_days   int  not null default 0,                -- relative to einzugstermin, negative = before
+  offset_days   int  not null default 0,                -- relative to the anchor date, negative = before
+  anchor        text not null default 'einzug' check (anchor in ('einzug', 'umzugstag')), -- b1.1
   critical      boolean not null default false,
   type          text not null default 'self' check (type in ('self', 'assist', 'claude')),
   done          boolean not null default false,
@@ -96,6 +97,8 @@ create table if not exists public.comments (
 );
 
 alter table public.tasks add column if not exists done_by text;
+alter table public.tasks add column if not exists anchor text not null default 'einzug'
+  check (anchor in ('einzug', 'umzugstag'));                                          -- b1.1
 update public.tasks set status = 'claude' where status in ('go', 'recherche', 'rueckfragen', 'arbeit');
 alter table public.tasks drop constraint if exists tasks_status_check;
 alter table public.tasks add constraint tasks_status_check check (status in ('briefing', 'claude', 'ergebnis'));
@@ -178,7 +181,8 @@ begin
 end;
 $$;
 
--- costs: paid_on settles the row; due_on defaults to the task deadline on insert (docs/changes/004)
+-- costs: paid_on settles the row; due_on defaults to the task deadline on insert (docs/changes/004),
+-- now via the task's own anchor date instead of always einzugstermin (bugfix 1.1)
 create or replace function public.costs_before_write()
 returns trigger
 language plpgsql
@@ -187,15 +191,21 @@ as $$
 declare
   base text;
   off  int;
+  anc  text;
 begin
   -- a payment date settles the row
   if new.paid_on is not null then
     new.status := 'bezahlt';
   end if;
-  -- default due date = deadline of the task (einzugstermin + offset_days), only when both are known
+  -- default due date = deadline of the task (anchor date + offset_days), only when both are known
   if tg_op = 'INSERT' and new.due_on is null and new.task_id is not null then
-    select value #>> '{}' into base from public.settings where key = 'einzugstermin';
-    select offset_days into off from public.tasks where id = new.task_id;
+    select offset_days, anchor into off, anc from public.tasks where id = new.task_id;
+    if anc = 'umzugstag' then
+      select value #>> '{}' into base from public.settings where key = 'umzugstag';
+    end if;
+    if base is null or base !~ '^\d{4}-\d{2}-\d{2}$' then
+      select value #>> '{}' into base from public.settings where key = 'einzugstermin';
+    end if;
     if base ~ '^\d{4}-\d{2}-\d{2}$' and off is not null then
       new.due_on := base::date + off;
     end if;
@@ -408,6 +418,7 @@ alter table public.recurring replica identity full;
 -- ---------------------------------------------------------------------
 insert into public.settings (key, value) values
   ('einzugstermin',   'null'::jsonb),
+  ('umzugstag',       'null'::jsonb),   -- b1.1: eigenes Datum, faellt zurueck auf einzugstermin solange leer
   ('seed_version',    '0'::jsonb),
   ('phases',          '[]'::jsonb),
   ('move_out_s',      'null'::jsonb),   -- Auszug Sebastian (date), Grundlage der berechneten Doppelmiete in 007
