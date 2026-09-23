@@ -7,7 +7,7 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 
 | Nr | Commit | Status | Offene Migrationen |
 |---|---|---|---|
-| 020 Tweaks | – | offen | – |
+| 020 Tweaks | `95f6f72` | fertig | – |
 | 016 Finanzen | – | offen | – |
 | 017 Akte | – | offen | – |
 | 018 Dashboard | – | offen | – |
