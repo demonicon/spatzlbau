@@ -1469,10 +1469,17 @@ function wireEvents() {
           toast('Kostenzeile gelöscht');
           return;
         // docs/changes/009: briefing -> claude -> ergebnis, nothing in between
-        case 'to-claude':
-          await updateTask(t.id, { status: 'claude' });
-          await addComment(t.id, 'An Claude übergeben.');
+        // docs/changes/024: "Claude jetzt starten" commits the open draft (Ziel/Kontext could
+        // still be unsaved) in the same request, so Claude never reads a stale briefing.
+        case 'claude-start': {
+          const patch = taskPatch(t) || {};
+          patch.status = 'claude';
+          patch.brief = { ...(t.brief || {}), ...(patch.brief || {}), requested_at: new Date().toISOString(), requested_by: state.person };
+          closeEdit();
+          await updateTask(t.id, patch);
+          await addComment(t.id, `${OWN[state.person]} hat Claude gestartet`);
           return;
+        }
         case 'accept':
           await updateTask(t.id, { status: 'ergebnis', done: true, ...doneBy(true) });
           return;

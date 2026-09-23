@@ -77,6 +77,26 @@ const STEP_SENTENCE = {
   ergebnis: 'Das Ergebnis liegt vor – lest es durch und hakt die Aufgabe ab.',
 };
 
+const fmtHM = (iso) => (iso ? new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '');
+
+/** docs/changes/024: 07-22 Uhr stündlich, sonst wartet die nächste Zeile bis 07:00. */
+function nextRunText() {
+  const h = new Date().getHours();
+  return h >= 7 && h < 22 ? `nächster Lauf bis ${String(h + 1).padStart(2, '0')}:00` : 'nächster Lauf ab 07:00';
+}
+
+/** docs/changes/024: wie es um den stündlichen Takt steht, nur solange etwas dazu zu sagen ist. */
+function rhythmHTML(t) {
+  if (t.status === 'claude' && t.brief?.requested_at) {
+    return `<p class="stand-line quiet">bei Claude seit ${fmtHM(t.brief.requested_at)} · ${nextRunText()}</p>`;
+  }
+  if (t.status === 'briefing' || !t.status) {
+    const last = state.settings.claude_last_run;
+    return `<p class="stand-line quiet">Claude prüft stündlich${last ? ` · zuletzt ${fmtHM(last)}` : ''}</p>`;
+  }
+  return '';
+}
+
 /** "Stand": where the delegation stands, one sentence, and the briefing behind a text link. */
 function standHTML(t) {
   const step = claudeStep(t);
@@ -87,9 +107,9 @@ function standHTML(t) {
   return `<h3>Stand <small>Jetzt dran: ${STEP_OWNER[step]}</small></h3>
     <ol class="steps" aria-label="Zustandsverlauf">${STEPS.map((s, i) => `<li class="${i === idx ? 'cur' : i < idx ? 'past' : ''}" ${i === idx ? 'aria-current="step"' : ''}><i></i><span>${s[1]}</span></li>`).join('')}</ol>
     <p class="stand-line">${STEP_SENTENCE[step]}</p>
+    ${rhythmHTML(t)}
     <div class="row">
       <button class="btn-text" data-act="brief-read" data-ref="${t.id}" aria-expanded="${open}">Briefing lesen ${open ? '›' : '›'}</button>
-      ${step === 'briefing' ? `<button class="btn-secondary" data-act="to-claude">An Claude geben</button>` : ''}
       ${step === 'claude' ? `<button class="btn-secondary" data-act="accept">Ergebnis übernommen</button>` : ''}
     </div>
     ${open ? `<div class="brief read">${text('goal', 'Ziel') || '<div class="brief-read"><b>Ziel</b><p class="none">noch nicht geschrieben</p></div>'}${text('ctx', 'Kontext & Rahmendaten')}${text('result', 'Ergebnis von Claude')}</div>` : ''}`;
@@ -216,6 +236,7 @@ function delegationEditHTML(t) {
   const cur = fieldValue(t, 'status') || 'briefing';
   const brief = t.brief || {};
   const filled = ['goal', 'ctx'].filter((k) => String(fieldValue(t, 'brief.' + k) || '').trim()).length;
+  const goalFilled = !!String(fieldValue(t, 'brief.goal') || '').trim();
   return `<h3>Delegation an Claude <small>Briefing ${filled === 2 ? 'vollständig' : 'unvollständig'} ${filled}/2</small></h3>
     <div class="seg" role="group" aria-label="Stand der Delegation">${STEPS.map(
       ([k, l]) => `<button class="pill" data-act="draft-set" data-field="status" data-to="${k}" aria-pressed="${cur === k}">${l}</button>`,
@@ -224,6 +245,11 @@ function delegationEditHTML(t) {
       <textarea data-draft="brief.goal" placeholder="z. B. Shortlist mit 3 Umzugsfirmen inkl. Preisrahmen und Verfügbarkeit">${esc(fieldValue(t, 'brief.goal'))}</textarea></label>
     <label class="lbl${markCls(t, 'brief.ctx')}"><span class="lbl-h">Kontext & Rahmendaten${mark(t, 'brief.ctx')}</span>
       <textarea data-draft="brief.ctx" placeholder="z. B. 3-Zimmer + 2-Zimmer, beide 3. OG ohne Aufzug, ~35 m³">${esc(fieldValue(t, 'brief.ctx'))}</textarea></label>
+    ${
+      cur === 'briefing'
+        ? `<div class="row"><button class="btn-secondary" data-act="claude-start" data-ref="${t.id}" ${goalFilled ? '' : 'disabled aria-disabled="true"'}>Claude jetzt starten</button></div>`
+        : ''
+    }
     <div class="brief-read"><b>Ergebnis von Claude</b><p class="${brief.result ? '' : 'none'}">${brief.result ? esc(brief.result) : 'liegt noch nicht vor'}</p></div>`;
 }
 

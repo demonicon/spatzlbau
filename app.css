@@ -376,6 +376,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .sub-read { font-size: var(--fs-ui); padding: 10px 0; line-height: 1.35; overflow-wrap: anywhere; }
 .sub.done .sub-read { color: var(--ink-3); text-decoration: line-through; }
 .stand-line { margin: 10px 0 0; font-size: var(--fs-ui); line-height: 1.45; }
+.stand-line.quiet { color: var(--ink-3); font-size: var(--fs-small); margin-top: 4px; }
 .brief.read { margin-top: 10px; }
 .brief-read { margin-top: 10px; }
 .brief-read:first-child { margin-top: 0; }

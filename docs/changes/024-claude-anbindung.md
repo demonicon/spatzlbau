@@ -1,5 +1,6 @@
 # 024 – Claude-Anbindung: Ergebnisse in der Akte, „Claude jetzt starten"
 
+Status: Teil 2 (PWA) umgesetzt (Branch `feat/024-claude-anbindung` → `preview`, Abweichungen in `024-abweichungen.md`). Teil 1 (Schreibrecht) und Teil 3 (Scheduled Task) sind nicht Aufgabe von Claude Code – siehe Abweichungsliste.
 Stand: 23.09.2026 · Meilenstein 2.0 · Ziel-Branch: `preview` · Modell: Sonnet · Aufwand: S (App) + Einrichtung außerhalb des Repos
 Entscheidung Sebastian 23.09.: Lösung B (Claude schreibt Ergebnisse selbst) plus ein Auslöser in der PWA.
 
@@ -36,11 +37,11 @@ Grenzen, offen benannt: Latenz bis 60 Minuten (der Button startet keinen Lauf, e
 
 ## Akzeptanzkriterien
 
-- [ ] Button nur mit gefülltem Ziel aktiv; Klick → `status = claude`, `requested_at`, Kommentar; zweiter Klick nicht möglich
-- [ ] Stand-Zeile zeigt `claude_last_run` und „nächster Lauf bis hh:00"
-- [ ] Testlauf: Sebastian startet `internet` per Button; der nächste stündliche Lauf schreibt Ergebnis + Kommentar C; Realtime zeigt es auf Annas Gerät ohne Reload
-- [ ] Testlauf ohne Arbeit: `claude_last_run` aktualisiert, sonst keine Schreibzugriffe (Kontrolle per `task_changes` und `comments`)
-- [ ] Bericht ≤ 10 Zeilen, Changelog: „Aufgaben lassen sich an Claude übergeben – Ergebnis und Rückfragen kommen in die Akte, stündlich."
+- [x] Button nur mit gefülltem Ziel aktiv; Klick → `status = claude`, `requested_at`, Kommentar; zweiter Klick nicht möglich
+- [x] Stand-Zeile zeigt `claude_last_run` und „nächster Lauf bis hh:00"
+- [ ] Testlauf: Sebastian startet `internet` per Button; der nächste stündliche Lauf schreibt Ergebnis + Kommentar C; Realtime zeigt es auf Annas Gerät ohne Reload – **nicht geprüft**: braucht Teil 1 (Schreibrecht) und Teil 3 (Scheduled Task), beide außerhalb dieses Auftragsteils
+- [ ] Testlauf ohne Arbeit: `claude_last_run` aktualisiert, sonst keine Schreibzugriffe – **nicht geprüft**, aus demselben Grund
+- [x] Bericht ≤ 10 Zeilen, Changelog: „Aufgaben lassen sich an Claude übergeben – Ergebnis und Rückfragen kommen in die Akte, stündlich."
 
 ## Reihenfolge
 
