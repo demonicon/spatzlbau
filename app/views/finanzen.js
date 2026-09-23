@@ -6,6 +6,7 @@ import { OWN } from '../ui/labels.js';
 import { state, ui, byId, einzug, umzugstag } from '../state.js';
 import { costHTML } from '../ui/detail.js';
 import { appHeadHTML, updateBarHTML, footHTML } from '../ui/chrome.js';
+import { SUPABASE_URL } from '../config.js';
 import {
   summary, balance, balanceText, balanceParts, cashflow, peakMonth, moveOutMissing, bufferRow, bufferPct,
   suggestedBuffer, nextPayments, recurringRows, recurringSummary, rowDelta, isCounted, isCostLate,
@@ -252,6 +253,37 @@ const SETTINGS = [
   ['buffer_pct', 'Puffer in %', 'num'],
 ];
 
+/* ---------- 8b. the calendar subscription (docs/changes/022) ----------
+   Two addresses, one per person. The token in them is the whole secret, so the line says what
+   happens when it is replaced before it replaces it. */
+
+export const icsToken = () => (typeof state.settings.ics_token === 'string' && state.settings.ics_token) || '';
+export const icsUrl = (person) => `${SUPABASE_URL}/functions/v1/ics?token=${encodeURIComponent(icsToken())}&person=${person}`;
+
+function icsHTML() {
+  const token = icsToken();
+  const asking = ui.confirm === 'ics-new';
+  if (!token) {
+    return `<p class="fin-rahmen-line">Kalender-Abo · <button class="btn-text" data-act="ics-new">Abo-Adressen erzeugen</button>
+      <span class="fin-note">Fristkritische Aufgaben und die fünf Gates als Kalender für iPhone, Google oder Outlook.</span></p>`;
+  }
+  return `<div class="fin-rahmen-line ics">
+    <span class="l">Kalender-Abo</span>
+    <span class="ics-links">
+      ${['S', 'A']
+        .map((k) => `<button class="btn-text ics-copy" data-act="ics-copy" data-to="${k}">${OWN[k]} kopieren</button>`)
+        .join('')}
+      ${asking
+        ? `<span class="confirm">Neue Adresse? Die alten Abos hören auf zu aktualisieren.
+            <button class="btn-text danger" data-act="ics-new-yes">Ja, neu erzeugen</button>
+            <button class="btn-secondary" data-act="confirm-no">Nein</button></span>`
+        : `<button class="btn-secondary" data-act="ics-new">Link neu erzeugen</button>`}
+    </span>
+    ${ui.icsShow ? `<input class="ics-url" type="text" readonly value="${esc(icsUrl(ui.icsShow))}" aria-label="Abo-Adresse ${esc(OWN[ui.icsShow])}">` : ''}
+    <span class="fin-note">Google aktualisiert abonnierte Kalender bis zu 24 Stunden später.</span>
+  </div>`;
+}
+
 function rahmenHTML() {
   const d = (k) => (typeof state.settings[k] === 'string' && state.settings[k] ? fmtDay(state.settings[k]) : '–');
   const split = state.settings.split_default_s ?? 50;
@@ -275,6 +307,7 @@ function rahmenHTML() {
           </div>`
         : ''
     }
+    ${icsHTML()}
   </section>`;
 }
 

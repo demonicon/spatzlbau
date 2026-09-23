@@ -528,7 +528,8 @@ insert into public.settings (key, value) values
   ('move_out_s',      'null'::jsonb),   -- Auszug Sebastian (date), Grundlage der berechneten Doppelmiete in 007
   ('move_out_a',      'null'::jsonb),   -- Auszug Anna
   ('split_default_s', '50'::jsonb),     -- Standardanteil Sebastian in % bei belongs_to = B
-  ('buffer_pct',      '20'::jsonb)      -- Puffersatz in %
+  ('buffer_pct',      '20'::jsonb),     -- Puffersatz in %
+  ('ics_token',       'null'::jsonb)   -- a022: Geheimnis hinter der Kalender-Abo-Adresse, App erzeugt es
 on conflict (key) do nothing;
 
 -- Show the result of this run.
