@@ -1,6 +1,6 @@
 # Meilenstein 2.0 auf `preview` – Status
 
-Reihenfolge wie beauftragt: 020 → 016 → 017 → 018 → 022 → 019 → 021.
+Reihenfolge wie beauftragt: 020 → 016 → 017 → 018 → 022 → 019 → 021. Session 2: 020b → 016b → 024.
 `main` und die Live-App bleiben unangetastet; nichts hiervon ist gemerged.
 Migrationen liegen nur als Dateien vor – **keine ist angewendet**. Die App lädt auf `/preview/`
 auch ohne sie; was dann fehlt, steht je Zeile.
@@ -8,6 +8,7 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 | Nr | Commit | Status | Offene Migrationen |
 |---|---|---|---|
 | 020 Tweaks | `95f6f72` | fertig | – |
+| 020b Typografie | `0e015bc` | fertig | keine |
 | 016 Finanzen | `eb3e340` | fertig | `010_a016_finanzen.sql` – ohne sie wird „Überweisung erfassen“ abgelehnt (mit Hinweis), der Rest läuft |
 | 017 Akte | `54cc36d` | fertig | keine |
 | 018 Dashboard | `bcaaffb` | fertig | `011_a018_task_changes.sql` – ohne sie fehlen in „Seit du zuletzt da warst“ die verschobenen Fristen |
