@@ -22,10 +22,11 @@ export function signalHTML(t) {
   return '';
 }
 
-/** Everything the row still has to say, in one line, quietly (020). */
-function quietHTML(t) {
+/** Everything the row still has to say, in one line, quietly (020).
+    The timeline (019) carries the owner as a badge of its own and asks for it to be left out. */
+export function quietHTML(t, { owner = true } = {}) {
   const parts = [];
-  parts.push(esc(OWN[t.owner]));
+  if (owner) parts.push(esc(OWN[t.owner]));
   if (t.type === 'claude') parts.push(esc(STEP_TAG[claudeStep(t)]));
   else if (t.type === 'assist') parts.push('Claude unterstützt');
   if (t.wait_on && t.wait_on !== state.person) parts.push('wartet auf ' + esc(OWN[t.wait_on]));

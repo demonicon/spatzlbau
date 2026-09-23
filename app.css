@@ -690,3 +690,45 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
   .pline .pfill { border-bottom-color: #666; }
   .pgroup h3 { border-bottom-color: #000; color: #000; }
 }
+
+/* ---------- Timeline (docs/changes/019, Variante 3b) ----------
+   A list, not a chart: the date on the left, five phase rails in the middle, the task itself on
+   the right. The rails are drawn with borders and a dot, never with an inline style (CSP, 008). */
+.view-chips { margin: 14px var(--gutter) 0; }
+.timeline { margin: 10px 0 0; }
+.tl-filters { display: flex; flex-direction: column; gap: 6px; margin: 0 var(--gutter); }
+.tl-note { margin: 8px var(--gutter) 0; font-size: var(--fs-micro); color: var(--ink-3); }
+.tl-month { margin: 18px var(--gutter) 0; padding-bottom: 4px; border-bottom: 1px solid var(--ink); font-size: var(--fs-micro); letter-spacing: 0.06em; font-weight: 600; color: var(--ink-2); }
+.tl-today { display: flex; align-items: center; gap: 8px; margin: 10px var(--gutter) 0; padding: 4px 0; border-top: 2px solid var(--ink); }
+.tl-today .l { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--ink); }
+.tl-today .d { font-size: var(--fs-micro); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+.tl-row { display: grid; grid-template-columns: 58px auto minmax(0, 1fr); gap: 0 8px; padding: 8px var(--gutter) 8px 0; margin-left: var(--gutter); border-bottom: 1px solid var(--line); align-items: start; }
+.tl-row.open { background: var(--card); }
+.tl-when { font-size: var(--fs-small); line-height: 1.2; font-variant-numeric: tabular-nums; padding-top: 4px; }
+.tl-when b { display: block; font-size: var(--fs-meta); }
+.tl-when span { display: block; color: var(--ink-3); font-size: var(--fs-micro); }
+.tl-when .t { color: var(--ink-2); }
+.tl-row.late .tl-when b { color: var(--danger); }
+
+/* five narrow columns; a phase that runs on this day draws its line through the cell */
+.tl-rails { display: grid; grid-template-columns: repeat(5, 9px); align-self: stretch; }
+.rail { position: relative; }
+.rail.on::before { content: ''; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: var(--line-dash); }
+.rail .dot { position: absolute; left: 1px; top: 10px; width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--ink); }
+.rail .gate { position: absolute; left: -1px; top: 22px; font-size: 11px; line-height: 1; color: var(--ink); }
+
+.tl-body { display: grid; grid-template-columns: var(--tap) minmax(0, 1fr); align-items: start; margin-left: -8px; }
+.tl-body .check { width: 20px; height: 20px; margin: 10px auto 0; accent-color: var(--ok); }
+.tl-main { min-width: 0; }
+.tl-main > .t { display: block; width: 100%; text-align: left; font-size: var(--fs-body); line-height: 1.3; padding: 6px 0 2px; overflow-wrap: anywhere; }
+.tl-main > .own { display: inline-block; margin: 2px 0; }
+.tl-row .sig { margin-top: 2px; }
+.tl-row .quiet { font-size: var(--fs-micro); color: var(--ink-3); line-height: 1.35; padding-bottom: 2px; }
+.tl-row.done .tl-main > .t { color: var(--ink-3); text-decoration: line-through; }
+.tl-row .detail { grid-column: 1 / -1; margin-top: 8px; }
+
+.tl-gate { display: flex; gap: 6px; align-items: baseline; margin: 2px var(--gutter) 6px calc(var(--gutter) + 66px); font-size: var(--fs-micro); color: var(--ink-2); line-height: 1.4; }
+.tl-gate .d { color: var(--ink); }
+.tl-done { margin-top: 8px; }
+.timeline .empty { margin: 16px var(--gutter); }

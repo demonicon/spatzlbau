@@ -79,6 +79,10 @@ ui.wide = false; // ≥ 900 px: the Akte is not inline any more (006)
 // docs/changes/013 A3: three steps instead of two - 'phone' (Akte inline), 'overlay' (Akte comes
 // in from the right over the list) and 'panel' (list and Akte side by side from 1180 px)
 ui.mode = 'phone';
+ui.view = 'personen'; // 'personen' | 'phasen' | 'timeline' (019), kept per device
+ui.tlPhase = null; // timeline: one phase alone, null = all (019)
+ui.tlOwner = 'all'; // timeline: 'all' | 'me' | 'B' | 'you' (019)
+ui.tlDone = false; // timeline: the ticked-off tasks unfolded at the end (019)
 ui.icsShow = null; // 'S' | 'A': the calendar address shown as text when copying failed (022)
 ui.col = 'me'; // which of the three columns the phone shows (018 §1), kept per device
 ui.visitOpen = false; // "Seit du zuletzt da warst" unfolded (018 §6)
@@ -236,7 +240,7 @@ onChange(render);
 
 function saveUI() {
   try {
-    localStorage.setItem(UI_KEY, JSON.stringify({ phase: ui.phase, col: ui.col }));
+    localStorage.setItem(UI_KEY, JSON.stringify({ phase: ui.phase, col: ui.col, view: ui.view }));
   } catch {}
 }
 function loadUI() {
@@ -244,6 +248,7 @@ function loadUI() {
     const u = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
     if (Number.isInteger(u.phase) || u.phase === null) ui.phase = u.phase;
     if (['me', 'B', 'you'].includes(u.col)) ui.col = u.col; // docs/changes/018 §1
+    if (['personen', 'phasen', 'timeline'].includes(u.view)) ui.view = u.view; // docs/changes/019
   } catch {}
 }
 
@@ -400,6 +405,11 @@ const isEditable = (el) => !!el && (el.tagName === 'INPUT' || el.tagName === 'TE
 /* ---------- events ---------- */
 const fail = (e) => e && toast('Nicht gespeichert – bitte nochmal versuchen');
 
+/** Put the today marker of the timeline in view (docs/changes/019). */
+function jumpToToday() {
+  requestAnimationFrame(() => $('#tl-today')?.scrollIntoView({ block: 'center' }));
+}
+
 /** A fresh 32-byte secret for the calendar addresses (docs/changes/022). */
 async function newIcsToken() {
   const bytes = new Uint8Array(32);
@@ -411,6 +421,7 @@ async function newIcsToken() {
 const OFFLINE_OK = new Set([
   'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
   'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'col-person', 'visit-toggle', 'group-open',
+  'view-switch', 'tl-phase', 'tl-owner', 'tl-done', 'tl-today',
   'brief-read', 'adv-open', 'akte-cancel', 'akte-discard',
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
@@ -719,6 +730,35 @@ function wireEvents() {
         case 'col-blocked':
           ui.blockedCols.has(b.dataset.ref) ? ui.blockedCols.delete(b.dataset.ref) : ui.blockedCols.add(b.dataset.ref);
           render();
+          return;
+        /* ---------- Timeline 019 ---------- */
+        case 'view-switch': {
+          const to = b.dataset.to;
+          if (ui.view === to) return;
+          ui.view = to;
+          ui.filter = null; // the signals belong to the person view
+          ui.expanded = null;
+          saveUI();
+          render();
+          // the timeline opens where today is: what is overdue stands directly above it
+          if (to === 'timeline') jumpToToday();
+          else window.scrollTo({ top: 0 });
+          return;
+        }
+        case 'tl-phase':
+          ui.tlPhase = b.dataset.to === 'all' ? null : parseInt(b.dataset.to, 10);
+          render();
+          return;
+        case 'tl-owner':
+          ui.tlOwner = b.dataset.to;
+          render();
+          return;
+        case 'tl-done':
+          ui.tlDone = !ui.tlDone;
+          render();
+          return;
+        case 'tl-today':
+          jumpToToday();
           return;
         /* ---------- dashboard 018 ---------- */
         case 'col-person':
