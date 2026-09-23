@@ -42,6 +42,7 @@ import { finanzenView } from './views/finanzen.js';
 import { isMoreOpen } from './ui/detail.js';
 import { searching } from './search.js';
 import { parseAmount, bufferRow, bufferPct, suggestedBuffer, costsOf } from './costs.js';
+import { OWN } from './ui/labels.js';
 
 const UI_KEY = 'spatzlbau-ui';
 const PERSON_KEY = 'spatzlbau-person';
@@ -64,7 +65,12 @@ ui.costPay = null; // cost row asking for date, person and receipt
 ui.costAdd = null; // task id showing the "new cost row" form
 ui.screen = 'dashboard'; // 'dashboard' | 'finanzen' (#finanzen, docs/changes/007)
 ui.finFilter = null; // which cost rows the Finanzen view shows
-ui.finSettings = false; // the small settings area (move-out dates, split, buffer)
+ui.finSettings = false; // the frame data at the foot, open for editing (016)
+ui.balHow = false; // "Wie gerechnet?" under the balance (016 F3)
+ui.balPay = false; // the transfer form (016 F3)
+ui.recEdit = false; // monthly costs in edit mode instead of read mode (016 F4)
+ui.postFilter = 'alle'; // which posts the list shows (016 §7)
+ui.postOpen = false; // the phone shows the list only after a tap (016 §7)
 ui.bufferEdit = false;
 ui.recAdd = false; // the "new monthly cost" field in the Finanzen view
 ui.printOpen = false; // "Umzugstag drucken" sheet
@@ -341,6 +347,7 @@ const OFFLINE_OK = new Set([
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
   'fin-recurring', 'q-clear', 'home', 'overlay-close', 'title-edit', 'title-done',
+  'bal-how', 'post-filter', 'post-open', 'rec-edit', 'rec-done',
   'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
 ]);
 
@@ -748,6 +755,62 @@ function wireEvents() {
           revealTask(byId(b.dataset.ref));
           setExpanded(b.dataset.ref);
           return;
+        /* ---------- Finanzen 016 ---------- */
+        case 'bal-how':
+          ui.balHow = !ui.balHow;
+          render();
+          return;
+        case 'bal-pay':
+          ui.balPay = true;
+          ui.balHow = false;
+          render();
+          $('[data-input=bal-amount]', $('#view'))?.focus();
+          return;
+        case 'bal-cancel':
+          ui.balPay = false;
+          render();
+          return;
+        case 'bal-save': {
+          const amount = parseAmount($('[data-input=bal-amount]', $('#view')).value);
+          if (amount === null || amount <= 0) return toast('Betrag nicht lesbar – z. B. 510 oder 510,50');
+          const by = $('[data-input=bal-by]', $('#view')).value;
+          ui.balPay = false;
+          // an 'ausgleich' row moves the balance and nothing else (016 F3)
+          await addCost(null, {
+            label: 'Ausgleich ' + OWN[by] + ' → ' + OWN[by === 'S' ? 'A' : 'S'],
+            amount,
+            kind: 'ausgleich',
+            status: 'bezahlt',
+            paid_by: by,
+            paid_on: new Date().toISOString().slice(0, 10),
+            belongs_to: by === 'S' ? 'A' : 'S',
+          }).catch((e) => {
+            // without migration 010 the database still refuses the new kind - say so plainly
+            toast('Ausgleich braucht Migration 010 – noch nicht eingespielt');
+            throw e;
+          });
+          toast('Überweisung erfasst');
+          return;
+        }
+        case 'rec-edit':
+          ui.recEdit = true;
+          render();
+          return;
+        case 'rec-done':
+          ui.recEdit = false;
+          ui.recAdd = false;
+          render();
+          return;
+        case 'post-filter':
+          ui.postFilter = b.dataset.to;
+          ui.finFilter = null;
+          ui.postOpen = true;
+          render();
+          return;
+        case 'post-open':
+          ui.postOpen = true;
+          render();
+          return;
         case 'fin-filter':
           ui.finFilter = ui.finFilter === b.dataset.to ? null : b.dataset.to;
           render();
@@ -838,6 +901,8 @@ function wireEvents() {
         case 'cost-step':
           // one step at a time; leaving 'bezahlt' has to clear the payment, otherwise the
           // trigger from 004 puts the row straight back on 'bezahlt'
+          // docs/changes/016: "Angebot eintragen" means a number is coming - open the row for it
+          if (b.dataset.to === 'angebot') ui.costEdit = b.dataset.ref;
           await updateCost(b.dataset.ref, b.dataset.to === 'faellig' ? { status: 'faellig', paid_on: null, paid_by: null } : { status: b.dataset.to });
           return;
         case 'cost-pay':

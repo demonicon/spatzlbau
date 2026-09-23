@@ -526,7 +526,8 @@ export async function deleteComment(id) {
    insert and forces status 'bezahlt' as soon as paid_on is set, so the row comes back from the
    server with those values already applied. */
 export async function addCost(taskId, fields) {
-  const row = { task_id: taskId, label: fields.label, amount: fields.amount, kind: 'einmalig', status: 'geschaetzt', belongs_to: 'B', tax_relevant: false };
+  // docs/changes/016: the balance transfer arrives here with kind/status/paid_* already set
+  const row = { task_id: taskId, label: fields.label, amount: fields.amount, kind: 'einmalig', status: 'geschaetzt', belongs_to: 'B', tax_relevant: false, ...fields };
   status('saving', 'Speichern …');
   const { data, error } = await supabase.from('costs').insert(row).select().single();
   if (error) {

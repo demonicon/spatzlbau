@@ -1,5 +1,6 @@
 # 016 – Upgrade Finanzen: drei Fragen statt fünf Zahlen
 
+Status: umgesetzt (Branch `feat/016-finanzen` → `preview`, Abweichungen in `016-abweichungen.md`)
 Stand: 23.09.2026 · Meilenstein 2.0 · Ziel-Branch: `preview` · Modell: Sonnet · Aufwand: M
 Quelle: Review v2 Teil C, Befunde F1–F5 und Mockup 2c (380 + 1280). Setzt 020 voraus.
 
@@ -24,9 +25,9 @@ Migration `NNN_a016_finanzen.sql`: Kind `ausgleich`, View `costs_summary` + `dou
 
 ## Akzeptanzkriterien
 
-- [ ] Mit Teil-B-Daten: Antwortzahl = planned_total + double_rent − refunds_expected, Herleitungszeilen addieren sich auf die Zahl
-- [ ] "Überweisung erfassen" 300 € → Saldo sinkt um 300 €, keine andere Summe ändert sich
-- [ ] Als-Nächstes-Zeile geschätzt → "Angebot eintragen" öffnet Betragsfeld, Stand wird angebot
-- [ ] Laufend: ohne Tippen keine Eingabefelder sichtbar; "Bearbeiten" → Felder, "Abbrechen" verwirft
-- [ ] 380 px: ein Primär-Button in der Ansicht (Überweisung erfassen), alle Buttons nach 020
-- [ ] Zwei Breiten, Bericht ≤ 15 Zeilen, Changelog: "Finanzen beantwortet drei Fragen: was kostet es, was ist als Nächstes zu zahlen, wer schuldet wem."
+- [x] Mit Teil-B-Daten: Antwortzahl = planned_total + double_rent − refunds_expected, Herleitungszeilen addieren sich auf die Zahl
+- [x] "Überweisung erfassen" 300 € → Saldo sinkt um 300 €, keine andere Summe ändert sich
+- [x] Als-Nächstes-Zeile geschätzt → "Angebot eintragen" öffnet Betragsfeld, Stand wird angebot
+- [x] Laufend: ohne Tippen keine Eingabefelder sichtbar; "Bearbeiten" → Felder, "Abbrechen" verwirft
+- [x] 380 px: ein Primär-Button in der Ansicht (Überweisung erfassen), alle Buttons nach 020
+- [x] Zwei Breiten, Bericht ≤ 15 Zeilen, Changelog: "Finanzen beantwortet drei Fragen: was kostet es, was ist als Nächstes zu zahlen, wer schuldet wem."
