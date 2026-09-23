@@ -19,7 +19,11 @@ alter table public.costs add constraint costs_kind_check
 --    Einzug bis zum letzten Auszug - für jeden Monat, in dem eine Altwohnung noch läuft.
 --    Fehlt einer der Termine, ist das Ergebnis null (die Ansicht fragt dann danach).
 -- ---------------------------------------------------------------------
-create or replace view public.costs_summary with (security_invoker = true) as
+-- Hinweis (Review 23.09.): create or replace kann keine Spalte vor 'net' einfügen
+-- (Postgres 42P16). Deshalb drop + create; die Standardrechte auf die View kommen über die
+-- Default Privileges des Schemas zurück, RLS greift über security_invoker auf costs.
+drop view if exists public.costs_summary;
+create view public.costs_summary with (security_invoker = true) as
 with counted as (
   select c.*
   from public.costs c
