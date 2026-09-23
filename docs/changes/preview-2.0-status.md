@@ -16,7 +16,7 @@ auch ohne sie; was dann fehlt, steht je Zeile.
 | 022 Kalender-Abo | `32e5475` | fertig | `012_a022_ics_token.sql` + Edge Function `ics` ausrollen (SETUP.md §11) – ohne beides bleibt die Zeile „Abo-Adressen erzeugen“ wirkungslos |
 | 019 Timeline | `780def8` | fertig (3b) | keine |
 | 021 Phasen/Gates | `0bc839c` | fertig | `013_a021_seen_gates.sql` – ohne sie merkt sich die App den gesehenen Gate-Moment nur für die Sitzung |
-| 024 Claude-Anbindung (Teil 2) | _folgt beim Merge_ | Teil 2 fertig, Teil 1+3 offen (nicht Claude Code) | `015_a024_claude_run.sql` – ohne sie fehlt in der Stand-Zeile „zuletzt HH:MM", sonst läuft alles |
+| 024 Claude-Anbindung (Teil 2) | `068a22f` | Teil 2 fertig, Teil 1+3 offen (nicht Claude Code) | `015_a024_claude_run.sql` – ohne sie fehlt in der Stand-Zeile „zuletzt HH:MM", sonst läuft alles |
 
 ## Migrationen in dieser Reihenfolge einspielen
 
