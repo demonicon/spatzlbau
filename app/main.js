@@ -78,6 +78,9 @@ ui.wide = false; // ≥ 900 px: the Akte is not inline any more (006)
 // docs/changes/013 A3: three steps instead of two - 'phone' (Akte inline), 'overlay' (Akte comes
 // in from the right over the list) and 'panel' (list and Akte side by side from 1180 px)
 ui.mode = 'phone';
+ui.col = 'me'; // which of the three columns the phone shows (018 §1), kept per device
+ui.visitOpen = false; // "Seit du zuletzt da warst" unfolded (018 §6)
+ui.openGroups = new Set(); // "<col>:<group>" - time groups opened by hand (018 §2)
 ui.akteEdit = null; // task id whose Akte is in edit mode (017)
 ui.draft = null; // { id, fields } - the unsaved changes of that Akte (017)
 ui.briefOpen = null; // task id whose briefing is unfolded in Ansehen (017)
@@ -231,13 +234,14 @@ onChange(render);
 
 function saveUI() {
   try {
-    localStorage.setItem(UI_KEY, JSON.stringify({ phase: ui.phase }));
+    localStorage.setItem(UI_KEY, JSON.stringify({ phase: ui.phase, col: ui.col }));
   } catch {}
 }
 function loadUI() {
   try {
     const u = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
     if (Number.isInteger(u.phase) || u.phase === null) ui.phase = u.phase;
+    if (['me', 'B', 'you'].includes(u.col)) ui.col = u.col; // docs/changes/018 §1
   } catch {}
 }
 
@@ -322,6 +326,16 @@ function openFinanzen() {
 function setExpanded(id) {
   const prev = ui.expanded;
   if (id) markCommentsSeen(id).catch(() => {}); // opening takes the "new" dot away (009)
+  // docs/changes/018 §1: the phone shows one column - a task from another one (a signal, a link,
+  // a search hit) would open into nothing, so the switch follows the task
+  const t0 = id ? byId(id) : null;
+  if (t0 && !ui.wide) {
+    const want = t0.owner === state.person ? 'me' : t0.owner === 'B' ? 'B' : 'you';
+    if (ui.col !== want) {
+      ui.col = want;
+      saveUI();
+    }
+  }
   ui.expanded = id;
   ui.confirm = null;
   ui.akteEdit = null;
@@ -386,7 +400,7 @@ const fail = (e) => e && toast('Nicht gespeichert – bitte nochmal versuchen');
 // what still works without a connection: looking, folding, filtering, printing (docs/changes/009)
 const OFFLINE_OK = new Set([
   'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
-  'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto',
+  'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'col-person', 'visit-toggle', 'group-open',
   'brief-read', 'adv-open', 'akte-cancel', 'akte-discard',
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings', 'buffer-edit', 'buffer-cancel',
@@ -696,6 +710,37 @@ function wireEvents() {
           ui.blockedCols.has(b.dataset.ref) ? ui.blockedCols.delete(b.dataset.ref) : ui.blockedCols.add(b.dataset.ref);
           render();
           return;
+        /* ---------- dashboard 018 ---------- */
+        case 'col-person':
+          ui.col = b.dataset.to;
+          ui.expanded = null;
+          saveUI();
+          render();
+          window.scrollTo({ top: 0 });
+          return;
+        case 'visit-toggle':
+          ui.visitOpen = !ui.visitOpen;
+          render();
+          return;
+        case 'group-open':
+          ui.openGroups.add(b.dataset.ref);
+          render();
+          return;
+        case 'answer': {
+          // open the Akte and put the cursor in the comment field - that is the answer (018 §3)
+          const id = b.dataset.ref;
+          ui.filter = null;
+          setExpanded(id); // marks the comments seen and renders
+          $(`[data-detail="${CSS.escape(id)}"] [data-input=com], #view .task[data-id="${CSS.escape(id)}"] [data-input=com]`, $('#view'))?.focus();
+          return;
+        }
+        case 'remind': {
+          const task = byId(b.dataset.ref);
+          if (!task) return;
+          await addComment(task.id, `Erinnerung: ${task.title}`);
+          toast('Erinnerung geschrieben');
+          return;
+        }
         case 'panel-close':
           setExpanded(null);
           return;

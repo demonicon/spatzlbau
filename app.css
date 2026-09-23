@@ -161,50 +161,65 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .gate .bar i { position: absolute; inset: 0 auto 0 0; background: var(--ink); }
 .gate.complete .bar i { background: var(--ok); }
 
-/* ---------- "Seit deinem letzten Besuch" (docs/changes/009) ---------- */
-/* docs/changes/013 A1: one line of chips; the four rows only while one of them is active */
-.visit.chips-only { margin: 10px var(--gutter) 0; padding: 2px 0; border: 0; background: none; display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; }
-.visit.chips-only::-webkit-scrollbar { display: none; }
-.visit-label { flex: none; font-size: var(--fs-micro); color: var(--ink-3); }
-.vchip { flex: none; padding: 0 12px; }
-.vchip b { color: var(--ink); font-size: var(--fs-meta); }
-/* docs/changes/013b N2: what waits for me is heavier and outlined, not red - red stays with
-   "überfällig", so the two cannot be confused at a glance */
-.vchip.urgent { border-color: var(--ink); color: var(--ink); font-weight: 600; background: var(--card); }
-.vchip .ndot { width: 16px; height: 16px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: var(--fs-nano); font-weight: 700; line-height: 1; margin-left: -3px; }
-.vchip .ndot.S, .visit-part .ndot.S { background: var(--seb); }
-.vchip .ndot.A, .visit-part .ndot.A { background: var(--anna); }
-.vchip .ndot.C, .visit-part .ndot.C { background: var(--claude); }
-.visit { margin: 12px var(--gutter) 0; border: 1px solid var(--ink); background: var(--card); }
-.visit h2 { margin: 0; padding: 8px 12px 6px; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--line); }
-.visit-part { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--line); }
-.visit-part:last-child { border-bottom: 0; }
-.visit-part .n { font-size: 20px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; min-width: 22px; }
-.visit-part .l { font-size: var(--fs-meta); color: var(--ink); line-height: 1.25; }
-.visit-part .ndot { width: 16px; height: 16px; border-radius: var(--r-pill); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: var(--fs-nano); font-weight: 700; line-height: 1; flex: none; }
-/* 013b N2: the row that waits for me is bold and carries a mark on the left - no red field */
-.visit-part.urgent { box-shadow: inset 3px 0 0 var(--ink); }
-.visit-part.urgent .l { font-weight: 600; }
-.visit-part[aria-pressed=true] { box-shadow: inset 3px 0 0 var(--ink); }
+/* ---------- "Seit du zuletzt da warst" (docs/changes/018 §6) ----------
+   One line while folded; it only exists when something actually happened. */
+.visit { margin: 10px var(--gutter) 0; border: 1px solid var(--line); background: var(--card); }
+.visit-line { width: 100%; min-height: var(--tap); display: flex; align-items: center; gap: 6px; padding: 6px 12px; text-align: left; font-size: var(--fs-meta); }
+.visit-line .l { color: var(--ink-2); flex: none; }
+.visit-line .v { color: var(--ink); font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.visit-line .chev { margin-left: auto; color: var(--ink-3); font-size: 16px; flex: none; }
+.visit-body { border-top: 1px solid var(--line); padding: 4px 12px 8px; }
+.visit-item { margin: 8px 0 0; font-size: var(--fs-small); line-height: 1.45; color: var(--ink-2); overflow-wrap: anywhere; }
+.visit-item b { color: var(--ink); }
+.visit-item .k { font-size: var(--fs-nano); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; margin-right: 4px; }
 
-/* ---------- KPI tiles: four, one row (docs/changes/009) ---------- */
-/* docs/changes/013 A1: five in one row, no empty cell */
+/* ---------- the three signals (docs/changes/018 §3) ---------- */
 .kpis { margin: 10px var(--gutter) 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.tile.money .n { font-size: var(--fs-small); letter-spacing: 0; }
-/* variant B: the money gets its own narrow line under the four tiles */
-.money-row { width: calc(100% - 2 * var(--gutter)); margin: 8px var(--gutter) 0; min-height: var(--tap); padding: 0 12px; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-meta); color: var(--ink-2); }
-.money-row b { color: var(--ink); }
-.money-row .arr { margin-left: auto; color: var(--ink-3); }
-.tile { background: var(--card); min-height: 58px; padding: 8px 5px 7px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; }
+.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tile { background: var(--card); min-height: 58px; padding: 8px 8px 7px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; text-align: left; }
 .tile[aria-pressed=true] { border-bottom-color: var(--ink); }
 .tile .n { font-size: 21px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
 .tile .n span { padding: 0 4px; margin-left: -4px; }
 .tile .l { font-size: var(--fs-micro); color: var(--ink-2); margin-top: 4px; line-height: 1.2; hyphens: auto; overflow-wrap: anywhere; }
-.tile .l span { color: var(--ink-3); display: none; } /* sub-counts from 600 px on */
 .tile.zero .n { color: var(--ink-3); }
-.tile.critical:not(.zero) .n span { background: var(--mark); }
-.tile.late:not(.zero) .n { color: var(--danger); }
+/* "wartet auf dich" is urgent, not wrong: weight and an outline, never red (Rot-Regel aus 015) */
+.sig-tile:not(.zero) .l { color: var(--ink); font-weight: 600; }
+.kpis.three .sig-tile:first-child:not(.zero) { box-shadow: inset 3px 0 0 var(--ink); }
+
+/* the four counts from 009 stay reachable, one quiet line below the signals */
+.quiet-counts { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px var(--gutter) 0; }
+.quiet-count { color: var(--ink-2); }
+.quiet-count[aria-pressed=true] { font-weight: 600; }
+
+/* the flat list behind a pressed signal: over all people, with the quote and one action */
+.siglist { margin: 10px var(--gutter) 0; }
+.siglist-note { margin: 0 0 6px; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+.sigrow { border-top: 1px solid var(--line); padding: 10px 0; }
+.sigrow-meta { display: flex; gap: 8px; align-items: center; font-size: var(--fs-small); color: var(--ink-2); }
+.sigrow-title { display: block; width: 100%; text-align: left; font-size: var(--fs-body); line-height: 1.3; padding: 4px 0 2px; overflow-wrap: anywhere; }
+.sigrow-quote { margin: 4px 0 0; padding-left: 10px; box-shadow: inset 2px 0 0 var(--line); font-size: var(--fs-small); color: var(--ink-2); line-height: 1.45; }
+.sigrow-quote .who { color: var(--ink-3); }
+
+/* ---------- the person switch (docs/changes/018 §1): one column at a time on a phone ---------- */
+.pswitch { display: flex; gap: 6px; margin: 16px var(--gutter) 0; }
+.pseg { flex: 1 1 0; min-width: 0; min-height: 52px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 6px 10px; border-radius: var(--r-tag); }
+.pseg b { font-size: var(--fs-meta); font-weight: 600; }
+.pseg .s { font-size: var(--fs-micro); font-weight: 400; color: var(--ink-3); }
+.pseg[aria-pressed=true] .s { color: rgba(255, 255, 255, 0.72); }
+
+/* ---------- time groups inside a column (docs/changes/018 §2) ---------- */
+.tgroup-head { display: flex; align-items: baseline; gap: 8px; padding: 12px 0 4px; }
+.tgroup-head .l { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--ink-2); }
+.tgroup-head .n { font-size: var(--fs-micro); color: var(--ink-3); }
+.tgroup:first-child .tgroup-head { padding-top: 4px; }
+.tgroup-more { color: var(--ink-2); }
+
+/* ---------- "Zwischen euch" in the desktop panel (docs/changes/018 §5) ---------- */
+.panel.between { padding-bottom: 12px; }
+.between-block { padding: 12px 14px 4px; border-bottom: 1px solid var(--line); }
+.between-block h3 { margin: 0; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--ink-2); }
+.between-title { display: block; width: 100%; text-align: left; font-size: var(--fs-ui); line-height: 1.35; font-weight: 600; padding: 6px 0 0; overflow-wrap: anywhere; }
 
 /* ---------- phase chips (docs/changes/009: phases filter, they no longer navigate) ---------- */
 .chips-row { display: flex; align-items: center; gap: var(--gap); margin: 18px 0 0; padding: 0 var(--gutter); }
@@ -559,19 +574,14 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
   .countdown .btn-text .long { display: inline; }
   .countdown .btn-text .short { display: none; }
   .countdown .n { font-size: 34px; }
-  .tile.money .n { font-size: var(--fs-ui); }
-  /* room for the sub-counts on the tiles (issues.md #3: never show less on the bigger screen) */
+  /* room for the labels on the tiles (issues.md #3: never show less on the bigger screen) */
   .tile { padding: 10px 12px 8px; min-height: 64px; }
-  .tile .l span { display: inline; }
   /* all phases fit without scrolling; the label keeps to the first row when they wrap */
   .pchips { flex-wrap: wrap; overflow-x: visible; }
   .chips-row { align-items: flex-start; }
   .chips-label { padding-top: 15px; }
-  /* the visit summary becomes one row of signals */
-  .visit { display: flex; flex-wrap: wrap; }
-  .visit h2 { flex: 1 0 100%; }
-  .visit-part { width: auto; flex: 1 1 190px; border-bottom: 0; border-left: 1px solid var(--line); }
-  .visit-part:first-of-type { border-left: 0; }
+  /* docs/changes/018: more room for the three names from here on */
+  .pseg { min-height: 56px; padding: 8px 14px; }
 }
 
 @media (min-width: 900px) {

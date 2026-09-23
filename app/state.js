@@ -17,6 +17,8 @@ export const state = {
   comments: [],
   costs: [], // cost rows per task (docs/changes/007)
   recurring: [], // monthly costs old vs new, for the double rent in the cashflow (007)
+  changes: [], // task_changes rows, newest first (018) - empty while migration 011 is missing
+  hasChanges: false, // true once migration 011 is applied and the table could be read (018)
   loaded: false,
 };
 
@@ -155,6 +157,7 @@ function saveSnapshot() {
         comments: state.comments,
         costs: state.costs,
         recurring: state.recurring,
+        changes: state.changes,
       }),
     );
   } catch {} // quota or private mode: the app just has no offline copy
@@ -177,6 +180,7 @@ export function loadSnapshot() {
     state.comments = d.comments || [];
     state.costs = d.costs || [];
     state.recurring = d.recurring || [];
+    state.changes = d.changes || [];
     state.loadedAt = d.saved_at || null;
     state.loaded = true;
     notify();
@@ -204,6 +208,11 @@ export async function loadAll() {
   state.comments = comments.data;
   state.costs = costs.data;
   state.recurring = recurring.data;
+  // docs/changes/018: the change log is additive and asked for on its own. Without migration 011
+  // the table is missing, the query fails, and "Seit du zuletzt da warst" simply stays away.
+  const chg = await supabase.from('task_changes').select('*').order('changed_at', { ascending: false }).limit(200);
+  state.hasChanges = !chg.error;
+  state.changes = chg.error ? [] : chg.data;
   state.loaded = true;
   state.loadedAt = new Date().toISOString();
   notify();
@@ -323,6 +332,12 @@ export function applyRealtimeEvent(table, payload) {
       return deleted ? dropRow(state.costs, old?.id) : upsertRow(state.costs, row);
     case 'recurring':
       return deleted ? dropRow(state.recurring, old?.id) : upsertRow(state.recurring, row);
+    case 'task_changes': {
+      // append-only (018): a new row goes to the front, nothing is ever updated or deleted
+      if (deleted || state.changes.some((c) => c.id === row.id)) return false;
+      state.changes.unshift(row);
+      return true;
+    }
     case 'settings': {
       const key = deleted ? old?.key : row.key;
       if (!key) return false;
@@ -358,7 +373,9 @@ export function subscribeRealtime() {
 
   let wasSubscribed = false;
   const ch = supabase.channel('spatzlbau-db');
-  for (const table of ['settings', 'tasks', 'subtasks', 'comments', 'costs', 'recurring']) {
+  const tables = ['settings', 'tasks', 'subtasks', 'comments', 'costs', 'recurring'];
+  if (state.hasChanges) tables.push('task_changes'); // only when migration 011 is in (018)
+  for (const table of tables) {
     ch.on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
       let changed;
       try {

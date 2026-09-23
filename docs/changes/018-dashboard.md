@@ -1,5 +1,6 @@
 # 018 – Dashboard: eine Person zur Zeit, nach Zeit geordnet
 
+Status: umgesetzt (Branch `feat/018-dashboard` → `preview`, Abweichungen in `018-abweichungen.md`)
 Stand: 23.09.2026 · Meilenstein 2.0 · Ziel-Branch: `preview` · Modell: Opus · Aufwand: L
 Quelle: Review v2 Teil C, Befunde B1–B5, B7, Mockups 2a (380 interaktiv, 1280 Panel ohne Auswahl) und Funktionsidee 4t. Setzt 020, 017, 019 voraus. **Design-Entscheidung von Anna am 27.09. auf `/preview/` – bis dahin nicht nach `main`.**
 
@@ -23,10 +24,10 @@ Migration `NNN_a018_task_changes.sql`: Tabelle `task_changes` (id, task_id, fiel
 
 ## Akzeptanzkriterien
 
-- [ ] 380 px: Umschalter zeigt eine Spalte, Wechsel ohne Reload, Zähler stimmen mit Spalteninhalt überein
-- [ ] Zeitgruppen: Aufgabe mit Frist Sonntag steht in "Diese Woche", Montag in "Bis Gate", nach dem Gate in "Später" (eingeklappt)
-- [ ] Kachel "warten auf dich" filtert über beide Personen, zeigt Zitat, Antworten öffnet Akte mit Fokus
-- [ ] Frist einer Aufgabe in Bearbeiten (017) ändern → Zeile in `task_changes`, "Seit du zuletzt da warst" beim anderen Gerät nennt sie zuerst
-- [ ] Desktop 1280 ohne Auswahl: Panel zeigt "Zwischen euch", mit Auswahl die Akte
-- [ ] Erinnern schreibt einen Kommentar mit Autor und Präfix "Erinnerung:"
-- [ ] Volle Prüfung (L, drei Breiten), Bericht ≤ 20 Zeilen, Changelog: "Das Dashboard zeigt am Handy eine Person zur Zeit, sortiert nach Zeit, und sagt, was sich seit deinem letzten Besuch geändert hat."
+- [x] 380 px: Umschalter zeigt eine Spalte, Wechsel ohne Reload, Zähler stimmen mit Spalteninhalt überein
+- [x] Zeitgruppen: Aufgabe mit Frist Sonntag steht in "Diese Woche", Montag in "Bis Gate", nach dem Gate in "Später" (eingeklappt)
+- [x] Kachel "warten auf dich" filtert über beide Personen, zeigt Zitat, Antworten öffnet Akte mit Fokus
+- [x] Frist einer Aufgabe in Bearbeiten (017) ändern → Zeile in `task_changes`, "Seit du zuletzt da warst" beim anderen Gerät nennt sie zuerst
+- [x] Desktop 1280 ohne Auswahl: Panel zeigt "Zwischen euch", mit Auswahl die Akte
+- [x] Erinnern schreibt einen Kommentar mit Autor und Präfix "Erinnerung:"
+- [x] Volle Prüfung (L, drei Breiten), Bericht ≤ 20 Zeilen, Changelog: "Das Dashboard zeigt am Handy eine Person zur Zeit, sortiert nach Zeit, und sagt, was sich seit deinem letzten Besuch geändert hat."
