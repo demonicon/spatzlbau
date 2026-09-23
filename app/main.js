@@ -43,6 +43,7 @@ import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
 import { dashboardView, columns } from './views/dashboard.js';
 import { finanzenView } from './views/finanzen.js';
+import { startSetupHTML, SETUP_STEPS, SETUP_STEP_TITLES, OWNER_PROPOSAL } from './views/start.js';
 import { draftOf, draftCount, fieldValue, costDraftOf, costDraftCount, costFieldValue } from './ui/detail.js';
 import { searching } from './search.js';
 import { parseAmount, bufferRow, bufferPct, suggestedBuffer, costsOf, num, eurShort } from './costs.js';
@@ -111,6 +112,13 @@ ui.updateReady = false; // a newer build took over the service worker (003, bar 
 ui.changelog = null; // changelog.json (docs/changes/005), loaded at start
 ui.changelogOpen = false;
 ui.changelogUnreadOnly = false; // auto-opened panel shows only the versions newer than last_seen_version
+ui.setupStep = null; // 0-7, the "gemeinsamer Start" screen showing now; null = read settings.setup_step (026)
+ui.setupSkip = false; // "Später" was chosen this visit - the wizard stays away until reload (026)
+ui.setupReopen = false; // opened one step from the menu instead of the sequential first run (026)
+ui.setupPicker = false; // "Stammdaten & Rahmendaten" step list open (026)
+ui.setupAufzug = null; // { s/a/n: bool } - Schritt 2's own tri-state toggle, not an <input> (026)
+ui.setupCostSel = null; // Set of seed_keys unchecked in Schritt 7 - "abgewählt", nichts wird angelegt (026)
+ui.avatarMenu = false; // the avatar's own small menu (026)
 
 /* ---------- screens ---------- */
 function show(screen) {
@@ -171,7 +179,10 @@ function render() {
   ensurePhase();
   const focusKey = keyOf(document.activeElement);
   document.body.classList.toggle('printing', !!ui.printOpen);
-  $('#view').innerHTML = ui.screen === 'finanzen' ? finanzenView() : dashboardView();
+  // docs/changes/026: the eight-step start takes the whole screen, like the Finanzen wizard it
+  // reuses parts of - first run (not skipped), or one step reopened from the avatar menu
+  const showSetup = (!state.settings.setup_done && !ui.setupSkip) || ui.setupReopen || ui.setupPicker;
+  $('#view').innerHTML = showSetup ? startSetupHTML() : ui.screen === 'finanzen' ? finanzenView() : dashboardView();
   // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set via CSSOM
   for (const el of $('#view').querySelectorAll('.bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
   // docs/changes/021: a segment is as wide as its share of all tasks, at least 44 px
@@ -277,42 +288,61 @@ function saveQuickField(el) {
 
 const setupVal = (id) => $(`[data-input="${id}"]`, $('#view'))?.value.trim() ?? '';
 
+// The four saves, factored out so docs/changes/026's own eight-step start can call the exact
+// same code for its Termine/Mieten/Kautionen/Aufteilung screens (016b's own AC: "kein zweiter
+// Code"). finSetupNext() below is now a thin wrapper kept for the Finanzen-embedded wizard.
+async function setupTermineSave() {
+  const fields = { einzugstermin: setupVal('setup-einzug'), umzugstag: setupVal('setup-umzugstag'), move_out_s: setupVal('setup-auszug-s'), move_out_a: setupVal('setup-auszug-a') };
+  for (const [key, v] of Object.entries(fields)) {
+    if (v && v !== (state.settings[key] || '')) await setSetting(key, v).catch(fail);
+  }
+}
+async function setupMietenSave() {
+  await finSetupSaveRecurring('miete', 'Kaltmiete', 'setup-miete-s', 'setup-miete-a', 'setup-miete-n');
+  await finSetupSaveRecurring('nk', 'Nebenkosten', 'setup-nk-s', 'setup-nk-a', 'setup-nk-n');
+}
+async function setupKautionenSave() {
+  const kautionTask = byId('kaution-zurueck') ? 'kaution-zurueck' : null;
+  await finSetupSaveCost('kaution-alt-s', 'Kaution zurück – ' + OWN.S, setupVal('setup-kaution-s'), { kind: 'rueckfluss', belongs_to: 'S', task_id: kautionTask });
+  await finSetupSaveCost('kaution-alt-a', 'Kaution zurück – ' + OWN.A, setupVal('setup-kaution-a'), { kind: 'rueckfluss', belongs_to: 'A', task_id: kautionTask });
+  const neuBetrag = setupVal('setup-kaution-neu-betrag');
+  if (neuBetrag) {
+    await finSetupSaveCost('kaution-neu', 'Kaution neue Wohnung', neuBetrag, {
+      kind: 'einmalig',
+      belongs_to: 'B',
+      task_id: byId('kaution') ? 'kaution' : null,
+      due_on: setupVal('setup-kaution-neu-frist') || null,
+    });
+  }
+}
+async function setupAufteilungSave() {
+  const split = parseAmount(setupVal('setup-split'));
+  const pct = parseAmount(setupVal('setup-puffer'));
+  if (split !== null && split !== (state.settings.split_default_s ?? 50)) await setSetting('split_default_s', split).catch(fail);
+  if (pct !== null && pct !== bufferPct()) await setSetting('buffer_pct', pct).catch(fail);
+  if (!bufferRow()) await addCost(null, { label: 'Puffer', amount: suggestedBuffer() }).catch(fail);
+  await setSetting('fin_setup_done', true).catch(fail);
+}
+
 async function finSetupNext() {
   const step = ui.finSetupStep || 0;
-  if (step === 0) {
-    const fields = { einzugstermin: setupVal('setup-einzug'), umzugstag: setupVal('setup-umzugstag'), move_out_s: setupVal('setup-auszug-s'), move_out_a: setupVal('setup-auszug-a') };
-    for (const [key, v] of Object.entries(fields)) {
-      if (v && v !== (state.settings[key] || '')) await setSetting(key, v).catch(fail);
-    }
-  } else if (step === 1) {
-    await finSetupSaveRecurring('miete', 'Kaltmiete', 'setup-miete-s', 'setup-miete-a', 'setup-miete-n');
-    await finSetupSaveRecurring('nk', 'Nebenkosten', 'setup-nk-s', 'setup-nk-a', 'setup-nk-n');
-  } else if (step === 2) {
-    const kautionTask = byId('kaution-zurueck') ? 'kaution-zurueck' : null;
-    await finSetupSaveCost('kaution-alt-s', 'Kaution zurück – ' + OWN.S, setupVal('setup-kaution-s'), { kind: 'rueckfluss', belongs_to: 'S', task_id: kautionTask });
-    await finSetupSaveCost('kaution-alt-a', 'Kaution zurück – ' + OWN.A, setupVal('setup-kaution-a'), { kind: 'rueckfluss', belongs_to: 'A', task_id: kautionTask });
-    const neuBetrag = setupVal('setup-kaution-neu-betrag');
-    if (neuBetrag) {
-      await finSetupSaveCost('kaution-neu', 'Kaution neue Wohnung', neuBetrag, {
-        kind: 'einmalig',
-        belongs_to: 'B',
-        task_id: byId('kaution') ? 'kaution' : null,
-        due_on: setupVal('setup-kaution-neu-frist') || null,
-      });
-    }
-  } else if (step === 3) {
-    const split = parseAmount(setupVal('setup-split'));
-    const pct = parseAmount(setupVal('setup-puffer'));
-    if (split !== null && split !== (state.settings.split_default_s ?? 50)) await setSetting('split_default_s', split).catch(fail);
-    if (pct !== null && pct !== bufferPct()) await setSetting('buffer_pct', pct).catch(fail);
-    if (!bufferRow()) await addCost(null, { label: 'Puffer', amount: suggestedBuffer() }).catch(fail);
-    await setSetting('fin_setup_done', true).catch(fail);
+  if (step === 0) await setupTermineSave();
+  else if (step === 1) await setupMietenSave();
+  else if (step === 2) await setupKautionenSave();
+  else if (step === 3) {
+    await setupAufteilungSave();
     toast('Finanzen eingerichtet');
     render();
     return;
   }
   ui.finSetupStep = Math.min(3, step + 1);
   render();
+}
+
+/* ---------- docs/changes/026: the eight-step start, steps 2-5 reuse the four saves above ---------- */
+const STAM_REUSED_SAVE = [setupTermineSave, setupMietenSave, setupKautionenSave, setupAufteilungSave];
+function currentSetupStep() {
+  return ui.setupStep ?? Math.min(SETUP_STEP_TITLES.length, state.settings.setup_step || 0);
 }
 
 /** One recurring row (Kaltmiete/Nebenkosten): update the seeded row if there is one, else insert. */
@@ -597,7 +627,17 @@ function wireEvents() {
       return;
     }
     if (e.key !== 'Escape') return;
-    if (ui.titleEdit) {
+    if (ui.avatarMenu) {
+      ui.avatarMenu = false;
+      render();
+    } else if (ui.setupPicker) {
+      ui.setupPicker = false;
+      render();
+    } else if (ui.setupReopen) {
+      ui.setupReopen = false;
+      ui.setupStep = null;
+      render();
+    } else if (ui.titleEdit) {
       if (document.activeElement?.closest?.('.akte-title')) document.activeElement.blur();
       ui.titleEdit = null;
       render();
@@ -699,6 +739,14 @@ function wireEvents() {
     if (el.id === 'einzug') {
       ui.dateEdit = false;
       setSetting('einzugstermin', el.value || '').catch(fail);
+      return;
+    }
+    // docs/changes/026 Schritt 7: a checkbox, not a button - "abgewählt" is remembered until Weiter
+    if (el.dataset.act === 'stam-cost-toggle') {
+      ui.setupCostSel = ui.setupCostSel || new Set();
+      if (el.checked) ui.setupCostSel.delete(el.dataset.ref);
+      else ui.setupCostSel.add(el.dataset.ref);
+      render();
       return;
     }
     const row = el.closest('[data-id]'); // task row, or the side panel
@@ -1100,6 +1148,7 @@ function wireEvents() {
           ui.costDraft = null;
           ui.costMore = null;
           ui.finPostAdd = false;
+          ui.avatarMenu = false;
           if (b.dataset.to === 'finanzen') openFinanzen();
           else {
             ui.screen = b.dataset.to;
@@ -1253,6 +1302,96 @@ function wireEvents() {
           return;
         case 'fin-setup-next':
           await finSetupNext();
+          return;
+        /* ---------- docs/changes/026: der gemeinsame Start, acht Schritte ---------- */
+        case 'stam-next': {
+          const step = currentSetupStep();
+          const [, , saveFn] = SETUP_STEPS[step];
+          if (saveFn) {
+            const plan = await saveFn(setupVal);
+            if (plan.stammdaten) await setSetting('stammdaten', plan.stammdaten).catch(fail);
+            if (plan.costInserts) for (const row of plan.costInserts) await addCost(row.task_id, row).catch(fail);
+          } else if (step >= 2 && step <= 5) {
+            // Termine/Mieten/Kautionen/Aufteilung (016b) - Schritt 7 "Wer macht was" hat kein
+            // eigenes saveFn UND ist kein wiederverwendeter Finanzen-Schritt: seine Änderungen
+            // schreiben sofort bei jedem Klick, "Weiter" hat dort nichts mehr zu speichern
+            await STAM_REUSED_SAVE[step - 2]();
+          }
+          ui.setupAufzug = null;
+          ui.setupCostSel = null;
+          if (ui.setupReopen) {
+            ui.setupReopen = false;
+            ui.setupStep = null;
+            toast('Gespeichert');
+            render();
+            return;
+          }
+          const next = step + 1;
+          ui.setupStep = next;
+          await setSetting('setup_step', next).catch(fail);
+          render();
+          return;
+        }
+        case 'stam-back':
+          ui.setupAufzug = null;
+          ui.setupCostSel = null;
+          ui.setupStep = Math.max(0, currentSetupStep() - 1);
+          render();
+          return;
+        case 'stam-skip':
+          ui.setupSkip = true;
+          render();
+          return;
+        case 'stam-resume':
+          ui.setupSkip = false;
+          ui.setupStep = null;
+          render();
+          return;
+        case 'stam-finish':
+          await setSetting('setup_done', true).catch(fail);
+          ui.setupStep = null;
+          toast('Los geht’s');
+          render();
+          return;
+        case 'stam-picker-open':
+          ui.avatarMenu = false;
+          ui.setupPicker = true;
+          render();
+          return;
+        case 'stam-picker-close':
+          ui.setupPicker = false;
+          render();
+          return;
+        case 'stam-reopen':
+          ui.setupAufzug = null;
+          ui.setupCostSel = null;
+          ui.setupPicker = false;
+          ui.setupReopen = true;
+          ui.setupStep = Number(b.dataset.ref);
+          render();
+          return;
+        case 'stam-reopen-close':
+          ui.setupReopen = false;
+          ui.setupStep = null;
+          render();
+          return;
+        case 'stam-aufzug':
+          ui.setupAufzug = ui.setupAufzug || {};
+          ui.setupAufzug[b.dataset.wohnung] = b.dataset.to === 'ja';
+          render();
+          return;
+        case 'stam-owner-set':
+          await updateTask(b.dataset.ref, { owner: b.dataset.to }).catch(fail);
+          return;
+        case 'stam-owner-apply': {
+          const targets = state.tasks.filter((x) => x.owner === 'B' && OWNER_PROPOSAL[x.id]);
+          for (const t of targets) await updateTask(t.id, { owner: OWNER_PROPOSAL[t.id] }).catch(fail);
+          toast(`${targets.length} Zuständigkeiten gesetzt`);
+          return;
+        }
+        case 'avatar-menu-toggle':
+          ui.avatarMenu = !ui.avatarMenu;
+          render();
           return;
         case 'buffer-add':
           await addCost(null, { label: 'Puffer', amount: suggestedBuffer() });

@@ -5,7 +5,7 @@ import { esc } from '../ui/dom.js';
 import { OWN, PAID_BY } from '../ui/labels.js';
 import { state, ui, byId, einzug, umzugstag } from '../state.js';
 import { costHTML, costNewHTML } from '../ui/detail.js';
-import { appHeadHTML, updateBarHTML, footHTML } from '../ui/chrome.js';
+import { appHeadHTML, updateBarHTML, footHTML, setupHintHTML } from '../ui/chrome.js';
 import { SUPABASE_URL } from '../config.js';
 import {
   summary, balance, balanceText, balanceParts, cashflow, peakMonth, moveOutMissing, bufferRow, bufferPct,
@@ -29,7 +29,9 @@ const costSeed = (key) => state.costs.find((c) => c.seed_key === key) || null;
 const setupDate = (v) => (typeof v === 'string' ? v : '');
 const setupAmount = (v) => (v === null || v === undefined ? '' : esc(String(num(v)).replace('.', ',')));
 
-function setupTermineHTML() {
+// exported for docs/changes/026: steps 3-6 of the "gemeinsamer Start" reuse these four screens
+// unchanged, instead of a second Termine/Mieten/Kautionen/Aufteilung implementation
+export function setupTermineHTML() {
   const v = (k) => setupDate(state.settings[k]);
   return `
     <label class="lbl">Einzug (Schlüsselübergabe)<input type="date" data-input="setup-einzug" value="${esc(v('einzugstermin'))}"></label>
@@ -40,7 +42,7 @@ function setupTermineHTML() {
     </div>`;
 }
 
-function setupMietenHTML() {
+export function setupMietenHTML() {
   const miete = recurringSeed('miete');
   const nk = recurringSeed('nk');
   // vorbelegt aus Teil B, wo vorhanden - sonst die bekannten Werte aus dem Vertrag (016b)
@@ -59,7 +61,7 @@ function setupMietenHTML() {
     </table></div>`;
 }
 
-function setupKautionenHTML() {
+export function setupKautionenHTML() {
   const altS = costSeed('kaution-alt-s');
   const altA = costSeed('kaution-alt-a');
   const neu = costSeed('kaution-neu');
@@ -74,7 +76,7 @@ function setupKautionenHTML() {
     </div>`;
 }
 
-function setupAufteilungHTML() {
+export function setupAufteilungHTML() {
   const split = state.settings.split_default_s ?? 50;
   const hh = ui.finSetupHousehold;
   return `
@@ -429,6 +431,7 @@ export function finanzenView() {
     : '';
   return (
     updateBarHTML() +
+    setupHintHTML() +
     `<div class="fin">` +
     `<header class="fin-head">${appHeadHTML('finanzen')}</header>` +
     setupHint +

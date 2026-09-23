@@ -4,7 +4,7 @@
 // groups in groups.js (shared with the timeline in 019).
 import { esc } from '../ui/dom.js';
 import { OWN, STEPS } from '../ui/labels.js';
-import { appHeadHTML, updateBarHTML, footHTML } from '../ui/chrome.js';
+import { appHeadHTML, updateBarHTML, footHTML, setupHintHTML } from '../ui/chrome.js';
 import { state, ui, byId, phases, einzug, umzugstag, dueInfo, dueShort, freshComments, doneByOther, claudeStep } from '../state.js';
 import { FILTERS, matches, count, isBlocked, isLate, isCritical, waitsOnMe, waitsOnYou, hasNews, other } from '../filters.js';
 import { timeGroups, gate, gateInDays } from '../groups.js';
@@ -477,6 +477,7 @@ export function dashboardView() {
   const panelTask = ui.mode === 'panel' ? open : null;
   return (
     updateBarHTML() +
+    setupHintHTML() +
     `<div class="board mode-${ui.mode}"><div class="col-list">` +
     headHTML() +
     searchHTML() +

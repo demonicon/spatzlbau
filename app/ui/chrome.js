@@ -17,8 +17,16 @@ export function appHeadHTML(active) {
     const on = active === key;
     return `<button class="pill navbtn ${on ? 'on' : ''}" data-act="${act}"${to ? ` data-to="${to}"` : ''} aria-label="${label}" title="${label}" aria-current="${on ? 'page' : 'false'}">${ICON[key === 'dashboard' ? 'home' : 'coin']}<span class="nl" aria-hidden="true">${label}</span></button>`;
   };
+  // docs/changes/026: the avatar's own small menu - one entry today, room for more later
   return `<div class="apphead">
-    <span class="avatar ${me}" title="Angemeldet als ${OWN[me]}" aria-label="Angemeldet als ${OWN[me]}">${me}</span>
+    <div class="avatar-wrap">
+      <button class="avatar ${me}" data-act="avatar-menu-toggle" aria-haspopup="true" aria-expanded="${!!ui.avatarMenu}" title="Angemeldet als ${OWN[me]}" aria-label="Menü, angemeldet als ${OWN[me]}">${me}</button>
+      ${
+        ui.avatarMenu
+          ? `<div class="avatar-menu" role="menu"><button class="avatar-menu-item" role="menuitem" data-act="stam-picker-open">Stammdaten & Rahmendaten</button></div>`
+          : ''
+      }
+    </div>
     <nav class="mainnav" aria-label="Bereiche">
       ${nav('dashboard', 'home', '', 'Aufgaben')}
       ${nav('finanzen', 'screen', 'finanzen', 'Finanzen')}
@@ -27,6 +35,13 @@ export function appHeadHTML(active) {
     <span class="spacer"></span>
     <span class="status" id="status" role="status"></span>
   </div>`;
+}
+
+/** docs/changes/026: "Später" was chosen - a way back in, not a lock. Mirrors 016b's own hint. */
+export function setupHintHTML() {
+  if (state.settings.setup_done || !ui.setupSkip) return '';
+  const step = Math.min(8, (state.settings.setup_step || 0) + 1);
+  return `<p class="fin-setup-hint"><button class="btn-text" data-act="stam-resume">Setup fortsetzen (Schritt ${step} von 8) ›</button></p>`;
 }
 
 /** A new build is waiting: a bar that says so, instead of a button that is always there. */
