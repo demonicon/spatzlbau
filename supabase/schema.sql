@@ -113,7 +113,7 @@ create table if not exists public.costs (
   id            uuid primary key default gen_random_uuid(),
   task_id       text references public.tasks (id) on delete cascade,
   label         text not null,
-  kind          text not null default 'einmalig' check (kind in ('einmalig', 'rueckfluss')),
+  kind          text not null default 'einmalig' check (kind in ('einmalig', 'rueckfluss', 'ausgleich')),  -- a016
   apartment     text check (apartment in ('S', 'A', 'N')),                          -- S alt Sebastian / A alt Anna / N neu
   status        text not null default 'geschaetzt'
                 check (status in ('geschaetzt', 'angebot', 'beauftragt', 'faellig', 'bezahlt')),
@@ -132,6 +132,10 @@ create table if not exists public.costs (
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
+alter table public.costs drop constraint if exists costs_kind_check;
+alter table public.costs add constraint costs_kind_check
+  check (kind in ('einmalig', 'rueckfluss', 'ausgleich'));                            -- a016
+
 create index if not exists costs_task_idx on public.costs (task_id);
 create index if not exists costs_due_idx  on public.costs (due_on);
 create unique index if not exists costs_seed_key_idx on public.costs (seed_key);   -- NULLs never conflict
@@ -368,25 +372,60 @@ $$;
 --  counts: status beauftragt/faellig/bezahlt; geschaetzt only while no row of the same task is
 --  beauftragt or further (buffer rows, task_id null, always count); angebot never counts (history).
 --  planned_total = counted einmalig · paid = counted einmalig & bezahlt · refunds_expected = counted
---  rueckfluss · buffer = counted einmalig with task_id null · net = planned_total - refunds_expected
+--  rueckfluss · buffer = counted einmalig with task_id null · double_rent = the calculated double
+--  rent (a016) · net = planned_total + double_rent - refunds_expected. kind 'ausgleich' (a payment
+--  between the two people) never counts here - it only moves the balance.
 --  security_invoker: the view runs with the caller's rights, so RLS on costs applies.
 -- ---------------------------------------------------------------------
 create or replace view public.costs_summary with (security_invoker = true) as
 with counted as (
   select c.*
   from public.costs c
-  where c.status in ('beauftragt', 'faellig', 'bezahlt')
+  where c.kind <> 'ausgleich' and (
+        c.status in ('beauftragt', 'faellig', 'bezahlt')
      or (c.status = 'geschaetzt' and (
            c.task_id is null
            or not exists (select 1 from public.costs o
-                          where o.task_id = c.task_id and o.status in ('beauftragt', 'faellig', 'bezahlt'))))
+                          where o.task_id = c.task_id and o.status in ('beauftragt', 'faellig', 'bezahlt')))))
+),
+dates as (
+  select
+    nullif(value #>> '{}', '')::date as einzug,
+    (select nullif(value #>> '{}', '')::date from public.settings where key = 'move_out_s') as out_s,
+    (select nullif(value #>> '{}', '')::date from public.settings where key = 'move_out_a') as out_a
+  from public.settings where key = 'einzugstermin'
+),
+rent as (
+  select
+    coalesce(sum(amount_s), 0) as rent_s,
+    coalesce(sum(amount_a), 0) as rent_a
+  from public.recurring
+  where label ~* '(kaltmiete|nebenkosten)'
+),
+months as (
+  select generate_series(
+           date_trunc('month', d.einzug),
+           date_trunc('month', greatest(d.out_s, d.out_a)),
+           interval '1 month') as m,
+         d.out_s, d.out_a
+  from dates d
+  where d.einzug is not null and d.out_s is not null and d.out_a is not null
+),
+double_rent_sum as (
+  select coalesce(sum(
+           case when date_trunc('month', m.out_s) >= m.m then (select rent_s from rent) else 0 end +
+           case when date_trunc('month', m.out_a) >= m.m then (select rent_a from rent) else 0 end), 0) as v,
+         count(*) as n
+  from months m
 )
 select
   (select sum(amount) from counted where kind = 'einmalig')                          as planned_total,
   (select sum(amount) from counted where kind = 'einmalig' and status = 'bezahlt')   as paid,
   (select sum(amount) from counted where kind = 'rueckfluss')                        as refunds_expected,
   (select sum(amount) from counted where kind = 'einmalig' and task_id is null)      as buffer,
-  (select sum(amount) from counted where kind = 'einmalig')
+  (select case when n = 0 then null else v end from double_rent_sum)                 as double_rent,
+  coalesce((select sum(amount) from counted where kind = 'einmalig'), 0)
+    + coalesce((select case when n = 0 then null else v end from double_rent_sum), 0)
     - coalesce((select sum(amount) from counted where kind = 'rueckfluss'), 0)       as net;
 
 -- ---------------------------------------------------------------------

@@ -169,7 +169,7 @@ function costPayHTML(c) {
   </div>`;
 }
 
-function costHTML(c) {
+export function costHTML(c) {
   const open = ui.costEdit === c.id;
   const paying = ui.costPay === c.id;
   const next = nextStep(c);
