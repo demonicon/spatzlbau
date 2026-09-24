@@ -602,7 +602,7 @@ function icsHTML() {
         : `<button class="btn-secondary" data-act="ics-new">Link neu erzeugen</button>`}
     </span>
     ${ui.icsShow ? `<input class="ics-url" type="text" readonly value="${esc(icsUrl(ui.icsShow))}" aria-label="Abo-Adresse ${esc(OWN[ui.icsShow])}">` : ''}
-    <span class="fin-note">Google aktualisiert abonnierte Kalender bis zu 24 Stunden später.</span>
+    <span class="fin-note">iPhone und Outlook erinnern 3 Tage vorher, 1 Tag vorher und am Tag selbst; Google nach seinen eigenen Kalender-Einstellungen. Google aktualisiert abonnierte Kalender außerdem bis zu 24 Stunden später.</span>
   </div>`;
 }
 

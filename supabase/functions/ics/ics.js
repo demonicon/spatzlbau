@@ -46,6 +46,36 @@ export function nextDay(iso) {
 
 /** UTC timestamp for DTSTAMP / LAST-MODIFIED. */
 export const asStamp = (iso) => new Date(iso || Date.now()).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+/** Same shape, from a Date object directly (docs/changes/022, Ergänzung 24.09. - alarm triggers). */
+export const asUtcStamp = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+
+/** `YYYY-MM-DD` shifted by `n` days (negative goes back), in plain calendar arithmetic (no zone). */
+export function shiftDate(iso, n) {
+  const d = new Date(iso.slice(0, 10) + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+
+// docs/changes/022, Ergänzung 24.09.: an all-day event's alarm fires "relative to the start of
+// the day" by spec, and every calendar app reads that differently (some UTC, some the device's
+// zone) - so the reminder shows up at a different hour for everyone. Instead we compute the
+// absolute UTC instant for "09:00 in Europe/Berlin" ourselves, using Intl (built into V8/Deno,
+// no new dependency) to find that day's real UTC offset (CET/CEST) - iOS and Outlook then agree.
+const berlinFmt = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Europe/Berlin', hourCycle: 'h23',
+  year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+});
+function berlinOffsetMinutes(utcGuess) {
+  const parts = Object.fromEntries(berlinFmt.formatToParts(utcGuess).map((p) => [p.type, p.value]));
+  const asUtc = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
+  return (asUtc - utcGuess.getTime()) / 60000;
+}
+/** The UTC instant for `HH:MM` wall-clock time in Berlin on `iso` (YYYY-MM-DD). */
+export function berlinWallToUtc(iso, hh, mm) {
+  const guess = new Date(`${iso.slice(0, 10)}T${pad(hh)}:${pad(mm)}:00Z`);
+  const offsetMin = berlinOffsetMinutes(guess);
+  return new Date(guess.getTime() - offsetMin * 60000);
+}
 
 const OWN = { S: 'Sebastian', A: 'Anna', B: 'gemeinsam' };
 
@@ -56,6 +86,25 @@ export function dueOn(task, settings) {
   const d = new Date(base + 'T00:00:00Z');
   d.setUTCDate(d.getUTCDate() + (task.offset_days || 0));
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+
+// docs/changes/022, Ergänzung 24.09.: three alarms for a critical task (3 days before, 1 day
+// before, the day itself, each 09:00 Europe/Berlin), two for a gate (7 days before, the day
+// itself). The wording names how soon the deadline is - fixed per slot, since an ICS file has no
+// "today" of its own to compute a live relative date from.
+function taskAlarms(t, on) {
+  const who = OWN[t.owner] || t.owner;
+  return [
+    { at: berlinWallToUtc(shiftDate(on, -3), 9, 0), desc: `${t.title} · ${who} · in 3 Tagen` },
+    { at: berlinWallToUtc(shiftDate(on, -1), 9, 0), desc: `${t.title} · ${who} · morgen` },
+    { at: berlinWallToUtc(on, 9, 0), desc: `${t.title} · ${who} · heute` },
+  ];
+}
+function gateAlarms(title, on) {
+  return [
+    { at: berlinWallToUtc(shiftDate(on, -7), 9, 0), desc: `${title} · in 7 Tagen` },
+    { at: berlinWallToUtc(on, 9, 0), desc: `${title} · heute` },
+  ];
 }
 
 /**
@@ -75,6 +124,7 @@ export function events({ tasks, settings, phases, person, appUrl }) {
       summary: `Spatzlbau: ${t.title}`,
       description: [`Zuständig: ${OWN[t.owner] || t.owner}`, `Phase ${t.phase}`, `${appUrl}#task=${encodeURIComponent(t.id)}`].join('\n'),
       stamp: t.updated_at,
+      alarms: taskAlarms(t, on),
     });
   }
   // the gate of a phase is its latest deadline - the day the phase has to be finished
@@ -82,12 +132,14 @@ export function events({ tasks, settings, phases, person, appUrl }) {
     const inPhase = open.filter((t) => t.phase === p.id).map((t) => dueOn(t, settings)).filter(Boolean);
     if (!inPhase.length) continue;
     const last = inPhase.sort()[inPhase.length - 1];
+    const gateTitle = `Gate Phase ${p.id} – ${p.short || p.name}`;
     out.push({
       uid: `gate-${p.id}@spatzlbau`,
       start: last,
-      summary: `◆ Spatzlbau: Gate Phase ${p.id} – ${p.short || p.name}`,
+      summary: `◆ Spatzlbau: ${gateTitle}`,
       description: [p.gate || `Ende von Phase ${p.id}`, appUrl].join('\n'),
       stamp: settings.updated_at,
+      alarms: gateAlarms(gateTitle, last),
     });
   }
   return out.sort((a, b) => a.start.localeCompare(b.start) || a.uid.localeCompare(b.uid));
@@ -114,8 +166,14 @@ export function buildIcs(list, now = new Date().toISOString()) {
       fold(`SUMMARY:${esc(e.summary)}`),
       fold(`DESCRIPTION:${esc(e.description)}`),
       'TRANSP:TRANSPARENT',
-      'END:VEVENT',
     );
+    // docs/changes/022, Ergänzung 24.09.: absolute triggers (09:00 Europe/Berlin, already
+    // converted to UTC in events()) - not TRIGGER:-P3D, which an all-day event's client is free
+    // to read against midnight in whichever zone it likes
+    for (const a of e.alarms || []) {
+      lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `TRIGGER;VALUE=DATE-TIME:${asUtcStamp(a.at)}`, fold(`DESCRIPTION:${esc(a.desc)}`), 'END:VALARM');
+    }
+    lines.push('END:VEVENT');
   }
   lines.push('END:VCALENDAR');
   return lines.join('\r\n') + '\r\n';

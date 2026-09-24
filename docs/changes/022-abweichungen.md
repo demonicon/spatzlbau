@@ -84,3 +84,28 @@ Handler mit denselben Eingaben, die er dort bekommt.
 | 27 | AC: der Token ändert sich, die alte Adresse ist weg | – |
 | 28 | 020: alle Knöpfe im System, 40 px, kein Primär | – |
 | 29 | 380 px: kein waagrechtes Scrollen | – |
+
+## Nachtrag 24.09. – Fristen-Wecker (4w)
+
+Branch `feat/022-valarm` von `preview`. `node test_ics_valarm.mjs` (ohne Deno, ohne Datenbank),
+21/21 grün, plus die Original-ACs erneut mitgeprüft (Personen-Filter, Gate-◆, 200/401).
+
+### Entscheidungen im Zweifel
+
+1. **Absolute Trigger statt `-P3D`/`-P1D`/`PT0S`.** Der Auftrag selbst verlangt das ausdrücklich
+   („absolut … berechnen, damit iOS und Outlook dieselbe Uhrzeit zeigen") – ein relativer Trigger
+   an einem ganztägigen Termin wird von jedem Client anders gelesen (mancher UTC-Mitternacht,
+   mancher Geräte-Zeitzone). `TRIGGER;VALUE=DATE-TIME:<UTC>` ist eindeutig.
+2. **Europe/Berlin ohne neue Abhängigkeit.** `Intl.DateTimeFormat` (in V8/Deno eingebaut) liest
+   für einen UTC-Zeitpunkt die tatsächliche Berliner Uhrzeit zurück – daraus ergibt sich der
+   Versatz (CET/CEST) für genau diesen Tag, ohne eine Zeitzonen-Bibliothek. Getestet: 09:00 Berlin
+   im Winter = 08:00 UTC, im Sommer = 07:00 UTC (Sommerzeit-Umstellung selbst nicht geprüft – die
+   Alarme liegen nie in der Umstellungsnacht).
+3. **Alarmtext ist eine feste Phrase je Slot** („in 3 Tagen" / „morgen" / „heute" bzw. „in 7
+   Tagen" / „heute"), keine Berechnung zur Laufzeit – eine ICS-Datei kennt kein „heute" beim
+   Erzeugen, nur beim Auslösen, und die Zuordnung Slot → Phrase ist immer dieselbe.
+4. **Hinweistext**: die bestehende Google-24h-Zeile blieb stehen (weiterhin wahr) und bekam den
+   neuen Satz zu den Erinnerungen davor, nicht anstelle davon.
+5. **Kein Validator aus npm.** Ein RFC-5545-Validator (BEGIN/END-Verschachtelung, Pflichtfelder,
+   75-Oktett-Faltung, CRLF) ist im Test selbst geschrieben – dieselbe Begründung wie in Punkt 1
+   der ursprünglichen Liste (keine neue Abhängigkeit ohne Rückfrage).
