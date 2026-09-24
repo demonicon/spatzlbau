@@ -51,7 +51,8 @@ function commentHTML(c, fresh) {
         ? `<div class="com-own-actions"><span class="confirm">Kommentar löschen? <button class="btn-text danger" data-act="com-del-yes" data-ref="${c.id}">Ja</button><button class="btn-secondary" data-act="confirm-no">Nein</button></span></div>`
         : `<div class="com-own-actions">${canEditComment(c) ? `<button class="btn-text" data-act="com-edit" data-ref="${c.id}">Bearbeiten</button>` : ''}<button class="btn-text" data-act="com-del" data-ref="${c.id}">Löschen</button></div>`
       : '';
-  return `<div class="com ${c.author}" data-com="${c.id}"><div class="h"><b>${OWN[c.author] || c.author}</b> · ${fmtTime(c.created_at)}${fresh ? ' · <span class="new">neu</span>' : ''}</div>${body}${actions}</div>`;
+  // docs/changes/029c #6: der Autor ist derselbe Chip wie Punkt 2 (own.S/.A/.C), nicht mehr nur fett
+  return `<div class="com ${c.author}" data-com="${c.id}"><div class="h"><span class="own ${c.author}">${OWN[c.author] || c.author}</span> · ${fmtTime(c.created_at)}${fresh ? ' · <span class="new">neu</span>' : ''}</div>${body}${actions}</div>`;
 }
 
 function commentsHTML(t) {

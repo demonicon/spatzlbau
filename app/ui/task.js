@@ -28,7 +28,9 @@ export function signalHTML(t) {
     The timeline (019) carries the owner as a badge of its own and asks for it to be left out. */
 export function quietHTML(t, { owner = true } = {}) {
   const parts = [];
-  if (owner) parts.push(esc(OWN[t.owner]));
+  // docs/changes/029c #2: dieselbe .own-Klasse wie der Chip, nur ohne Grund/Rand - Text in der
+  // Personenfarbe, nicht mehr ungefaerbt
+  if (owner) parts.push(`<span class="own text-only ${t.owner}">${esc(OWN[t.owner])}</span>`);
   // docs/changes/030 #1: "Claude unterstützt" ist mit dem Inhaltspaket kein Unterschied mehr
   // (alle Aufgaben haben Beratung) - die Meta-Zeile nennt Claude nur noch bei echter Delegation
   if (t.type === 'claude') parts.push(esc(STEP_TAG[claudeStep(t)]));

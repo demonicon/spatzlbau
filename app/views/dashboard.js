@@ -22,15 +22,6 @@ const CAP = 8; // rows per column before "alle n zeigen"
 // fmtDay from 029b #4 on purpose, see 029b-abweichungen.md
 const fmtDayMonth = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 
-// docs/changes/029b #2: countdown and the date-editor now live in the shared renderHeader()
-// (chrome.js) - the phase strip stays dashboard-only, right underneath it.
-function headHTML() {
-  return `<header class="dash-head">
-    ${renderHeader('dashboard')}
-    ${phaseStripHTML()}
-  </header>`;
-}
-
 /* ---------- the phase strip (docs/changes/021, idea 4o) ----------
    Five labelled segments instead of a percentage: as wide as the phase has tasks, filled by how
    much of it is done, outlined while it is the one being worked on. A tap is the phase filter -
@@ -363,7 +354,7 @@ function columnHTML(c) {
             : ''
         }
         ${showDone ? c.done.map(taskHTML).join('') : ''}
-        ${c.done.length && !showDone ? `<button class="btn-text row disclose" data-act="col-done" data-ref="${c.key}"><span class="dchev" aria-hidden="true">▸</span>${c.done.length} erledigt zeigen</button>` : ''}
+        ${c.done.length && !showDone ? `<button class="btn-text row disclose" data-act="col-done" data-ref="${c.key}"><span class="dchev" aria-hidden="true">▸</span>${c.done.length} erledigt</button>` : ''}
       </div>`;
   return `<section class="col ${c.key} own-${c.cls}" data-col="${c.key}">${head}${body}</section>`;
 }
@@ -462,11 +453,14 @@ export function dashboardView() {
   // "Zwischen euch") next to it from 900 px on - the overlay step of 013 A3 is skipped there
   const mode = tl && ui.mode === 'overlay' ? 'panel' : ui.mode;
   const panelTask = mode === 'panel' ? open : null;
+  // docs/changes/029c #3: der Kopf sitzt jetzt ueber dem Grid, nicht mehr in der schmaleren
+  // col-list - genau wie in Finanzen, auf allen drei Ansichten deckungsgleich
   return (
     updateBarHTML() +
     setupHintHTML() +
+    renderHeader('dashboard') +
     `<div class="board mode-${mode}${tl ? ' v-timeline' : ''}"><div class="col-list">` +
-    headHTML() +
+    phaseStripHTML() +
     searchHTML() +
     viewChipsHTML() +
     (tl ? '' : visitHTML() + signalsHTML()) +

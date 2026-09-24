@@ -48,7 +48,8 @@
   --claude: #6b4e16; --claude-bg: #f3e9d2; --claude-past: #c9b98a;
   /* signals: yellow only for critical, red only for overdue / waiting */
   --link: #2e5a9c; /* 016c: links in the Finanzen export - 6.6:1 on paper */
-  --mark: #f7de4a; --mark-deep: #8a7300; --danger: #b33a2e; --danger-bg: #f8e3e0; --ok: #2f6f4e;
+  /* 029c #1: --mark-deep auf 5,18:1 (paper) gedunkelt - die einzige Stelle, die durchfiel (docs/changes/029c-kontrast.md) */
+  --mark: #f7de4a; --mark-deep: #7a6600; --danger: #b33a2e; --danger-bg: #f8e3e0; --ok: #2f6f4e;
   /* type scale */
   --fs-hero: 60px; --fs-kpi: 28px; --fs-tile: 24px; --fs-title: 22px; --fs-body: 16px; --fs-ui: 15px;
   --fs-meta: 14px; --fs-small: 13px; --fs-micro: 12px; --fs-nano: 11px;
@@ -388,6 +389,8 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .own.H { background: var(--card); color: var(--ink-2); } /* Haushaltskonto (016b): neither person */
 /* 029b #5: die Phase im Spaltenkopf ist keine Person - neutral, damit Gruen nur "gemeinsam" meint */
 .own.ph { background: var(--paper); color: var(--ink-2); border-color: var(--line); }
+/* 029c #2: dieselbe Klasse, ohne Chip-Huelle - farbiger Text statt Grund/Rand, fuer Meta-Zeilen */
+.own.text-only { background: transparent; border: 0; padding: 0; min-height: 0; border-radius: 0; font-weight: 600; }
 /* 029b #14: im Bearbeiten-Modus traegt das aktive Stand-Segment dieselbe Stufenfarbe */
 .seg.stand-seg .pill[aria-pressed=true][data-to=geschaetzt] { border-color: var(--ink-3); color: var(--ink-3); }
 .seg.stand-seg .pill[aria-pressed=true][data-to=faellig] { border-color: var(--ink); color: var(--ink); }
@@ -568,15 +571,16 @@ button.cost-amount:hover { background: var(--line); }
 /* the ladder itself: dots filled up to the current rung, then the word - nothing to learn */
 .ladder { display: inline-flex; align-items: center; gap: 6px; }
 .ladder .dots { display: inline-flex; gap: 3px; }
-.ladder .dots i { width: 6px; height: 6px; border-radius: var(--r-pill); background: var(--line-dash); display: block; }
+/* 029c #7: hohle Kreise mit 1-px-Rand statt der fast unsichtbaren gefuellten Punkte */
+.ladder .dots i { width: 6px; height: 6px; border-radius: var(--r-pill); background: transparent; border: 1px solid var(--ink-3); box-sizing: border-box; display: block; }
 /* 029b #14: die Stufe traegt ihre eigene Farbe - geschaetzt ink-3, fest ink, bezahlt gruen
    (--ok, dieselbe wie erledigte Aufgaben; #2f6f4e auf #fff/--paper ≈ 6:1, 008b-Check gruen) */
 .ladder.ladder-low { color: var(--ink-3); }
-.ladder.ladder-low .dots i.on { background: var(--ink-3); }
+.ladder.ladder-low .dots i.on { background: var(--ink-3); border-color: var(--ink-3); }
 .ladder.ladder-mid { color: var(--ink); }
-.ladder.ladder-mid .dots i.on { background: var(--ink); }
+.ladder.ladder-mid .dots i.on { background: var(--ink); border-color: var(--ink); }
 .ladder.ladder-paid { color: var(--ok); }
-.ladder.ladder-paid .dots i.on { background: var(--ok); }
+.ladder.ladder-paid .dots i.on { background: var(--ok); border-color: var(--ok); }
 .cost-form { padding: 8px 0 10px; }
 .cost-form .row { margin-top: 8px; align-items: flex-end; }
 .cost-form .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); flex: 1 1 140px; min-width: 0; }
@@ -787,11 +791,12 @@ button.cost-amount:hover { background: var(--line); }
   .fin-number .u { font-size: var(--fs-ui); }
   /* 029 Regel 1: die vier Kennzahlen waren eine Linien-Grafik (1 px Spalt), jetzt eigene Karten */
   .fin-break { flex: 1 1 auto; margin-top: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-  .fin-break-row { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); min-height: 82px; display: flex; flex-direction: column-reverse; justify-content: center; align-items: flex-start; gap: 4px; padding: 10px 12px; border: 0; }
+  /* 029c #10: wieder eine Rand-Karte (--line), keine Schatten-Karte - Auftrag ausdruecklich so */
+  .fin-break-row { background: var(--card); border-radius: var(--r-card); border: 1px solid var(--line); min-height: 82px; display: flex; flex-direction: column-reverse; justify-content: center; align-items: flex-start; gap: 4px; padding: 10px 12px; }
   .fin-break-row .v { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; line-height: 24px; }
   .fin-break-row .l { font-size: var(--fs-micro); color: var(--ink-2); line-height: 15px; }
   .fin-break-row .arr { display: none; }
-  .fin-break-row[aria-pressed=true] { box-shadow: var(--sh-card), inset 0 -3px 0 var(--ink); }
+  .fin-break-row[aria-pressed=true] { border-color: var(--ink); box-shadow: inset 0 -3px 0 var(--ink); }
   .fin-next { grid-area: next; padding: 24px 14px 0 20px; }
   .fin-mon { grid-area: mon; padding: 24px 20px 0 14px; }
   .fin-months .paidcol { display: table-cell; }
@@ -813,15 +818,16 @@ button.cost-amount:hover { background: var(--line); }
      Zellen bleiben vertikal mittig */
   .fin-posts-table th, .fin-posts-table td { min-height: 44px; padding: 6px 10px 6px 0; text-align: left; vertical-align: middle; border-top: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fin-posts-table thead th { height: 34px; border-top: 0; font-size: var(--fs-micro); font-weight: 400; color: var(--ink-3); }
-  .fin-posts-table thead th:nth-child(1) { width: 22%; }
-  .fin-posts-table thead th:nth-child(2) { width: 21%; }
-  .fin-posts-table thead th:nth-child(3) { width: 12%; }
-  .fin-posts-table thead th:nth-child(4) { width: 7%; }
-  .fin-posts-table thead th:nth-child(5) { width: 12%; }
-  .fin-posts-table thead th:nth-child(6) { width: 10%; }
-  .fin-posts-table thead th:nth-child(7) { width: 16%; }
+  /* 029c #8: Posten nimmt den Rest (kein width), die anderen vier/fuenf sind Inhalt-breit;
+     die Aktionsspalte existiert nur, wenn hasAction sie rendert (siehe postsHTML) */
+  .fin-posts-table thead th:nth-child(2),
+  .fin-posts-table thead th:nth-child(3),
+  .fin-posts-table thead th:nth-child(4),
+  .fin-posts-table thead th:nth-child(5),
+  .fin-posts-table thead th:nth-child(6) { width: 1%; white-space: nowrap; }
   .fin-posts-table .r, .fin-posts-table .fp-amt, .fin-posts-table .fp-act { text-align: right; }
   .fin-posts-table .fp-act { padding-right: 0; }
+  .fin-posts-table tr > :last-child { padding-right: 0; }
   /* 029b #13: fit-content statt einer vollen Textspalte, Chip zentriert */
   .fin-posts-table .fp-who { width: 1%; white-space: nowrap; text-align: center; }
   /* in a table cell the title and the task link fill the whole 44 px row - that is their hit
@@ -1090,6 +1096,8 @@ button.cost-amount:hover { background: var(--line); }
 .tl-when span { display: block; font-size: var(--fs-nano); color: var(--ink-3); line-height: 14px; white-space: nowrap; }
 .tl-row.late { background: color-mix(in srgb, var(--danger-bg) 55%, #fff); }
 .tl-row.late .tl-when b { color: var(--danger); }
+/* 029c #5: dasselbe Gelb-als-Chip wie .due.crit in den Spalten - kein eigener Signal-Chip mehr */
+.tl-row.crit .tl-when b { display: inline-block; background: var(--mark); color: var(--ink); padding: 1px 4px; border-radius: var(--r-tag); }
 .tl-row.open, .tl-row.selected { background: var(--card); }
 .tl-row.selected { box-shadow: inset 3px 0 0 var(--ink); }
 
@@ -1146,10 +1154,10 @@ button.cost-amount:hover { background: var(--line); }
 .timeline .empty { margin: 16px var(--gutter); }
 .timeline > .btn-text.row, .tl-done > .btn-text.row { margin-left: var(--gutter); max-width: calc(100% - 2 * var(--gutter)); }
 
-/* ≥ 900 px: 3b condensed, not stretched - two lines of at most 56 px, list at most 720 px wide,
-   the Akte (or "Zwischen euch") in the panel next to it (019c §6) */
+/* ≥ 900 px: 3b condensed, not stretched - two lines of at most 56 px. docs/changes/029c #11: die
+   Liste teilt sich das Grid mit Personen/Phasen (.board.mode-panel, oben) - kein eigener 720-px-
+   Deckel mehr, die Akte (oder "Zwischen euch") sitzt an derselben Stelle wie dort. */
 @media (min-width: 900px) {
-  .board.mode-panel.v-timeline { grid-template-columns: minmax(0, 720px) minmax(360px, 1fr); }
   /* 5 + 20 + 8 + 17 + 5 + 1 = 56 px with the 8 px gap under the title (014 #2) */
   .tl-c, .tl-gate { padding-top: 5px; padding-bottom: 5px; }
   .tl-when { padding-top: 6px; }
@@ -1161,7 +1169,8 @@ button.cost-amount:hover { background: var(--line); }
 }
 
 /* ---------- phase strip (docs/changes/021, idea 4o): five labelled segments in the head ---------- */
-.pstrip { display: flex; gap: 4px; margin: 10px 0 0; }
+/* 029c #3: .dash-head ist weg (der Kopf sitzt jetzt ausserhalb des Grids) - der Streifen traegt seinen Rand selbst */
+.pstrip { display: flex; gap: 4px; margin: 12px var(--gutter) 0; }
 .pseg-ph { flex: 1 1 0; min-width: 44px; min-height: var(--tap); padding: 4px 6px 6px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; text-align: left; position: relative; }
 .pseg-ph .lbl { display: flex; align-items: baseline; gap: 4px; min-width: 0; font-size: var(--fs-micro); color: var(--ink-2); line-height: 1.1; }
 .pseg-ph .lbl .n { font-weight: 600; color: var(--ink); }
@@ -1171,7 +1180,8 @@ button.cost-amount:hover { background: var(--line); }
 .pseg-ph.complete .bar i { background: var(--ok); }
 .pseg-ph.current { box-shadow: inset 0 0 0 1px var(--ink); }
 .pseg-ph.current .lbl { color: var(--ink); font-weight: 600; }
-.pseg-ph[aria-pressed=true] { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--ink); }
+/* 029c #4: nur die laufende Phase traegt einen Rahmen (.current) - ausgewaehlt/gedrueckt bekommt nur den helleren Grund, keinen zweiten Ring */
+.pseg-ph[aria-pressed=true] { background: var(--card); }
 .pseg-ph .gate-mark { position: absolute; right: 3px; top: 2px; font-size: 10px; line-height: 1; color: var(--ok); }
 /* a narrow segment shortens its name with an ellipsis; from 600 px on it never has to (021) */
 @media (max-width: 479px) {

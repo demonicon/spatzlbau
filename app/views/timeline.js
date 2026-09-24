@@ -81,7 +81,8 @@ function signalHTML(t, at) {
   }
   if (t.wait_on === state.person) return `<span class="tl-sig waitme">wartet auf dich</span>`;
   if (dayStart(at).getTime() === dayStart().getTime()) return `<span class="tl-sig crit">heute</span>`;
-  if (isCritical(t)) return `<span class="tl-sig crit">kritisch</span>`;
+  // docs/changes/029c #5: kein eigener "kritisch"-Chip mehr - das Datum selbst wird gelb (wie in
+  // den Spalten, .tl-row.crit .tl-when b), damit Spalten und Timeline dasselbe Signal zeigen
   return '';
 }
 
@@ -131,7 +132,7 @@ function rowHTML({ t, at }, rl) {
         <button class="t" data-act="open" aria-expanded="${open}" title="${esc(t.title)}">${esc(t.title)}</button>
         <input type="checkbox" class="check" ${ui.offline || blocked ? 'disabled' : ''} data-act="done" aria-label="Erledigt${blocked ? ' – wartet noch auf eine andere Aufgabe' : ''}">
       </div>
-      <div class="tl-meta"><span class="own ${t.owner}">${OWN[t.owner]}</span>${sig}<span class="tl-q">${metaHTML(t)}</span></div>
+      <div class="tl-meta"><span class="own text-only ${t.owner}">${OWN[t.owner]}</span>${sig}<span class="tl-q">${metaHTML(t)}</span></div>
       ${waitList}
     </div>
     ${open && !ui.wide ? detailHTML(t, false) : ''}

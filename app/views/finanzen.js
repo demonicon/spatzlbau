@@ -254,12 +254,11 @@ function balanceHTML() {
 
 /* ---------- 3. what is next to pay (F5) ---------- */
 
-/** The state as one chip: the three words of 016b, in the export's chip colours. */
+/** The state: overdue stays its own red chip, everything else is the same dots-ladder as the
+    posts table and the Akte (docs/changes/029c #7 - 029b's own #14 missed this spot). */
 function stateChip(c) {
   if (isCostLate(c)) return `<span class="st-chip late">überfällig</span>`;
-  const st = rowState(c);
-  const label = c.kind === 'rueckfluss' ? REFUND_LABEL[st] : LADDER_LABEL[st];
-  return `<span class="st-chip ${st}">${esc(label)}</span>`;
+  return ladderHTML(c);
 }
 
 // docs/changes/030 #5: in der Postentabelle (>= 900 px) ist der Betrag selbst die Aktion fuer
@@ -450,8 +449,8 @@ function payerChip(c) {
 const dueText = (c) => (c.due_on ? fmtDay(c.due_on) : '—');
 
 /** ≥ 900 px: one table row per post, the columns of the export plus the action of 016b. */
-function postRowHTML(c) {
-  if (openRow(c, 'list')) return `<tr class="fin-post-open" data-where="list"><td colspan="6">${costHTML(c)}</td></tr>`;
+function postRowHTML(c, withAction) {
+  if (openRow(c, 'list')) return `<tr class="fin-post-open" data-where="list"><td colspan="${withAction ? 6 : 5}">${costHTML(c)}</td></tr>`;
   const t = c.task_id ? byId(c.task_id) : null;
   // docs/changes/029b #12: Zeile 2 der Posten-Zelle ist der Aufgabentitel, leise - "ohne Aufgabe"
   // statt einer eigenen Spalte
@@ -465,15 +464,22 @@ function postRowHTML(c) {
   const amountCell = estimating
     ? `<button class="fp-amt-btn" data-act="cost-set" data-ref="${c.id}" aria-label="Betrag festlegen: ${esc(amountText(c))}">${amountText(c)}</button>${taxMark(c)}`
     : `${amountText(c)}${taxMark(c)}`;
-  const action = actionHTML(c, { amountIsAction: true });
   return `<tr class="fin-post ${c.status === 'bezahlt' ? 'paid' : ''} ${isCostLate(c) ? 'late' : ''}" data-cost="${c.id}" data-where="list">
     <th scope="row"><button class="fp-title" data-act="cost-open" data-ref="${c.id}">${esc(c.label)}</button>${taskLine}</th>
     <td class="fp-state">${ladderHTML(c)}</td>
     <td class="fp-due">${dueText(c)}</td>
     <td class="fp-who">${payerChip(c)}</td>
     <td class="fp-amt">${amountCell}</td>
-    <td class="fp-act">${action || (estimating ? '' : `<button class="btn-text" data-act="cost-open" data-ref="${c.id}">ändern</button>`)}</td>
+    ${withAction ? `<td class="fp-act">${rowActionHTML(c)}</td>` : ''}
   </tr>`;
+}
+
+// docs/changes/029c #8: was eine Zeile in der Aktionsspalte zeigt - einmal berechnet, einmal
+// benutzt, um zu wissen, ob die Spalte in dieser Auswahl ueberhaupt eine Zeile fuellt
+function rowActionHTML(c) {
+  const estimating = c.kind !== 'rueckfluss' && ladderState(c) === 'geschaetzt';
+  const action = actionHTML(c, { amountIsAction: true });
+  return action || (estimating ? '' : `<button class="btn-text" data-act="cost-open" data-ref="${c.id}">ändern</button>`);
 }
 
 /** < 900 px: at most two lines - title and amount, then state · due · who and the action. */
@@ -503,14 +509,15 @@ function postsHTML() {
         <button class="pill on filter-chip" data-act="fin-filter-clear" aria-label="Filter entfernen">Filter: ${esc(breakdown().find((r) => r.key === ui.finFilter)?.label || ui.finFilter)}<span class="x" aria-hidden="true">×</span></button>
       </div>`
     : '';
+  const hasAction = rows.some((c) => rowActionHTML(c) !== '');
   const list = !open
     ? `<button class="fin-more" data-act="post-open" data-to="offen">${openCount} offene Posten zeigen →</button>`
     : !rows.length
       ? '<p class="empty">Keine Zeile in dieser Auswahl.</p>'
       : ui.wide
         ? `<table class="fin-posts-table">
-            <thead><tr><th>Posten</th><th>Stand</th><th>fällig</th><th>zahlt</th><th class="r">Betrag</th><th><span class="sr">Aktion</span></th></tr></thead>
-            <tbody>${rows.map(postRowHTML).join('')}</tbody>
+            <thead><tr><th>Posten</th><th>Stand</th><th>fällig</th><th>zahlt</th><th class="r">Betrag</th>${hasAction ? '<th><span class="sr">Aktion</span></th>' : ''}</tr></thead>
+            <tbody>${rows.map((c) => postRowHTML(c, hasAction)).join('')}</tbody>
           </table>`
         : `<div class="fin-posts">${rows.map(postLineHTML).join('')}</div>`;
   return `<div class="fin-ph">
