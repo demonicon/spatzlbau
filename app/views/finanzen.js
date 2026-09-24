@@ -262,10 +262,13 @@ function stateChip(c) {
   return `<span class="st-chip ${st}">${esc(label)}</span>`;
 }
 
-function actionHTML(c) {
+// docs/changes/030 #5: in der Postentabelle (>= 900 px) ist der Betrag selbst die Aktion fuer
+// eine geschaetzte Zeile - kein zweiter Button daneben. "Als Naechstes zahlen" und die
+// Handy-Liste behalten ihre drei Buttons, darum der Schalter statt eines zweiten Aufrufers.
+function actionHTML(c, { amountIsAction = false } = {}) {
   if (c.kind === 'rueckfluss') return c.status === 'bezahlt' ? '' : `<button class="btn-secondary" data-act="cost-pay" data-ref="${c.id}">Erhalten</button>`;
   const st = ladderState(c);
-  if (st === 'geschaetzt') return `<button class="btn-secondary" data-act="cost-set" data-ref="${c.id}">Betrag festlegen</button>`;
+  if (st === 'geschaetzt') return amountIsAction ? '' : `<button class="btn-secondary" data-act="cost-set" data-ref="${c.id}">Betrag festlegen</button>`;
   if (st === 'fest') return `<button class="btn-secondary" data-act="cost-pay" data-ref="${c.id}">Bezahlt</button>`;
   return '';
 }
@@ -455,13 +458,21 @@ function postRowHTML(c) {
   const taskLine = t
     ? `<button class="fp-task-link" data-act="fin-open" data-ref="${esc(t.id)}">${esc(t.title)}</button>`
     : `<span class="fp-no-task">ohne Aufgabe</span>`;
+  // docs/changes/030 #5: eine geschaetzte Zeile hat keinen Button - der Betrag selbst ist die
+  // Aktion (oeffnet dieselbe "Betrag festlegen"-Bearbeitung); die "ändern"-Ausweichzeile bleibt
+  // nur, wo tatsaechlich nichts anderes mehr zu tun ist (eine bezahlte Zeile).
+  const estimating = c.kind !== 'rueckfluss' && ladderState(c) === 'geschaetzt';
+  const amountCell = estimating
+    ? `<button class="fp-amt-btn" data-act="cost-set" data-ref="${c.id}" aria-label="Betrag festlegen: ${esc(amountText(c))}">${amountText(c)}</button>${taxMark(c)}`
+    : `${amountText(c)}${taxMark(c)}`;
+  const action = actionHTML(c, { amountIsAction: true });
   return `<tr class="fin-post ${c.status === 'bezahlt' ? 'paid' : ''} ${isCostLate(c) ? 'late' : ''}" data-cost="${c.id}" data-where="list">
     <th scope="row"><button class="fp-title" data-act="cost-open" data-ref="${c.id}">${esc(c.label)}</button>${taskLine}</th>
     <td class="fp-state">${ladderHTML(c)}</td>
     <td class="fp-due">${dueText(c)}</td>
     <td class="fp-who">${payerChip(c)}</td>
-    <td class="fp-amt">${amountText(c)}${taxMark(c)}</td>
-    <td class="fp-act">${actionHTML(c) || `<button class="btn-text" data-act="cost-open" data-ref="${c.id}">ändern</button>`}</td>
+    <td class="fp-amt">${amountCell}</td>
+    <td class="fp-act">${action || (estimating ? '' : `<button class="btn-text" data-act="cost-open" data-ref="${c.id}">ändern</button>`)}</td>
   </tr>`;
 }
 
@@ -590,6 +601,38 @@ const fmtLong = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE',
 const fmtFull = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const set = (k) => (typeof state.settings[k] === 'string' && state.settings[k] ? state.settings[k] : '');
 
+// docs/changes/030 #6: die Rahmendaten pruefen sich selbst - leise Hinweiszeilen, kein Rot, kein
+// Gelb (das ist Fehlzustand/Frist, nicht "passt das zusammen"). Nur der erste zutreffende Fall
+// zeigt sich: mit dem heutigen Stand (28.12./31.12./01.01.) treffen der erste und der dritte
+// Fall zugleich zu (Umzug vor Einzug UND Einzug genau der Tag nach Auszug) - der Auftrag verlangt
+// "genau ein Hinweis" dafuer, also Prioritaet statt Aufzaehlung.
+function plausibilityHTML() {
+  const ein = set('einzugstermin');
+  const umzug = umzugstag();
+  const outS = set('move_out_s');
+  const outA = set('move_out_a');
+  const hints = [];
+  if (umzug && ein && umzug < ein) {
+    hints.push('Umzug vor der Schlüsselübergabe – Vorab-Schlüssel mit dem Vermieter vereinbart?');
+  }
+  if (umzug) {
+    const early = [];
+    if (outS && outS < umzug) early.push(OWN.S);
+    if (outA && outA < umzug) early.push(OWN.A);
+    if (early.length) hints.push(`Auszug ${early.join(' und ')} vor dem Umzug – Übergabe der Altwohnung vor dem Umzugstag?`);
+  }
+  if (ein && (outS || outA)) {
+    const last = [outS, outA].filter(Boolean).sort().pop();
+    const next = new Date(last + 'T00:00:00');
+    next.setDate(next.getDate() + 1);
+    if (next.toISOString().slice(0, 10) === ein) {
+      hints.push('Kein Überlappungstag – Übergabe und Einzug direkt nacheinander.');
+    }
+  }
+  if (!hints.length) return '';
+  return `<div class="fin-rahmen-check">${hints.slice(0, 1).map((h) => `<p class="fin-note">${esc(h)}</p>`).join('')}</div>`;
+}
+
 function rahmenHTML() {
   const d = (k) => (set(k) ? fmtDay(set(k)) : '–');
   const split = state.settings.split_default_s ?? 50;
@@ -611,6 +654,7 @@ function rahmenHTML() {
     <div class="fin-h fin-rahmen-h"><h2>Rahmendaten</h2><button class="btn-text" data-act="fin-settings" aria-expanded="${!!ui.finSettings}">ändern</button></div>
     ${block}
     <p class="fin-rahmen-line fin-rahmen-one">${esc(line)} · <button class="fin-link" data-act="fin-settings" aria-expanded="${!!ui.finSettings}">ändern</button></p>
+    ${plausibilityHTML()}
     ${
       ui.finSettings
         ? `<div class="row">

@@ -1,6 +1,7 @@
 // German UI labels for codes stored in the database.
 export const OWN = { S: 'Sebastian', A: 'Anna', B: 'gemeinsam', C: 'Claude' };
-export const TYPE = { self: 'nur ihr', assist: 'Claude unterstützt', claude: 'an Claude delegiert' };
+// docs/changes/030 #1: dieselbe Wortwahl wie vorher, nur nicht mehr die exakte Meta-Zeilen-Phrase
+export const TYPE = { self: 'nur ihr', assist: 'Claude hilft mit', claude: 'an Claude delegiert' };
 // docs/changes/009: three states instead of six – questions and answers are normal comments now
 export const STEPS = [
   ['briefing', 'Briefing'],
