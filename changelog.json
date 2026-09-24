@@ -1,6 +1,18 @@
 {
   "entries": [
     {
+      "version": "2.1.2",
+      "release": "2.1",
+      "date": "2026-09-24",
+      "title": "Ein paar Vorbelegungen zeigten kurz nach Mitternacht den falschen Tag – das ist jetzt richtig.",
+      "new": [],
+      "improved": [],
+      "fixed": [
+        "Das Datum bei „bezahlt am", „erhalten am" und „fällig am" stimmt jetzt auch kurz nach Mitternacht.",
+        "„Seit du zuletzt da warst" zeigt bei einer geänderten Frist das richtige Datum."
+      ]
+    },
+    {
       "version": "2.1.1",
       "release": "2.1",
       "date": "2026-09-24",
