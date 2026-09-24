@@ -99,7 +99,10 @@ function changeLine(c) {
       if (!base) return v + ' Tage';
       const d = new Date(base + 'T00:00:00');
       d.setDate(d.getDate() + Number(v));
-      return fmtDayMonth(d.toISOString().slice(0, 10));
+      // docs/changes/034 (Fund aus 014e): local-calendar string, not toISOString() (UTC, a day
+      // early east of UTC near Mitternacht) - d sits at local midnight
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return fmtDayMonth(iso);
     };
     return `${esc(t.title)}: ${at(c.old_value)} → <b>${at(c.new_value)}</b>${who ? ', ' + who : ''}`;
   }

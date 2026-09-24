@@ -53,6 +53,13 @@ import { icsToken, icsUrl } from './views/finanzen.js';
 const UI_KEY = 'spatzlbau-ui';
 const PERSON_KEY = 'spatzlbau-person';
 
+// docs/changes/034 (Fund aus 014e): local-calendar string, not toISOString() (UTC, a day early
+// east of UTC near Mitternacht) - the date fields below default to "today" as the person sees it
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 // dashboard state (docs/changes/009): no filter on open – the columns already answer "what is mine";
 // the phase is a chip (null = all phases) and is remembered per device
 ui.filter = null;
@@ -259,7 +266,7 @@ function costPatch(c) {
     patch.paid_on = null;
     patch.paid_by = null;
   } else if (patch.status === 'bezahlt') {
-    if (!('paid_on' in patch) && !c.paid_on) patch.paid_on = new Date().toISOString().slice(0, 10);
+    if (!('paid_on' in patch) && !c.paid_on) patch.paid_on = todayISO();
     if (!('paid_by' in patch) && !c.paid_by) patch.paid_by = state.person;
   }
   return patch;
@@ -1243,7 +1250,7 @@ function wireEvents() {
             kind: 'ausgleich',
             status: 'bezahlt',
             paid_by: by,
-            paid_on: new Date().toISOString().slice(0, 10),
+            paid_on: todayISO(),
             belongs_to: by === 'S' ? 'A' : 'S',
           }).catch((e) => {
             // without migration 010 the database still refuses the new kind - say so plainly
@@ -1546,7 +1553,7 @@ function wireEvents() {
         case 'cost-pay-save': {
           const row = b.closest('.cost, .fin-pay');
           const by = b.dataset.by;
-          const date = input('[data-input=pay-date]', row).value || new Date().toISOString().slice(0, 10);
+          const date = input('[data-input=pay-date]', row).value || todayISO();
           ui.costPay = null;
           ui.costPayBy = null;
           try {
@@ -1563,7 +1570,7 @@ function wireEvents() {
           const row = b.closest('.cost, .fin-pay');
           const amount = parseAmount(input('[data-input=recv-amount]', row).value);
           if (amount === null || amount < 0) return toast('Betrag nicht lesbar – z. B. 2610 oder 2.610,50');
-          const date = input('[data-input=recv-date]', row).value || new Date().toISOString().slice(0, 10);
+          const date = input('[data-input=recv-date]', row).value || todayISO();
           const c = state.costs.find((x) => x.id === b.dataset.ref);
           const shortfall = c ? Math.round((num(c.amount) - amount) * 100) / 100 : 0;
           const by = c?.paid_by || (c?.belongs_to === 'B' ? state.person : c?.belongs_to) || state.person;
