@@ -340,7 +340,9 @@ function monthsHTML() {
 const amountInput = (id, field, value) =>
   `<input type="text" inputmode="decimal" data-rec-field="${field}" data-ref="${id}" value="${value === null || value === undefined ? '' : esc(String(num(value)).replace('.', ','))}" placeholder="–" aria-label="Betrag">`;
 /** "+50 €" / "−70 €": a difference, written without the space the tiles use. */
-const delta = (v) => (v > 0 ? '+' : v < 0 ? MINUS : '') + eurShort(Math.abs(v));
+// docs/changes/014d #1: no value yet -> the column stays empty, not a wrong number
+const delta = (v) => (v === null ? '' : (v > 0 ? '+' : v < 0 ? MINUS : '') + eurShort(Math.abs(v)));
+const newAmount = (v) => (v === null || v === undefined || v === '' ? '–' : eurShort(v));
 
 function recurringHTML() {
   const rows = recurringRows();
@@ -378,14 +380,22 @@ function recurringHTML() {
       <div class="row"><button class="btn-secondary" data-act="rec-done">Fertig</button></div>`
     : // two read tables: the phone sums both old flats into "heute", the desktop rail splits them
       `<table class="fin-table rec read rec-narrow"><tbody>
-          ${rows.map((r) => `<tr><th scope="row">${esc(r.label)}</th><td>${eurShort(num(r.amount_s) + num(r.amount_a))}</td><td class="new">${eurShort(r.amount_n)}</td><td class="delta">${delta(rowDelta(r))}</td></tr>`).join('')}
+          ${rows.map((r) => `<tr><th scope="row">${esc(r.label)}</th><td>${eurShort(num(r.amount_s) + num(r.amount_a))}</td><td class="new">${newAmount(r.amount_n)}</td><td class="delta">${delta(rowDelta(r))}</td></tr>`).join('')}
         </tbody></table>
         <table class="fin-table rec read rec-wide">
           <thead><tr><th>Posten</th><th>du</th><th>${OWN[OTHER()]}</th><th>neu</th><th>Δ</th></tr></thead>
           <tbody>
-          ${rows.map((r) => `<tr><th scope="row">${esc(r.label)}</th><td>${eurShort(r[mineCol])}</td><td>${eurShort(r[theirCol])}</td><td class="new">${eurShort(r.amount_n)}</td><td class="delta">${delta(rowDelta(r))}</td></tr>`).join('')}
+          ${rows.map((r) => `<tr><th scope="row">${esc(r.label)}</th><td>${eurShort(r[mineCol])}</td><td>${eurShort(r[theirCol])}</td><td class="new">${newAmount(r.amount_n)}</td><td class="delta">${delta(rowDelta(r))}</td></tr>`).join('')}
           </tbody></table>`;
-  const diff = t.delta === 0 ? 'genauso viel wie' : `${eurShort(Math.abs(t.delta))} ${t.delta > 0 ? 'mehr' : 'weniger'} als`;
+  // docs/changes/014d #1: names the row(s) still missing a "neu"-Betrag - "(Internet offen)"
+  const missingNote = t.missing.length ? ` (${t.missing.map((r) => r.label).join(', ')} offen)` : '';
+  const diff =
+    t.delta === null ? 'noch nicht vergleichbar mit' : t.delta === 0 ? 'genauso viel wie' : `${eurShort(Math.abs(t.delta))} ${t.delta > 0 ? 'mehr' : 'weniger'} als`;
+  const diffShort =
+    t.delta === null ? 'noch nicht vergleichbar' : t.delta === 0 ? 'genauso viel wie heute zusammen' : `${eurShort(Math.abs(t.delta))} ${t.delta > 0 ? 'mehr' : 'weniger'} als heute zusammen`;
+  const missingHint = t.missing.length
+    ? `<p class="fin-hint"><button class="btn-text" data-act="rec-edit">${t.missing.length === 1 ? '1 Wert fehlt' : `${t.missing.length} Werte fehlen`} ›</button></p>`
+    : '';
   return `${head('Laufend' + (from ? ' ab ' + from : ''))}
       ${edit ? '' : `<button class="btn-text" data-act="rec-edit">Bearbeiten</button>`}
     </div>
@@ -393,9 +403,8 @@ function recurringHTML() {
       edit
         ? ''
         : `<p class="fin-lead"><b>${eurShort(t.n)}</b><span class="lg"> im Monat für die neue Wohnung</span><span class="sm"> / Monat</span>
-            <span class="fin-lead-sub"><span class="lg">${diff} eure beiden Wohnungen heute (${eurShort(t.old)})</span><span class="sm">${
-              t.delta === 0 ? 'genauso viel wie heute zusammen' : `${eurShort(Math.abs(t.delta))} ${t.delta > 0 ? 'mehr' : 'weniger'} als heute zusammen`
-            }</span></span></p>`
+            <span class="fin-lead-sub"><span class="lg">${diff} eure beiden Wohnungen heute (${eurShort(t.old)})${missingNote}</span><span class="sm">${diffShort}${missingNote}</span></span></p>
+          ${missingHint}`
     }
     ${table}`;
 }
@@ -517,6 +526,11 @@ const SETTINGS = [
     Summe "Posten inkl. Puffer" oben (docs/changes/014c §4). */
 function bufferFootHTML() {
   const buf = bufferInfo();
+  // docs/changes/014d #4: 0 % ist kein Puffer, keine Zeile "+ Puffer 0 % · 0 €" - ein Hinweis
+  // mit Weg zu den Rahmendaten, wo der Satz steht
+  if (buf.mode === 'pct' && bufferPct() === 0) {
+    return `<p class="fin-note fin-buffer-foot"><button class="btn-text" data-act="fin-settings">Kein Puffer eingeplant ›</button></p>`;
+  }
   const label = buf.mode === 'fixed' ? `${eurShort(buf.amount)} fest` : `${bufferPct()} % · ${eurShort(buf.amount)}`;
   return `<p class="fin-note fin-buffer-foot">+ Puffer ${label}</p>`;
 }

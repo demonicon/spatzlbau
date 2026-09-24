@@ -223,7 +223,9 @@ export function doubleRent(key) {
 
 export const moveOutMissing = () => !state.settings.move_out_s || !state.settings.move_out_a;
 
-/** The months the cashflow spans: from this month to two after the move (or the last move-out). */
+/** The months the cashflow spans: from this month to the month of the last dated post (a
+    refund counts too, docs/changes/014d #2) - at least to one month past the last move-out, so
+    the double-rent tail still shows without a post of its own. Nothing after the last post. */
 export function cashflowMonths() {
   const einzug = typeof state.settings.einzugstermin === 'string' ? state.settings.einzugstermin : '';
   const from = dayStart();
@@ -234,6 +236,12 @@ export function cashflowMonths() {
     if (d > last) last.setTime(d.getTime());
   }
   last.setMonth(last.getMonth() + 1); // 016c: one month past the last move-out, as the export
+  // docs/changes/014d #2: the last counted post (any kind, a refund included) can reach further
+  const lastPost = state.costs.filter((c) => c.due_on && isCounted(c)).map((c) => c.due_on).sort().pop();
+  if (lastPost) {
+    const d = new Date(lastPost + 'T00:00:00');
+    if (d > last) last.setTime(d.getTime());
+  }
   if (last < from) last.setTime(from.getTime());
   const months = [];
   const cur = new Date(from.getFullYear(), from.getMonth(), 1);
@@ -329,11 +337,24 @@ export const finMatch = (c, key) => !key || !FIN_FILTERS[key] || FIN_FILTERS[key
 /* ---------- monthly costs, old against new (docs/changes/007 commit 3) ---------- */
 export const recurringRows = () => [...state.recurring].sort((a, b) => a.sort - b.sort || (a.created_at || '').localeCompare(b.created_at || ''));
 
-/** Per row and in total: what the two old flats cost, what the new one costs, and the delta. */
+const hasN = (r) => r.amount_n !== null && r.amount_n !== undefined && r.amount_n !== '';
+
+/** Per row and in total: what the two old flats cost, what the new one costs, and the delta.
+    docs/changes/014d #1: a row without amount_n yet (null - the content package left it open)
+    stays out of the delta, both per row and in the total; the sum itself already left it at 0
+    on purpose (a placeholder, not a claim about the real cost) and keeps doing that. `missing`
+    names the rows still open, for the "1 Wert fehlt" hint and the sentence underneath. */
 export function recurringTotals(rows = recurringRows()) {
   const s = rows.reduce((n, r) => n + num(r.amount_s), 0);
   const a = rows.reduce((n, r) => n + num(r.amount_a), 0);
   const nNew = rows.reduce((n, r) => n + num(r.amount_n), 0);
-  return { s, a, n: nNew, delta: Math.round((nNew - s - a) * 100) / 100 };
+  const complete = rows.filter(hasN);
+  const missing = rows.filter((r) => !hasN(r));
+  const cs = complete.reduce((n, r) => n + num(r.amount_s), 0);
+  const ca = complete.reduce((n, r) => n + num(r.amount_a), 0);
+  const cn = complete.reduce((n, r) => n + num(r.amount_n), 0);
+  const delta = complete.length ? Math.round((cn - cs - ca) * 100) / 100 : null;
+  return { s, a, n: nNew, delta, missing };
 }
-export const rowDelta = (r) => Math.round((num(r.amount_n) - num(r.amount_s) - num(r.amount_a)) * 100) / 100;
+/** null when the row's own "neu" is not set yet - the delta column stays empty, not a wrong number. */
+export const rowDelta = (r) => (hasN(r) ? Math.round((num(r.amount_n) - num(r.amount_s) - num(r.amount_a)) * 100) / 100 : null);

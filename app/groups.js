@@ -47,33 +47,54 @@ export function gate() {
 
 // docs/changes/029b #4: the group note is running text - the shared weekday+date helper
 const fmt = (d) => fmtDay(d.toISOString().slice(0, 10));
+const fmtMonth = (d) => { const s = d.toLocaleDateString('de-DE', { month: 'long' }); return s.charAt(0).toUpperCase() + s.slice(1); };
 
 /**
- * Sort tasks into the three groups. Returns only the groups that hold something.
+ * Sort tasks into groups. Returns only the groups that hold something.
  * Each group: { key, label, note, tasks, fold } - fold = "shown behind one line by default".
+ *
+ * `phaseId` (docs/changes/014d #3): a Personen column (undefined) keeps the original three
+ * buckets - "Diese Woche", "Bis Gate n" (the one current gate, whichever phase it belongs to)
+ * and everything else folded behind one "Später" line. A Phasen column only earns the "Bis
+ * Gate n" bucket when n is its OWN phase - the gate of phase 1 means nothing in the phase 3
+ * column. Everything past the week (and past that column's own gate, if any) falls into month
+ * groups instead of one folded catch-all, so a phase far in the future stays a readable list.
  */
-export function timeGroups(tasks) {
+export function timeGroups(tasks, phaseId) {
   const list = [...tasks];
   if (!list.some(anchorDate)) return list.length ? [{ key: 'all', label: '', note: '', tasks: list, fold: false }] : [];
   const week = endOfWeek().getTime();
   const g = gate();
-  // a gate before the end of the week adds nothing: the week already covers it
-  const gateAt = g && g.at.getTime() > week ? g.at.getTime() : null;
-  const groups = [
-    { key: 'week', label: 'Diese Woche', note: 'bis ' + fmt(endOfWeek()), tasks: [], fold: false },
-    { key: 'gate', label: g ? `Bis Gate ${g.phase}` : 'Als Nächstes', note: gateAt ? 'bis ' + fmt(new Date(gateAt)) : '', tasks: [], fold: false },
-    { key: 'later', label: 'Später', note: '', tasks: [], fold: true },
-  ];
+  const monthly = phaseId !== undefined;
+  // a gate before the end of the week adds nothing: the week already covers it. In a Phasen
+  // column the gate bucket only exists when the gate belongs to that very column's phase.
+  const gateMatches = g && (!monthly || g.phase === phaseId);
+  const gateAt = gateMatches && g.at.getTime() > week ? g.at.getTime() : null;
+  const groups = [{ key: 'week', label: 'Diese Woche', note: 'bis ' + fmt(endOfWeek()), tasks: [], fold: false }];
+  if (!monthly || gateAt !== null) {
+    groups.push({ key: 'gate', label: g && gateMatches ? `Bis Gate ${g.phase}` : 'Als Nächstes', note: gateAt ? 'bis ' + fmt(new Date(gateAt)) : '', tasks: [], fold: false });
+  }
+  const rest = [];
   for (const t of list) {
     const at = dueInfo(t).sort;
     if (at <= week) groups[0].tasks.push(t);
     else if (gateAt && at <= gateAt) groups[1].tasks.push(t);
-    else groups[2].tasks.push(t);
+    else rest.push(t);
   }
-  const later = groups[2].tasks;
-  if (later.length) {
-    const first = Math.min(...later.map((t) => dueInfo(t).sort));
-    groups[2].note = 'ab ' + fmt(new Date(first));
+  if (!monthly) {
+    const later = { key: 'later', label: 'Später', note: '', tasks: rest, fold: true };
+    if (rest.length) later.note = 'ab ' + fmt(new Date(Math.min(...rest.map((t) => dueInfo(t).sort))));
+    groups.push(later);
+  } else {
+    rest.sort((a, b) => dueInfo(a).sort - dueInfo(b).sort);
+    const byMonth = new Map();
+    for (const t of rest) {
+      const d = new Date(dueInfo(t).sort);
+      const key = d.getFullYear() + '-' + d.getMonth();
+      if (!byMonth.has(key)) byMonth.set(key, { key: 'm-' + key, label: fmtMonth(d), note: '', tasks: [], fold: false });
+      byMonth.get(key).tasks.push(t);
+    }
+    groups.push(...byMonth.values());
   }
   return groups.filter((x) => x.tasks.length);
 }
