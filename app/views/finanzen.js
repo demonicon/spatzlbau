@@ -632,7 +632,10 @@ function plausibilityHTML() {
     const last = [outS, outA].filter(Boolean).sort().pop();
     const next = new Date(last + 'T00:00:00');
     next.setDate(next.getDate() + 1);
-    if (next.toISOString().slice(0, 10) === ein) {
+    // docs/changes/014e #3: local-calendar string, not toISOString() (UTC, a day early east of
+    // UTC) - the same fix as groups.js's fmt(), found while chasing the gate-date mismatch there
+    const nextISO = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+    if (nextISO === ein) {
       hints.push('Kein Überlappungstag – Übergabe und Einzug direkt nacheinander.');
     }
   }

@@ -121,7 +121,9 @@ export function dueLabel(t) {
   if (d === 0) return 'heute';
   if (d === 1) return 'morgen';
   // docs/changes/013 A5: near dates also say how near - a date alone is hard to feel
-  const iso = date.toISOString().slice(0, 10);
+  // docs/changes/014e #3: local-calendar string, not toISOString() (UTC, a day early east of
+  // UTC) - `date` already sits at local midnight, converting it through UTC can slip a day
+  const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   if (d < 60) return `bis ${fmtDay(iso)} (in ${d} Tagen)`;
   return 'bis ' + fmtDay(iso);
 }

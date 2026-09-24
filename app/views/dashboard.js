@@ -14,7 +14,7 @@ import { compareVersions } from '../changelog.js';
 import { summary, eurShort } from '../costs.js';
 import { isHit, term } from '../search.js';
 import { printHTML } from './print.js';
-import { timelineHTML } from './timeline.js';
+import { timelineHTML, rows as timelineRows } from './timeline.js';
 import { gateHTML } from '../ui/gate.js';
 
 const CAP = 8; // rows per column before "alle n zeigen"
@@ -452,14 +452,29 @@ export function dashboardView() {
   // docs/changes/019c: the timeline keeps its list at most 720 px wide and puts the Akte (or
   // "Zwischen euch") next to it from 900 px on - the overlay step of 013 A3 is skipped there
   const mode = tl && ui.mode === 'overlay' ? 'panel' : ui.mode;
-  const panelTask = mode === 'panel' ? open : null;
+  // docs/changes/014e #5: without a selection the Timeline panel used to say "Nichts hängt
+  // gerade zwischen euch" - the first row due at or after today answers that better, and a click
+  // on another row still overrides it (`open` wins whenever something really is selected)
+  const defaultTlTask = () => {
+    if (!tl || open) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const first = timelineRows().find(({ at }) => at >= today);
+    return first ? first.t : null;
+  };
+  const panelTask = mode === 'panel' ? open || defaultTlTask() : null;
+  // docs/changes/014e #6: with nothing selected and nothing waiting between them, the panel
+  // shows only "Zwischen euch ist nichts offen" - give that width back to the columns instead of
+  // reserving it forever (030's own Abweichung). The Timeline almost always has a default task
+  // (#5) and keeps its panel share regardless.
+  const panelEmpty = mode === 'panel' && !panelTask && !tl && BETWEEN.every(([key]) => !state.tasks.some((t) => matches(t, key)));
   // docs/changes/029c #3: der Kopf sitzt jetzt ueber dem Grid, nicht mehr in der schmaleren
   // col-list - genau wie in Finanzen, auf allen drei Ansichten deckungsgleich
   return (
     updateBarHTML() +
     setupHintHTML() +
     renderHeader('dashboard') +
-    `<div class="board mode-${mode}${tl ? ' v-timeline' : ''}"><div class="col-list">` +
+    `<div class="board mode-${mode}${tl ? ' v-timeline' : ''}${panelEmpty ? ' panel-empty' : ''}"><div class="col-list">` +
     phaseStripHTML() +
     searchHTML() +
     viewChipsHTML() +

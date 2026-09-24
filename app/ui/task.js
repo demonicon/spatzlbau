@@ -15,18 +15,17 @@ export function signalHTML(t) {
   // a second red "überfällig" chip underneath would say the same thing twice
   if (isLate(t)) return '';
   if (!t.done && t.wait_on === state.person) return `<span class="sig-chip waitme">wartet auf dich</span>`;
-  const bl = blockers(t);
-  if (!t.done && bl.length) {
-    // the reason is a link to the blocking task - this is where the dependency graph lives (009)
-    // a link, not a button: it navigates to #task=<id>, which the hash router already knows (020)
-    return `<span class="sig-chip blocked">wartet auf: <a class="tlink" href="#task=${encodeURIComponent(bl[0].id)}">${esc(bl[0].title)}</a>${bl.length > 1 ? ` <span>+ ${bl.length - 1}</span>` : ''}</span>`;
-  }
+  // docs/changes/014e #4: "blockiert" ist kein Signal-Chip mehr - die Zeile bleibt still (Haken
+  // gestrichelt, siehe box in taskHTML), der Grund steht knapp in der Meta-Zeile (quietHTML), wie
+  // "wartet auf N ›" in der Timeline
   return '';
 }
 
 /** Everything the row still has to say, in one line, quietly (020).
     The timeline (019) carries the owner as a badge of its own and asks for it to be left out. */
-export function quietHTML(t, { owner = true } = {}) {
+// docs/changes/014e #1: in der Personen-Ansicht steht schon die Spalte fuer die Zustaendigkeit -
+// die Meta-Zeile wiederholt sie dort nicht; in Phasen und Timeline bleibt sie die Information
+export function quietHTML(t, { owner = ui.view !== 'personen' } = {}) {
   const parts = [];
   // docs/changes/029c #2: dieselbe .own-Klasse wie der Chip, nur ohne Grund/Rand - Text in der
   // Personenfarbe, nicht mehr ungefaerbt
@@ -35,6 +34,11 @@ export function quietHTML(t, { owner = true } = {}) {
   // (alle Aufgaben haben Beratung) - die Meta-Zeile nennt Claude nur noch bei echter Delegation
   if (t.type === 'claude') parts.push(esc(STEP_TAG[claudeStep(t)]));
   if (t.wait_on && t.wait_on !== state.person) parts.push('wartet auf ' + esc(OWN[t.wait_on]));
+  // docs/changes/014e #4: dieselbe Kurzform wie die Timeline ("wartet auf N ›"), Titel im Tipp
+  const bl = blockers(t);
+  if (!t.done && bl.length) {
+    parts.push(`<button class="tl-wait" data-act="tl-wait" data-ref="${t.id}" aria-expanded="${ui.tlWait === t.id}" title="wartet auf: ${esc(bl.map((b) => b.title).join(' · '))}">wartet auf ${bl.length} ›</button>`);
+  }
   const sp = subProgress(t);
   if (sp) parts.push(`${sp[0]}/${sp[1]} Teilschritte`);
   // one dot per author who wrote something since this person's last visit (009), with the
@@ -59,6 +63,13 @@ export function taskHTML(t) {
   const dueCls = isLate(t) ? 'late' : isCritical(t) ? 'crit' : '';
   const sig = signalHTML(t);
   const quiet = quietHTML(t);
+  // docs/changes/014e #4: dieselbe aufklappbare Liste wie die Timeline, unter der Meta-Zeile
+  const waitList =
+    ui.tlWait === t.id && blocked
+      ? `<div class="tl-waitlist">wartet auf: ${blockers(t)
+          .map((b) => `<a class="tlink" href="#task=${encodeURIComponent(b.id)}">${esc(b.title)}</a>`)
+          .join(' · ')}</div>`
+      : '';
   // docs/changes/012: while searching, the hit is bold and a matching subtask becomes a second line
   const subHits = q ? hitSubs(t, q) : [];
   // docs/changes/013 A4: open and inline, this row is the head of the Akte - so the title
@@ -79,6 +90,7 @@ export function taskHTML(t) {
             keeps only the title, so nothing is read twice */ ''}
       ${sig && !inlineHead ? `<div class="sig">${sig}</div>` : ''}
       ${quiet && !inlineHead ? `<div class="quiet">${quiet}</div>` : ''}
+      ${!inlineHead ? waitList : ''}
     </div>
     ${inlineHead ? detailHTML(t, false) : ''}
   </div>`;
