@@ -41,7 +41,7 @@ export function gateHTML(id) {
           ? `<p class="gm-next"><span class="l">Als Nächstes</span> Phase ${next.id} – ${esc(next.short || next.name)}${next.gate ? `<span class="s">${esc(firstSentence(next.gate))}</span>` : ''}</p>`
           : `<p class="gm-next"><span class="l">Das war die letzte Phase.</span></p>`
       }
-      ${einzug() ? `<p class="gm-foot">Noch ${daysLeft()} ${daysLeft() === 1 ? 'Tag' : 'Tage'} bis zur Schlüsselübergabe.</p>` : ''}
+      ${einzug() ? `<p class="gm-foot">Noch ${daysLeft()} ${daysLeft() === 1 ? 'Tag' : 'Tage'} bis zum Einzug.</p>` : ''}
       <div class="row"><button class="btn-primary btn-wide" data-act="gate-next" data-ref="${id}">Weiter</button></div>
     </div>
   </div>`;

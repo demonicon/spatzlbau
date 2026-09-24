@@ -87,7 +87,19 @@ export const doneByOther = (t) =>
 
 const fmtDate = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtShort = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-const fmtDay = (d) => d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
+const fmtWd = (d) => d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
+
+// docs/changes/029b #4: one date format for running text - "Mo 28.12.", year only when it
+// differs from the current one ("Fr 01.01.2027"). Kopf, Gruppenlabels and the Akte's deadline
+// text share this; compact figures (a due-date column, "seit N T.") and the Rahmendaten block
+// ("Fr, 01.01.2027") are their own thing on purpose and stay untouched (029b Abweichungen).
+export function fmtDay(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  const dm = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }); // "28.12."
+  const y = d.getFullYear();
+  return y === new Date().getFullYear() ? `${fmtWd(d)} ${dm}` : `${fmtWd(d)} ${dm}${y}`;
+}
 
 // deadline relative to the move-in date, without a calendar date
 export function offsetLabel(t) {
@@ -109,8 +121,9 @@ export function dueLabel(t) {
   if (d === 0) return 'heute';
   if (d === 1) return 'morgen';
   // docs/changes/013 A5: near dates also say how near - a date alone is hard to feel
-  if (d < 60) return `bis ${fmtDay(date)} ${fmtShort(date)} (in ${d} Tagen)`;
-  return 'bis ' + fmtShort(date);
+  const iso = date.toISOString().slice(0, 10);
+  if (d < 60) return `bis ${fmtDay(iso)} (in ${d} Tagen)`;
+  return 'bis ' + fmtDay(iso);
 }
 
 /** The deadline as the row shows it since 020: a date, right-aligned, short enough to sit

@@ -4,8 +4,8 @@
 // groups in groups.js (shared with the timeline in 019).
 import { esc } from '../ui/dom.js';
 import { OWN, STEPS } from '../ui/labels.js';
-import { appHeadHTML, updateBarHTML, footHTML, setupHintHTML } from '../ui/chrome.js';
-import { state, ui, byId, phases, einzug, umzugstag, dueInfo, dueShort, freshComments, doneByOther, claudeStep } from '../state.js';
+import { renderHeader, updateBarHTML, footHTML, setupHintHTML } from '../ui/chrome.js';
+import { state, ui, byId, phases, einzug, umzugstag, dueInfo, dueShort, freshComments, doneByOther, claudeStep, fmtDay } from '../state.js';
 import { FILTERS, matches, count, isBlocked, isLate, isCritical, waitsOnMe, waitsOnYou, hasNews, other } from '../filters.js';
 import { timeGroups, gate, gateInDays } from '../groups.js';
 import { taskHTML } from '../ui/task.js';
@@ -17,50 +17,16 @@ import { printHTML } from './print.js';
 import { timelineHTML } from './timeline.js';
 import { gateHTML } from '../ui/gate.js';
 
-const DAY = 86400000;
 const CAP = 8; // rows per column before "alle n zeigen"
-
-// bugfix 1.1: same abbreviations as the due-date labels elsewhere ("bis Do 15.10.")
-const fmtWeekday = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
+// compact figure inside a longer sentence (changeLine, old -> new date) - not the running-text
+// fmtDay from 029b #4 on purpose, see 029b-abweichungen.md
 const fmtDayMonth = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 
-function daysToMoveIn() {
-  const base = einzug();
-  if (!base) return null;
-  const dt = new Date(base + 'T00:00:00');
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.round((dt - today) / DAY);
-}
-
-/* docs/changes/013 A1: the head of the phone carries one line instead of a poster -
-   number, what it counts and the date, so the first task fits on the first screen. */
+// docs/changes/029b #2: countdown and the date-editor now live in the shared renderHeader()
+// (chrome.js) - the phase strip stays dashboard-only, right underneath it.
 function headHTML() {
-  const base = einzug();
-  const days = daysToMoveIn();
-  const d = base ? new Date(base + 'T00:00:00') : null;
-  const dateLong = d ? d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : '';
-  const dateShort = d ? d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-  // bugfix 1.1: the moving day is a second, independent date - shown only once it differs from
-  // einzug, so a device that has never seen it renders byte-identical to before
-  const move = umzugstag() && umzugstag() !== base ? umzugstag() : '';
-  // fmtDayMonth already ends in a dot (de-DE "02.01."), like fmtShort elsewhere - no second one
-  const moveSuffix = move ? ` · Umzug ${fmtWeekday(move)} ${fmtDayMonth(move)}` : '';
-  const count = !base
-    ? `<span class="n open">Termin offen</span><span class="t">Einzugstermin eintragen, dann zählt die App</span>`
-    : days > 0
-      ? `<span class="n">${days}</span><span class="t">${days === 1 ? 'Tag' : 'Tage'} bis zur Schlüsselübergabe${moveSuffix}</span>`
-      : days === 0
-        ? `<span class="n">Heute</span><span class="t">ist Schlüsselübergabe${moveSuffix}</span>`
-        : `<span class="n">${-days}</span><span class="t">${-days === 1 ? 'Tag' : 'Tage'} seit der Schlüsselübergabe${moveSuffix}</span>`;
-  const showDate = ui.dateEdit || !base;
   return `<header class="dash-head">
-    ${appHeadHTML('dashboard')}
-    <div class="countdown">
-      ${count}
-      ${base ? `<button class="btn-text" data-act="date-toggle" aria-expanded="${showDate}" aria-label="Einzugstermin ändern"><span class="long">${esc(dateLong)}</span><span class="short">${esc(dateShort)}</span></button>` : ''}
-    </div>
-    ${showDate ? `<div class="date-edit"><label class="hint" for="einzug">Schlüsselübergabe neue Wohnung</label><input type="date" id="einzug" value="${esc(base)}"></div>` : ''}
+    ${renderHeader('dashboard')}
     ${phaseStripHTML()}
   </header>`;
 }
@@ -100,7 +66,9 @@ function phaseStripHTML() {
    that is neither in "Ich" nor in the open phase. */
 function searchHTML() {
   const q = ui.q || '';
+  // docs/changes/029b #7: die Lupe als Inline-SVG, 16 px, links im Feld
   return `<div class="search-row">
+    <svg class="search-ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="10.3" y1="10.3" x2="15" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
     <input type="search" id="search" data-input="q" value="${esc(q)}" placeholder="Aufgabe suchen" aria-label="Aufgabe suchen" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
     ${q ? `<button class="search-x" data-act="q-clear" aria-label="Suche leeren">×</button>` : ''}
   </div>`;
@@ -152,7 +120,11 @@ function changeLine(c) {
 function visitHTML() {
   const v = sinceVisit();
   if (!v) return '';
-  const day = new Date(v.at).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.,', ',');
+  // docs/changes/029b #4: derselbe Kopf-Helfer wie ueberall in laufendem Text - v.at ist ein
+  // Zeitstempel (Zeitzone zaehlt), erst auf den lokalen Kalendertag umrechnen, dann formatieren
+  const visitDt = new Date(v.at);
+  const localISO = `${visitDt.getFullYear()}-${String(visitDt.getMonth() + 1).padStart(2, '0')}-${String(visitDt.getDate()).padStart(2, '0')}`;
+  const day = fmtDay(localISO);
   const parts = [];
   if (v.moved.length) parts.push(`${v.moved.length} ${v.moved.length === 1 ? 'Frist verschoben' : 'Fristen verschoben'}`);
   if (v.coms.length) parts.push(`${v.coms.length} ${v.coms.length === 1 ? 'Kommentar' : 'Kommentare'}`);
@@ -280,7 +252,8 @@ export function columns() {
   if (ui.filter === 'claude') return STEPS.map(([key, label]) => column('st-' + key, label, 'C', pool.filter((t) => claudeStep(t) === key)));
   // docs/changes/019: the same list, cut by phase instead of by person
   if (currentView() === 'phasen') {
-    return phases().map((p) => column('ph-' + p.id, `${p.id} ${p.short || p.name}`, 'B', pool.filter((t) => t.phase === p.id)));
+    // docs/changes/029b #5: 'ph', not 'B' - a phase is not a person, it stays neutral (.own.ph)
+    return phases().map((p) => column('ph-' + p.id, `${p.id} ${p.short || p.name}`, 'ph', pool.filter((t) => t.phase === p.id)));
   }
   const all = [
     column('me', `Ich (${OWN[me]})`, me, pool.filter((t) => t.owner === me)),
@@ -380,11 +353,11 @@ function columnHTML(c) {
         ${groupedHTML(c, rows, all)}
         ${
           c.blocked.length
-            ? `<button class="btn-text row col-sub" data-act="col-blocked" data-ref="${c.key}" aria-expanded="${showBlocked}" aria-controls="blocked-${c.key}">${c.blocked.length} ${c.blocked.length === 1 ? 'wartet' : 'warten'} auf einen Vorgänger<span class="chev" aria-hidden="true">${showBlocked ? '−' : '+'}</span></button>${showBlocked ? `<div id="blocked-${c.key}">${c.blocked.map(taskHTML).join('')}</div>` : ''}`
+            ? `<button class="btn-text row col-sub disclose" data-act="col-blocked" data-ref="${c.key}" aria-expanded="${showBlocked}" aria-controls="blocked-${c.key}"><span class="dchev" aria-hidden="true">${showBlocked ? '▾' : '▸'}</span>${c.blocked.length} ${c.blocked.length === 1 ? 'wartet' : 'warten'} auf einen Vorgänger</button>${showBlocked ? `<div id="blocked-${c.key}">${c.blocked.map(taskHTML).join('')}</div>` : ''}`
             : ''
         }
         ${showDone ? c.done.map(taskHTML).join('') : ''}
-        ${c.done.length && !showDone ? `<button class="btn-text row" data-act="col-done" data-ref="${c.key}">${c.done.length} erledigt zeigen</button>` : ''}
+        ${c.done.length && !showDone ? `<button class="btn-text row disclose" data-act="col-done" data-ref="${c.key}"><span class="dchev" aria-hidden="true">▸</span>${c.done.length} erledigt zeigen</button>` : ''}
       </div>`;
   return `<section class="col ${c.key} own-${c.cls}" data-col="${c.key}">${head}${body}</section>`;
 }
@@ -403,7 +376,7 @@ function groupedHTML(c, rows, all) {
       const openGroup = !g.fold || ui.openGroups.has(c.key + ':' + g.key) || g.tasks.some((t) => t.id === ui.expanded);
       const head = `<div class="tgroup-head"><span class="l">${esc(g.label)}</span>${g.note ? `<span class="n">${esc(g.note)}</span>` : ''}</div>`;
       if (!openGroup) {
-        return `<button class="btn-text row tgroup-more" data-act="group-open" data-ref="${c.key}:${g.key}">${g.tasks.length} ${g.tasks.length === 1 ? 'Aufgabe' : 'Aufgaben'} ${esc(g.note || 'später')} zeigen →</button>`;
+        return `<button class="btn-text row tgroup-more disclose" data-act="group-open" data-ref="${c.key}:${g.key}"><span class="dchev" aria-hidden="true">▸</span>${g.tasks.length} ${g.tasks.length === 1 ? 'Aufgabe' : 'Aufgaben'} ${esc(g.note || 'später')}</button>`;
       }
       return `<div class="tgroup">${head}${g.tasks.map(taskHTML).join('')}</div>`;
     })
