@@ -5,7 +5,7 @@ import { esc } from '../ui/dom.js';
 import { OWN, PAID_BY } from '../ui/labels.js';
 import { state, ui, byId, einzug, umzugstag } from '../state.js';
 import { costHTML, costNewHTML, ladderHTML } from '../ui/detail.js';
-import { updateBarHTML, footHTML, setupHintHTML, avatarHTML } from '../ui/chrome.js';
+import { updateBarHTML, footHTML, setupHintHTML, renderHeader } from '../ui/chrome.js';
 import { SUPABASE_URL } from '../config.js';
 import {
   summary, balance, balanceParts, cashflow, peakMonth, moveOutMissing, bufferInfo, bufferPct, bufferFixed,
@@ -144,14 +144,6 @@ const monthLabel = (key) => {
   return MONTHS[Number(m) - 1] + ' ' + y;
 };
 
-function daysToEinzug() {
-  if (!einzug()) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = Math.round((new Date(einzug() + 'T00:00:00') - today) / 86400000);
-  return d >= 0 ? d : null;
-}
-
 /* ---------- 1. one answer, with the derivation next to or under it (F1, F2) ---------- */
 
 /** The rows that add up to the answer. Each one filters the list of posts (Kennzahl = Filter). */
@@ -283,9 +275,10 @@ function actionHTML(c) {
 const openRow = (c, where) =>
   (ui.costPay === c.id || ui.costEdit === c.id || ui.costSet === c.id) && (!ui.costWhere || ui.costWhere === where);
 // 014c: task_id null war einmal immer der Puffer - jetzt ist es ein normaler Posten ohne Aufgabe
-const ownerOf = (c) => {
+// 029b #13: derselbe Personen-Chip wie in der Postentabelle, statt "gemeinsam" als Text
+const ownerChip = (c) => {
   const t = c.task_id ? byId(c.task_id) : null;
-  return t ? who(t.owner) : 'ohne Aufgabe';
+  return t ? `<span class="own ${t.owner}">${esc(OWN[t.owner])}</span>` : `<span class="fp-no-task">ohne Aufgabe</span>`;
 };
 
 function payRowHTML(c) {
@@ -297,7 +290,7 @@ function payRowHTML(c) {
     <div class="fin-pay-date">${d ? `<b>${String(d.getDate()).padStart(2, '0')}.</b><span>${MONTHS[d.getMonth()]}</span>` : '<span>offen</span>'}</div>
     <div class="fin-pay-body">
       <button class="fin-task-title" data-act="fin-open" data-ref="${esc(c.task_id || '')}">${esc(c.label)}</button>
-      <div class="fin-pay-meta">${stateChip(c)}<span class="who">${esc(ownerOf(c))}</span>${actionHTML(c)}</div>
+      <div class="fin-pay-meta">${stateChip(c)}${ownerChip(c)}${actionHTML(c)}</div>
     </div>
     <div class="fin-pay-amount">${ladderState(c) === 'geschaetzt' ? '≈ ' : ''}${eurShort(c.amount)}</div>
   </div>`;
@@ -430,18 +423,34 @@ function payerText(c) {
   if (c.status === 'bezahlt' && c.paid_by) return who(c.paid_by);
   return who(c.belongs_to || 'B');
 }
+// docs/changes/029b #13: "zahlt" als Personen-Chip statt Text - dieselben Klassen wie im Aufgaben-
+// Spaltenkopf (.own.S/.own.A/.own.B/.own.H); Punkt 10 ("Sebastian" statt "du") gilt damit mit,
+// weil der Chip nie "du" schreibt.
+function payerChip(c) {
+  if (c.kind === 'rueckfluss') {
+    if (c.belongs_to === 'B') return `<span class="own B">an beide</span>`;
+    const code = c.belongs_to || 'B';
+    return `<span class="own ${code}">an ${esc(OWN[code] || code)}</span>`;
+  }
+  const code = c.status === 'bezahlt' && c.paid_by ? c.paid_by : c.belongs_to || 'B';
+  return `<span class="own ${code}">${esc(PAID_BY[code] || OWN[code] || code)}</span>`;
+}
 const dueText = (c) => (c.due_on ? fmtDay(c.due_on) : '—');
 
 /** ≥ 900 px: one table row per post, the columns of the export plus the action of 016b. */
 function postRowHTML(c) {
-  if (openRow(c, 'list')) return `<tr class="fin-post-open" data-where="list"><td colspan="7">${costHTML(c)}</td></tr>`;
+  if (openRow(c, 'list')) return `<tr class="fin-post-open" data-where="list"><td colspan="6">${costHTML(c)}</td></tr>`;
   const t = c.task_id ? byId(c.task_id) : null;
+  // docs/changes/029b #12: Zeile 2 der Posten-Zelle ist der Aufgabentitel, leise - "ohne Aufgabe"
+  // statt einer eigenen Spalte
+  const taskLine = t
+    ? `<button class="fp-task-link" data-act="fin-open" data-ref="${esc(t.id)}">${esc(t.title)}</button>`
+    : `<span class="fp-no-task">ohne Aufgabe</span>`;
   return `<tr class="fin-post ${c.status === 'bezahlt' ? 'paid' : ''} ${isCostLate(c) ? 'late' : ''}" data-cost="${c.id}" data-where="list">
-    <th scope="row"><button class="fp-title" data-act="cost-open" data-ref="${c.id}">${esc(c.label)}</button></th>
-    <td class="fp-task">${t ? `<button class="fin-link" data-act="fin-open" data-ref="${esc(t.id)}">${esc(t.title)}</button>` : '—'}</td>
+    <th scope="row"><button class="fp-title" data-act="cost-open" data-ref="${c.id}">${esc(c.label)}</button>${taskLine}</th>
     <td class="fp-state">${ladderHTML(c)}</td>
     <td class="fp-due">${dueText(c)}</td>
-    <td class="fp-who">${esc(payerText(c))}</td>
+    <td class="fp-who">${payerChip(c)}</td>
     <td class="fp-amt">${amountText(c)}${taxMark(c)}</td>
     <td class="fp-act">${actionHTML(c) || `<button class="btn-text" data-act="cost-open" data-ref="${c.id}">ändern</button>`}</td>
   </tr>`;
@@ -480,7 +489,7 @@ function postsHTML() {
       ? '<p class="empty">Keine Zeile in dieser Auswahl.</p>'
       : ui.wide
         ? `<table class="fin-posts-table">
-            <thead><tr><th>Posten</th><th>Aufgabe</th><th>Stand</th><th>fällig</th><th>zahlt</th><th class="r">Betrag</th><th><span class="sr">Aktion</span></th></tr></thead>
+            <thead><tr><th>Posten</th><th>Stand</th><th>fällig</th><th>zahlt</th><th class="r">Betrag</th><th><span class="sr">Aktion</span></th></tr></thead>
             <tbody>${rows.map(postRowHTML).join('')}</tbody>
           </table>`
         : `<div class="fin-posts">${rows.map(postLineHTML).join('')}</div>`;
@@ -602,21 +611,7 @@ function rahmenHTML() {
   </section>`;
 }
 
-/* ---------- the head of the view (016c: title left, places and avatar right) ---------- */
-
-function finHeadHTML() {
-  const days = daysToEinzug();
-  return `<header class="fin-head">
-    <h1 class="fin-title">Finanzen${days !== null ? `<span class="fin-days">${days} ${days === 1 ? 'Tag' : 'Tage'} bis Einzug</span>` : ''}</h1>
-    ${ui.preview ? `<span class="preview-badge" title="Testversion unter /preview/ – gleiche Datenbank wie die echte App, aber dein Lesestand wird hier nicht gespeichert">Vorschau</span>` : ''}
-    <span class="spacer"></span>
-    <nav class="fin-nav" aria-label="Bereiche">
-      <button class="pill navbtn" data-act="home">Aufgaben</button>
-      <button class="pill navbtn on" data-act="screen" data-to="finanzen" aria-current="page">Finanzen</button>
-    </nav>
-    ${avatarHTML(true)}
-  </header>`;
-}
+/* docs/changes/029b #2: die Kopfzeile kommt jetzt aus chrome.js (renderHeader), geteilt mit Aufgaben */
 
 export function finanzenView() {
   // docs/changes/016b: without settings.fin_setup_done, Finanzen opens to the four questions
@@ -629,7 +624,7 @@ export function finanzenView() {
     updateBarHTML() +
     setupHintHTML() +
     `<div class="fin">` +
-    finHeadHTML() +
+    renderHeader('finanzen') +
     setupHint +
     `<div class="fin-grid">` +
     answerHTML() +

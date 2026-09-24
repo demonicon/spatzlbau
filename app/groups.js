@@ -9,7 +9,7 @@
 //
 // Without a date of its own (no move-in date set) there is nothing to order by: everything
 // lands in one unnamed group, exactly the list the app showed before.
-import { state, dueInfo, anchorDate, phases } from './state.js';
+import { state, dueInfo, anchorDate, phases, fmtDay } from './state.js';
 
 const DAY = 86400000;
 
@@ -45,7 +45,8 @@ export function gate() {
   return { phase: id, name: p ? p.short || p.name : String(id), at: new Date(last) };
 }
 
-const fmt = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+// docs/changes/029b #4: the group note is running text - the shared weekday+date helper
+const fmt = (d) => fmtDay(d.toISOString().slice(0, 10));
 
 /**
  * Sort tasks into the three groups. Returns only the groups that hold something.

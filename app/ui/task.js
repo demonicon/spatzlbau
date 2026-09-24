@@ -11,7 +11,9 @@ import { detailHTML, titleHTML } from './detail.js';
 
 /** At most one signal per row: overdue beats waiting for me, waiting beats blocked (020). */
 export function signalHTML(t) {
-  if (isLate(t)) return `<span class="sig-chip late">überfällig</span>`;
+  // docs/changes/029b #6: the date next to the title is already red ("seit 1 T.") when late -
+  // a second red "überfällig" chip underneath would say the same thing twice
+  if (isLate(t)) return '';
   if (!t.done && t.wait_on === state.person) return `<span class="sig-chip waitme">wartet auf dich</span>`;
   const bl = blockers(t);
   if (!t.done && bl.length) {

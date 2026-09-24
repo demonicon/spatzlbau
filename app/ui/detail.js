@@ -6,7 +6,7 @@
 // form fields and a clear end. Fertig writes every changed field in one go, Abbrechen discards.
 import { esc, fmtTime } from './dom.js';
 import { OWN, STEPS, STEP_OWNER, ADV, PAID_BY } from './labels.js';
-import { state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, umzugstag, dueInfo, anchorDate, freshComments, canEditComment } from '../state.js';
+import { state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, umzugstag, dueInfo, anchorDate, freshComments, canEditComment, fmtDay as fmtRunningDay } from '../state.js';
 import { isLate, isCritical } from '../filters.js';
 import {
   costsOf, isHistory, isCostLate, isCostSoon, eur, num, KIND, APARTMENT, ladderState, refundState,
@@ -169,11 +169,15 @@ function adviceViewHTML(t) {
   const filled = ADV.filter(([k]) => adv[k]);
   if (!filled.length) return '';
   const openKey = (ui.advOpen || '').startsWith(t.id + ':') ? ui.advOpen.slice(t.id.length + 1) : null;
+  // docs/changes/029b #9: Akkordeon-Zeilen statt Pillenreihe - nur ein Thema gleichzeitig offen,
+  // derselbe ui.advOpen-Zustand wie vorher, nur die Darstellung ist neu
   return `<h3>Beratung <small>von Claude · ${filled.length} ${filled.length === 1 ? 'Thema' : 'Themen'}</small></h3>
-    <div class="pchips adv-pills">${filled
-      .map(([k, l]) => `<button class="pill" data-act="adv-open" data-ref="${t.id}" data-to="${k}" aria-pressed="${openKey === k}">${l}</button>`)
-      .join('')}</div>
-    ${openKey && adv[openKey] ? `<div class="adv-body">${esc(adv[openKey])}</div>` : ''}`;
+    <div class="adv-acc">${filled
+      .map(
+        ([k, l]) => `<button class="adv-row" data-act="adv-open" data-ref="${t.id}" data-to="${k}" aria-expanded="${openKey === k}"><span class="dchev" aria-hidden="true">${openKey === k ? '▾' : '▸'}</span>${l}</button>
+    ${openKey === k && adv[k] ? `<div class="adv-body">${esc(adv[k])}</div>` : ''}`,
+      )
+      .join('')}</div>`;
 }
 
 function viewHTML(t, withHead) {
@@ -202,7 +206,7 @@ function viewHTML(t, withHead) {
     ${t.id === 'kosten' ? `<p class="row"><button class="btn-text" data-act="fin-recurring">Laufende Kosten öffnen →</button></p>` : ''}
     ${adviceViewHTML(t)}
     ${commentsHTML(t)}
-    <p class="akte-changed">zuletzt geändert ${esc(fmtShortDay(t.updated_at))}${t.done && t.done_by ? ` · abgehakt von ${OWN[t.done_by]}` : ''}</p>
+    <p class="akte-changed">zuletzt geändert ${esc(fmtRunningDay(t.updated_at.slice(0, 10)))}${t.done && t.done_by ? ` · abgehakt von ${OWN[t.done_by]}` : ''}</p>
   </div>`;
 }
 
@@ -336,7 +340,10 @@ export function ladderHTML(c) {
   const label = c.kind === 'rueckfluss' ? REFUND_LABEL : LADDER_LABEL;
   const cur = c.kind === 'rueckfluss' ? refundState(c) : ladderState(c);
   const at = steps.indexOf(cur);
-  return `<span class="ladder"><span class="dots" aria-hidden="true">${steps.map((_, i) => `<i class="${i <= at ? 'on' : ''}"></i>`).join('')}</span>${esc(label[cur])}</span>`;
+  // docs/changes/029b #14: the tier decides the colour, not the kind - "erhalten" reads as
+  // "bezahlt" (paid), "ausstehend" as the lowest rung (geschaetzt)
+  const tier = cur === 'bezahlt' || cur === 'erhalten' ? 'paid' : cur === 'fest' ? 'mid' : 'low';
+  return `<span class="ladder ladder-${tier}"><span class="dots" aria-hidden="true">${steps.map((_, i) => `<i class="${i <= at ? 'on' : ''}"></i>`).join('')}</span>${esc(label[cur])}</span>`;
 }
 
 /** Amount, tappable in place unless a form already has this row open (016b). */
@@ -461,7 +468,7 @@ export function costEditHTML(c) {
         <input type="date" data-cost-draft="due_on" value="${esc(costFieldValue(c, 'due_on') || '')}"></label>
     </div>
     <div class="lbl">Stand${cmark(c, 'status')}
-      <div class="seg" role="group" aria-label="Stand">${steps
+      <div class="seg stand-seg" role="group" aria-label="Stand">${steps
         .map((k) => `<button class="pill" data-act="cost-draft-status" data-ref="${c.id}" data-to="${statusFor(k)}" aria-pressed="${cur === k}">${label[k]}</button>`)
         .join('')}</div>
     </div>
