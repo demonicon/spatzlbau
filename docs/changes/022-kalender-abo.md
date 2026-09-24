@@ -1,6 +1,7 @@
 # 022 – Kalender-Abo
 
-Status: umgesetzt (Branch `feat/022-kalender` → `preview`, Abweichungen in `022-abweichungen.md`)
+Status: umgesetzt (Branch `feat/022-kalender` → `preview`, Abweichungen in `022-abweichungen.md`; Fristen-Wecker-Ergänzung: Branch `feat/022-valarm`, Nachtrag unten)
+
 Stand: 23.09.2026 · Meilenstein 2.0 · Ziel-Branch: `preview` · Modell: Sonnet · Aufwand: S
 Quelle: Funktionsideen Teil E, 4a.
 
@@ -18,6 +19,25 @@ Kritische Fristen und Gates als abonnierbarer Kalender (ICS) für iOS, Google, O
 ## Daten
 
 Migration `NNN_a022_ics_token.sql`: `settings.ics_token` (initial null; App erzeugt beim ersten Öffnen der Rahmendaten). Additiv.
+
+## Ergänzung 24.09. – Fristen-Wecker (4w), freigegeben
+
+Erinnerungen kommen über den Kalender, nicht über Push oder Cron: Jeder Termin im ICS bekommt `VALARM`-Blöcke.
+
+- Kritische Aufgaben: drei Alarme – `-P3D` 09:00, `-P1D` 09:00, `PT0S` 09:00 (ganztägig → Trigger relativ zum Tagesbeginn, absolut als `TRIGGER;VALUE=DATE-TIME` in `Europe/Berlin` berechnen, damit iOS und Outlook dieselbe Uhrzeit zeigen).
+- Gates: zwei Alarme – `-P7D` und `PT0S`.
+- Beschreibung des Alarms = Titel + Zuständigkeit („Wohnung kündigen · Sebastian · morgen").
+- Keine Abschaltung je Aufgabe (bewusst weggelassen); wer keine Alarme will, schaltet sie im Kalender-Abo ab (iOS: „Hinweise entfernen", Outlook: Erinnerungen aus).
+- **Bekannte Grenze:** Google Kalender übernimmt `VALARM` aus abonnierten Kalendern nicht; dort gelten die Standard-Benachrichtigungen des Kalenders (in den Google-Einstellungen des Abos einmal „1 Tag vorher" setzen). Hinweistext unter den Abo-Links entsprechend ergänzen: „iOS/Outlook erinnern 3 Tage, 1 Tag und am Tag selbst; Google nach seinen Kalender-Einstellungen."
+
+Zusätzliche Akzeptanzkriterien:
+- [x] ICS-Validator akzeptiert die Alarme; ein kritischer Termin hat drei `VALARM`, ein Gate zwei
+- [x] iOS: Abo zeigt die drei Hinweise für `kuend-s` (Sebastian am Handy)
+- [x] Hinweistext unter den Links angepasst
+
+## Deploy (Sebastian, nach Merge 2.1)
+
+`supabase functions deploy ics --no-verify-jwt --project-ref rxhbwjbiwackxuswupuy`, dann in Rahmendaten „Link neu erzeugen", Abo auf iOS und Google einrichten, ein Termin prüfen.
 
 ## Akzeptanzkriterien
 

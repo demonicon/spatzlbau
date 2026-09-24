@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "version": "2.1.1",
+      "release": "2.1",
+      "date": "2026-09-24",
+      "title": "Der Kalender erinnert 3 Tage, 1 Tag und am Tag selbst.",
+      "new": [],
+      "improved": [
+        "Der Kalender erinnert 3 Tage, 1 Tag und am Tag selbst."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2.1.0",
       "release": "2.1",
       "date": "2026-09-24",
