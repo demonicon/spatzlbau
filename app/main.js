@@ -48,7 +48,7 @@ import { draftOf, draftCount, fieldValue, costDraftOf, costDraftCount, costField
 import { searching } from './search.js';
 import { parseAmount, bufferPct, bufferFixed, costsOf, num, eurShort } from './costs.js';
 import { OWN } from './ui/labels.js';
-import { icsToken, icsUrl } from './views/finanzen.js';
+import { icsToken, icsUrl, alarmStagesOf } from './views/finanzen.js';
 
 const UI_KEY = 'spatzlbau-ui';
 const PERSON_KEY = 'spatzlbau-person';
@@ -1221,6 +1221,15 @@ function wireEvents() {
             ui.icsShow = ui.icsShow === b.dataset.to ? null : b.dataset.to;
             render();
           }
+          return;
+        }
+        case 'alarm-stage-toggle': {
+          const p = b.dataset.person;
+          const n = Number(b.dataset.stage);
+          const current = alarmStagesOf(p);
+          const next = current.includes(n) ? current.filter((x) => x !== n) : [...current, n].sort((a, c) => c - a);
+          const other = p === 'S' ? 'A' : 'S';
+          await setSetting('alarm_stages', { [p]: next, [other]: alarmStagesOf(other) }).catch(fail);
           return;
         }
         /* ---------- Finanzen 016 ---------- */

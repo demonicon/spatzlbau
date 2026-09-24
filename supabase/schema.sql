@@ -561,6 +561,7 @@ insert into public.settings (key, value) values
   ('split_default_s', '50'::jsonb),     -- Standardanteil Sebastian in % bei belongs_to = B
   ('buffer_pct',      '20'::jsonb),     -- Puffersatz in %
   ('ics_token',       'null'::jsonb),  -- a022: Geheimnis hinter der Kalender-Abo-Adresse, App erzeugt es
+  ('alarm_stages',    '{"S":[3,1,0],"A":[1,0]}'::jsonb), -- a022: Erinnerungsstufen je Person im Kalender-Abo
   ('fin_setup_done',  'false'::jsonb), -- a016b: die "vier Fragen" schon beantwortet? Fehlt wirkt wie false
   ('claude_last_run', 'null'::jsonb),  -- a024: Zeitpunkt des letzten stündlichen Claude-Laufs, von Claude gesetzt
   ('setup_done',       'false'::jsonb), -- a026: der Acht-Schritte-Start schon durchlaufen?

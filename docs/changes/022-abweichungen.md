@@ -109,3 +109,29 @@ Branch `feat/022-valarm` von `preview`. `node test_ics_valarm.mjs` (ohne Deno, o
 5. **Kein Validator aus npm.** Ein RFC-5545-Validator (BEGIN/END-Verschachtelung, Pflichtfelder,
    75-Oktett-Faltung, CRLF) ist im Test selbst geschrieben – dieselbe Begründung wie in Punkt 1
    der ursprünglichen Liste (keine neue Abhängigkeit ohne Rückfrage).
+
+## Nachtrag 24.09. (2) – Stufen je Person (022c)
+
+Branch `feat/022c` von `preview`. Migration `020_a022_alarm_stages.sql` (additiv, Default
+`{"S":[3,1,0],"A":[1,0]}` – deckt sich mit dem bisherigen fest verdrahteten Verhalten, ändert also
+nichts, bis jemand ein Segment anfasst). `node test_022c_ics.mjs` (10/10 grün, ohne Deno, ohne
+Datenbank) plus `test022c_ui.mjs` (Browser, 9/9 grün, ohne Datenbank) für die Segmente in den
+Rahmendaten. Regression `scen022.mjs` (11/11) und `scen030.mjs` (14/14) erneut grün.
+
+### Entscheidungen im Zweifel
+
+1. **Gate-Stufen bleiben fest** (`-7`/`-1`, nicht mehr `-7`/`0`) – der Auftrag lässt sie bewusst
+   außerhalb der Segmente ("ein Gate braucht Vorlauf"), also keine eigene Rahmendaten-Zeile dafür.
+2. **Ein Klick schreibt sofort**, kein eigener „Speichern"-Knopf – dieselbe Konvention wie jedes
+   andere Feld in den Rahmendaten (`data-setting`, `change`-Event schreibt direkt). Der Klick
+   schreibt immer das ganze `alarm_stages`-Objekt (beide Personen), nie nur ein Feld, weil
+   `settings` eine Schlüssel-Wert-Tabelle ist und `alarm_stages` ein einzelner Schlüssel mit einem
+   verschachtelten Wert – die andere Person kommt dabei mit ihrem aktuell wirksamen Wert (Setting
+   oder Default) mit, damit ein fehlendes Setting nicht plötzlich zu `undefined` für sie wird.
+3. **Kein neues CSS.** Der Segment-Block wiederverwendet `.row`/`.lbl`/`.seg`/`.pill`/`.fin-note`
+   aus dem bestehenden Button-System (020) und dem Puffer-Segment (`bufferSettingHTML`) – keine
+   neuen Klassen, keine neue Anpassung an den 44-px-Regeln (die bestehenden Regeln reichen, geprüft
+   über die Zeilenhöhe, nicht nur die Button-Box).
+4. **`ics.js` exportiert `alarmStagesFor`/`DEFAULT_ALARM_STAGES`, `finanzen.js` hat eine eigene,
+   kleine Kopie davon** (`alarmStagesOf`) – dieselbe Konvention wie bei den Datums-Helfern in 034:
+   kein gemeinsames Modul über den Edge-Function/Frontend-Rand hinweg für zwei kurze Zeilen.
