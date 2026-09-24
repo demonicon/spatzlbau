@@ -971,6 +971,10 @@ button.cost-amount:hover { background: var(--line); }
   /* docs/changes/013 A2/A3: the side panel only from 1180 px - below that the list uses the
      full width and the Akte is an overlay, so no empty panel stands around */
   .board.mode-panel { display: grid; grid-template-columns: minmax(0, 1fr) clamp(420px, 30vw, 600px); align-items: start; }
+  /* 014e #6: nichts ausgewaehlt und nichts wartet zwischen ihnen - der Container bekommt die
+     Breite des leeren Panels zurueck, statt sie fuer eine leere Zeile vorzuhalten (Rest aus 030) */
+  .board.mode-panel.panel-empty { grid-template-columns: minmax(0, 1fr); }
+  .board.panel-empty .panel { display: none; }
   .col-list { min-width: 0; }
   /* the person columns start here, as many as fit (029 Regel 1: Karten statt der Linien-Grafik;
      Regel 2: ihre Zeilen-Trennlinien werden hier innen zu --divider) */
