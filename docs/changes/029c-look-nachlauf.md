@@ -14,7 +14,7 @@ Befund aus dem preview-Check nach dem Run 2.1 (drei Screens, 24.09. 10:06). Läu
 5. **Fristsignal einheitlich:** Datum gelb (Chip) in Spalten **und** Timeline; der Chip „kritisch" in der Timeline-Meta entfällt. Überfällig: Datum rot in beiden.
 6. **Akte:** Akkordeon-Zeilen mit Chevron „▸/▾" statt „▪"; Kommentar-Autor „Claude" in der Claude-Farbe (Chip wie Punkt 2), Sebastian/Anna in ihrer Farbe; Erledigt-Block in Spalten als Aufklapper „▸ 2 erledigt" wie die anderen.
 7. **Stand-Leiter sichtbar:** hohle Kreise mit 1 px Rand in `--ink-3` (heute unsichtbar, es bleibt „• geschätzt"). Leiter auch in „Als Nächstes zahlen" vor dem Wort (029b Punkt 14 war dort nicht umgesetzt).
-8. **Postentabelle, Spaltenbreiten:** Posten `auto` (nimmt den Rest), Stand auf Inhalt (`width: 1%; white-space: nowrap`), fällig/zahlt auf Inhalt, Betrag rechtsbündig an der Tabellenkante. Die leere Aktionsspalte entfällt, wenn keine Zeile eine Aktion hat; sonst schmal ganz rechts.
+8. **Postentabelle, Spaltenbreiten – feste Prozente.** (Ersetzt die Fassung vom 24.09. 10:30; das `width: 1%`-Rezept hat die schmalen Spalten kollabieren lassen, Screenshot 11:07.) `table-layout: fixed` mit `<colgroup>`: **Posten 35 % · Stand 10 % · fällig 10 % · zahlt 15 % · Betrag 15 % · Aktion 15 %.** Betrag rechtsbündig, tabular. Die Aktionsspalte bleibt immer da (auch leer), damit die Spalten nicht springen. Zellen `overflow: hidden; text-overflow: ellipsis`, nur die Posten-Zelle darf zweizeilig sein. Zwischen 900 und 1099 px zeigt Stand nur die drei Kreise (Wort als `title`), damit 10 % reichen. Unter 900 px gilt weiter die Zwei-Zeilen-Form aus 016c.
 9. **Δ-Spalte in „Laufend ab Januar":** Vorzeichen zeigen (`−225 €`), wie vor dem Run; „weniger/mehr" im Satz bleibt.
 10. **Kacheln:** die vier Kennzahlen neben der Antwortzahl wieder als Karten (`--card`, Rand `--line`, Radius 8), Label in `--ink-2`. Kennzahl bleibt Filter.
 11. **Timeline so breit wie die Aufgaben-Fläche.** Der 720-px-Deckel aus 019c entfällt. Die Timeline nutzt dasselbe Grid wie Personen/Phasen: Liste `1fr`, Panel rechts in derselben Breite und Position wie auf der Aufgaben-Seite. Damit gilt eine Grid-Definition für alle drei Ansichten; die Zeilen bleiben zweizeilig (Titel · Meta), nur die Titel werden seltener abgeschnitten. Datums-/Schienen-Spalte links behält ihre feste Breite.
@@ -25,6 +25,7 @@ Befund aus dem preview-Check nach dem Run 2.1 (drei Screens, 24.09. 10:06). Läu
 - [x] Overlay der drei Kopfzeilen (1800 px) deckungsgleich; mit offenem Akte-Panel bleibt die Nav rechts
 - [x] Grep: Personenfarbe als Text nur noch in Meta-Zeilen; Chips über eine Klasse
 - [x] Stand-Leiter: drei Kreise in Tabelle, Als Nächstes, Akte; Screenshot 1280 zeigt ● ○ ○
+- [x] Postentabelle 1280 px: sechs Spalten mit den Prozentbreiten, keine kollabierte Spalte, Betrag lesbar („≈ 4.725 € §"); 1000 px: Stand als Kreise ohne Wort
 - [x] Timeline: kein Chip „kritisch", Datum gelb; Spalten identisch
 - [x] 1800 px: Timeline-Liste und Personen-Spaltenfläche haben dieselbe linke und rechte Kante, Panel deckungsgleich; Grep: eine Grid-Definition für die drei Ansichten
 - [x] Screenshots 380/1280 (Aufgaben Personen, Timeline, Finanzen) in `design/snapshot/2026-09-24-nachlauf/`

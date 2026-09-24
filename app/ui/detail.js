@@ -344,7 +344,9 @@ export function ladderHTML(c) {
   // docs/changes/029b #14: the tier decides the colour, not the kind - "erhalten" reads as
   // "bezahlt" (paid), "ausstehend" as the lowest rung (geschaetzt)
   const tier = cur === 'bezahlt' || cur === 'erhalten' ? 'paid' : cur === 'fest' ? 'mid' : 'low';
-  return `<span class="ladder ladder-${tier}"><span class="dots" aria-hidden="true">${steps.map((_, i) => `<i class="${i <= at ? 'on' : ''}"></i>`).join('')}</span>${esc(label[cur])}</span>`;
+  // docs/changes/029c #8: das Wort steckt in einer eigenen Spanne, damit die Postentabelle es
+  // zwischen 900 und 1099 px ausblenden kann (title traegt es dann als Tooltip)
+  return `<span class="ladder ladder-${tier}" title="${esc(label[cur])}"><span class="dots" aria-hidden="true">${steps.map((_, i) => `<i class="${i <= at ? 'on' : ''}"></i>`).join('')}</span><span class="word">${esc(label[cur])}</span></span>`;
 }
 
 /** Amount, tappable in place unless a form already has this row open (016b). */

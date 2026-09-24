@@ -449,8 +449,8 @@ function payerChip(c) {
 const dueText = (c) => (c.due_on ? fmtDay(c.due_on) : '—');
 
 /** ≥ 900 px: one table row per post, the columns of the export plus the action of 016b. */
-function postRowHTML(c, withAction) {
-  if (openRow(c, 'list')) return `<tr class="fin-post-open" data-where="list"><td colspan="${withAction ? 6 : 5}">${costHTML(c)}</td></tr>`;
+function postRowHTML(c) {
+  if (openRow(c, 'list')) return `<tr class="fin-post-open" data-where="list"><td colspan="6">${costHTML(c)}</td></tr>`;
   const t = c.task_id ? byId(c.task_id) : null;
   // docs/changes/029b #12: Zeile 2 der Posten-Zelle ist der Aufgabentitel, leise - "ohne Aufgabe"
   // statt einer eigenen Spalte
@@ -470,7 +470,7 @@ function postRowHTML(c, withAction) {
     <td class="fp-due">${dueText(c)}</td>
     <td class="fp-who">${payerChip(c)}</td>
     <td class="fp-amt">${amountCell}</td>
-    ${withAction ? `<td class="fp-act">${rowActionHTML(c)}</td>` : ''}
+    <td class="fp-act">${rowActionHTML(c)}</td>
   </tr>`;
 }
 
@@ -509,15 +509,18 @@ function postsHTML() {
         <button class="pill on filter-chip" data-act="fin-filter-clear" aria-label="Filter entfernen">Filter: ${esc(breakdown().find((r) => r.key === ui.finFilter)?.label || ui.finFilter)}<span class="x" aria-hidden="true">×</span></button>
       </div>`
     : '';
-  const hasAction = rows.some((c) => rowActionHTML(c) !== '');
+  // docs/changes/029c #8 (Fassung 24.09. 11:07): feste Prozentbreiten statt "width: 1%" - das
+  // liess die schmalen Spalten kollabieren. Die Aktionsspalte bleibt jetzt immer da (auch leer),
+  // damit die Spalten nicht springen, sobald der Filter auf eine andere Auswahl wechselt.
   const list = !open
     ? `<button class="fin-more" data-act="post-open" data-to="offen">${openCount} offene Posten zeigen →</button>`
     : !rows.length
       ? '<p class="empty">Keine Zeile in dieser Auswahl.</p>'
       : ui.wide
         ? `<table class="fin-posts-table">
-            <thead><tr><th>Posten</th><th>Stand</th><th>fällig</th><th>zahlt</th><th class="r">Betrag</th>${hasAction ? '<th><span class="sr">Aktion</span></th>' : ''}</tr></thead>
-            <tbody>${rows.map((c) => postRowHTML(c, hasAction)).join('')}</tbody>
+            <colgroup><col class="c-posten"><col class="c-stand"><col class="c-faellig"><col class="c-zahlt"><col class="c-betrag"><col class="c-aktion"></colgroup>
+            <thead><tr><th>Posten</th><th>Stand</th><th>fällig</th><th>zahlt</th><th class="r">Betrag</th><th><span class="sr">Aktion</span></th></tr></thead>
+            <tbody>${rows.map(postRowHTML).join('')}</tbody>
           </table>`
         : `<div class="fin-posts">${rows.map(postLineHTML).join('')}</div>`;
   return `<div class="fin-ph">

@@ -23,3 +23,16 @@ nach 030 verglichen.
 
 016–026 gegenüber dem Stand nach 030 verglichen: keine neue, unerklärte Abweichung. `scen019c`s
 „Liste ≤ 720 px" schlägt jetzt bewusst fehl (858 px) – exakt das Ziel von Punkt 11.
+
+## Nachtrag 24.09. 11:07 – Punkt 8 ersetzt
+
+Die erste Fassung von Punkt 8 (`width: 1%` auf den schmalen Spalten) hat die Spalten „Stand",
+„fällig" und „zahlt" im echten Fenster kollabieren lassen (Screenshot 11:07) – `width: 1%` ist nur
+eine Mindestbreite, kein Zielwert, und `table-layout: fixed` verteilt den Rest anders als gedacht.
+Ersetzt durch feste Prozente über ein `<colgroup>` (Posten 35 % · Stand 10 % · fällig 10 % ·
+zahlt 15 % · Betrag 15 % · Aktion 15 %), die Aktionsspalte bleibt jetzt immer stehen (auch leer),
+damit kein Spaltensprung mehr auftritt. Zwischen 900 und 1099 px zeigt die Stand-Leiter nur die
+Kreise, das Wort steckt als `title`-Tooltip auf der Leiter selbst (`ladderHTML`, jetzt überall,
+nicht nur in der Tabelle – harmlos, war vorher nirgends ein Tooltip). Eigener Test: `scen029d`
+(6/6 grün), plus `scen029c` erneut komplett gegengeprüft (13/14 – die eine bekannte Abweichung ist
+014e-bedingt, siehe oben).

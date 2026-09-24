@@ -818,18 +818,26 @@ button.cost-amount:hover { background: var(--line); }
      Zellen bleiben vertikal mittig */
   .fin-posts-table th, .fin-posts-table td { min-height: 44px; padding: 6px 10px 6px 0; text-align: left; vertical-align: middle; border-top: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fin-posts-table thead th { height: 34px; border-top: 0; font-size: var(--fs-micro); font-weight: 400; color: var(--ink-3); }
-  /* 029c #8: Posten nimmt den Rest (kein width), die anderen vier/fuenf sind Inhalt-breit;
-     die Aktionsspalte existiert nur, wenn hasAction sie rendert (siehe postsHTML) */
-  .fin-posts-table thead th:nth-child(2),
-  .fin-posts-table thead th:nth-child(3),
-  .fin-posts-table thead th:nth-child(4),
-  .fin-posts-table thead th:nth-child(5),
-  .fin-posts-table thead th:nth-child(6) { width: 1%; white-space: nowrap; }
+  /* 029c #8 (Fassung 24.09. 11:07): feste Prozentbreiten ueber <colgroup> - das vorherige
+     "width: 1%"-Rezept liess die schmalen Spalten kollabieren. Aktionsspalte bleibt immer da,
+     damit die Spalten beim Filterwechsel nicht springen. */
+  .fin-posts-table col.c-posten { width: 35%; }
+  .fin-posts-table col.c-stand { width: 10%; }
+  .fin-posts-table col.c-faellig { width: 10%; }
+  .fin-posts-table col.c-zahlt { width: 15%; }
+  .fin-posts-table col.c-betrag { width: 15%; }
+  .fin-posts-table col.c-aktion { width: 15%; }
+  @media (max-width: 1099px) {
+    /* 029c #8: 10 % reicht fuer "Stand" nur ohne Wort - die drei Kreise bleiben, das Wort */
+    /* steht als title-Tooltip (siehe ladderHTML) statt gedruckt in der Zelle */
+    .fin-posts-table .ladder .word { display: none; }
+  }
   .fin-posts-table .r, .fin-posts-table .fp-amt, .fin-posts-table .fp-act { text-align: right; }
+  .fin-posts-table .fp-amt { font-variant-numeric: tabular-nums; }
   .fin-posts-table .fp-act { padding-right: 0; }
   .fin-posts-table tr > :last-child { padding-right: 0; }
-  /* 029b #13: fit-content statt einer vollen Textspalte, Chip zentriert */
-  .fin-posts-table .fp-who { width: 1%; white-space: nowrap; text-align: center; }
+  /* 029b #13: Chip zentriert */
+  .fin-posts-table .fp-who { text-align: center; }
   /* in a table cell the title and the task link fill the whole 44 px row - that is their hit
      area, and it lets the ellipsis cut them at the cell edge instead of under the next column */
   /* 029b #12: eine Zeile, nicht mehr zellenfuellend - Zeile 2 ist der Aufgabentitel */
