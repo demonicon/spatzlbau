@@ -3,13 +3,17 @@
     {
       "version": "2.1.0",
       "release": "2.1",
-      "date": "2026-09-23",
+      "date": "2026-09-24",
       "title": "Ruhigerer Look: neutrale Flächen, Karten, feinere Linien, sichtbarer Fokus.",
       "new": [],
       "improved": [
-        "Ruhigerer Look: neutrale Flächen, Karten, feinere Linien, sichtbarer Fokus."
+        "Ruhigerer Look: neutrale Flächen, Karten, feinere Linien, sichtbarer Fokus.",
+        "Kopfzeile, Pillen und Signale sind aufgeräumt.",
+        "Weniger Gelb, weniger Buttons, alle Phasen im Blick – und die Rahmendaten sagen, wenn etwas nicht zusammenpasst."
       ],
-      "fixed": []
+      "fixed": [
+        "Laufende Kosten, Monatsübersicht und Spalten-Gruppen stimmen."
+      ]
     },
     {
       "version": "2.0.4",
