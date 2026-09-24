@@ -8,7 +8,7 @@
 // all of them without a gap, and a phase's line ends in the diamond of its gate row.
 import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
-import { state, ui, phases, einzug, umzugstag, dueInfo, anchorDate, blockers, subProgress, comsOf } from '../state.js';
+import { state, ui, phases, einzug, umzugstag, dueInfo, anchorDate, blockers, subProgress, comsOf, openDecisionsOf, ackedBy } from '../state.js';
 import { isLate, isCritical } from '../filters.js';
 import { detailHTML } from '../ui/detail.js';
 import { isHit, term } from '../search.js';
@@ -79,7 +79,8 @@ function signalHTML(t, at) {
     const n = Math.round((dayStart() - dayStart(at)) / DAY);
     return `<span class="tl-sig late">seit ${n} T. überfällig</span>`;
   }
-  if (t.wait_on === state.person) return `<span class="tl-sig waitme">wartet auf dich</span>`;
+  // docs/changes/032: an open decision without my own tick waits the same way wait_on does
+  if (t.wait_on === state.person || openDecisionsOf(t).some((c) => !ackedBy(c, state.person))) return `<span class="tl-sig waitme">wartet auf dich</span>`;
   if (dayStart(at).getTime() === dayStart().getTime()) return `<span class="tl-sig crit">heute</span>`;
   // docs/changes/029c #5: kein eigener "kritisch"-Chip mehr - das Datum selbst wird gelb (wie in
   // den Spalten, .tl-row.crit .tl-when b), damit Spalten und Timeline dasselbe Signal zeigen

@@ -6,7 +6,10 @@
 // form fields and a clear end. Fertig writes every changed field in one go, Abbrechen discards.
 import { esc, fmtTime } from './dom.js';
 import { OWN, STEPS, STEP_OWNER, ADV, PAID_BY } from './labels.js';
-import { state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, umzugstag, dueInfo, anchorDate, freshComments, canEditComment, fmtDay as fmtRunningDay } from '../state.js';
+import {
+  state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, umzugstag, dueInfo, anchorDate, freshComments, canEditComment, fmtDay as fmtRunningDay,
+  openDecisionsOf, ackedBy, isConfirmedDecision,
+} from '../state.js';
 import { isLate, isCritical } from '../filters.js';
 import {
   costsOf, isHistory, isCostLate, isCostSoon, eur, num, KIND, APARTMENT, ladderState, refundState,
@@ -34,6 +37,9 @@ const markCls = (t, key) => (isChanged(t, key) ? ' is-changed' : '');
 
 /* ---------- comments: the same in both modes, one field ---------- */
 
+// "Do 24.09." - weekday plus date, no dot after the abbreviation (like finanzen.js's fmtLong)
+const fmtWeekDay = (iso) => new Date(iso).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace(/^(\w+)\./, '$1');
+
 // docs/changes/013 B5: only the own comments carry actions - deleting always, editing only
 // inside the ten-minute window (RLS allows both for either person; the "own only" limit is
 // a rule of the interface)
@@ -41,28 +47,74 @@ function commentHTML(c, fresh) {
   const own = c.author === state.person;
   const editing = own && ui.comEdit === c.id;
   const confirming = own && ui.confirm === 'comdel:' + c.id;
+  const superseded = c.decision && c.superseded_by;
   const body = editing
     ? `<textarea class="com-edit" aria-label="Kommentar bearbeiten">${esc(c.body)}</textarea>
       <div class="row pad"><button class="btn-secondary" data-act="com-save" data-ref="${c.id}">Speichern</button><button class="btn-text" data-act="com-cancel">Abbrechen</button></div>`
-    : esc(c.body);
+    : superseded
+      ? `<s>${esc(c.body)}</s> <span class="tag replaced">ersetzt</span>`
+      : esc(c.body);
+  // docs/changes/032: a subtle toggle under the own comment, always available (not time-boxed
+  // like Bearbeiten) - Claude never authors its own comment as `state.person`, so it never gets
+  // this button either, without a special case
+  const decisionToggle =
+    own && !editing && !confirming
+      ? `<button class="btn-text quiet" data-act="com-decision-toggle" data-ref="${c.id}" aria-pressed="${!!c.decision}">${c.decision ? 'Entscheidung aufheben' : 'Als Entscheidung markieren'}</button>`
+      : '';
   const actions =
     own && !editing
       ? confirming
         ? `<div class="com-own-actions"><span class="confirm">Kommentar löschen? <button class="btn-text danger" data-act="com-del-yes" data-ref="${c.id}">Ja</button><button class="btn-secondary" data-act="confirm-no">Nein</button></span></div>`
-        : `<div class="com-own-actions">${canEditComment(c) ? `<button class="btn-text" data-act="com-edit" data-ref="${c.id}">Bearbeiten</button>` : ''}<button class="btn-text" data-act="com-del" data-ref="${c.id}">Löschen</button></div>`
+        : `<div class="com-own-actions">${canEditComment(c) ? `<button class="btn-text" data-act="com-edit" data-ref="${c.id}">Bearbeiten</button>` : ''}<button class="btn-text" data-act="com-del" data-ref="${c.id}">Löschen</button>${decisionToggle}</div>`
       : '';
   // docs/changes/029c #6: der Autor ist derselbe Chip wie Punkt 2 (own.S/.A/.C), nicht mehr nur fett
   return `<div class="com ${c.author}" data-com="${c.id}"><div class="h"><span class="own ${c.author}">${OWN[c.author] || c.author}</span> · ${fmtTime(c.created_at)}${fresh ? ' · <span class="new">neu</span>' : ''}</div>${body}${actions}</div>`;
 }
 
+/** docs/changes/032: an open (not yet replaced) decision, pinned above the chronological list. */
+function decisionCardHTML(c) {
+  const author = OWN[c.author] || c.author;
+  const myAck = ackedBy(c, state.person);
+  const confirmed = isConfirmedDecision(c);
+  const otherOf = (p) => (p === 'S' ? 'A' : 'S');
+  const foot = confirmed
+    ? (() => {
+        const at = new Date(Math.max(new Date(c.ack_s).getTime(), new Date(c.ack_a).getTime())).toISOString();
+        return `<div class="dc-confirmed">
+          <span class="dc-circles">${['S', 'A']
+            .map((p) => `<${p === state.person ? 'button data-act="decision-ack-toggle" data-ref="' + c.id + '"' : 'span'} class="dc-circle ${p}">${p}</${p === state.person ? 'button' : 'span'}>`)
+            .join('')}</span>
+          <span class="fin-note">bestätigt · ${esc(fmtWeekDay(at))}</span>
+        </div>`;
+      })()
+    : myAck
+      ? `<p class="fin-note">wartet auf ${esc(OWN[otherOf(c.author)])}</p>`
+      : `<div class="dc-action">
+          <span class="sig-chip waitme">wartet auf dich</span>
+          <button class="btn-primary" data-act="decision-ack" data-ref="${c.id}">Einverstanden</button>
+        </div>`;
+  return `<div class="com decision-card" data-com="${c.id}">
+    <div class="dc-head"><span class="dc-tag">◆ ENTSCHEIDUNG · ${esc(author)} · ${esc(fmtWeekDay(c.created_at))}</span><span class="fin-note">angeheftet</span></div>
+    <p class="dc-body">${esc(c.body)}</p>
+    ${foot}
+  </div>`;
+}
+
 function commentsHTML(t) {
   const coms = comsOf(t.id);
+  const pinned = openDecisionsOf(t).slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const pinnedIds = new Set(pinned.map((c) => c.id));
+  const rest = coms.filter((c) => !pinnedIds.has(c.id));
   const fresh = new Set(freshComments(t).map((c) => c.id));
   const other = state.person === 'S' ? 'A' : 'S';
   const n = fresh.size;
-  return `<h3>Kommentare ${coms.length ? `<small>${coms.length}${n ? ` · ${n} neu` : ''}</small>` : ''}</h3>
-    ${coms.map((c) => commentHTML(c, fresh.has(c.id))).join('')}
+  return `<h3>Kommentare ${coms.length ? `<small>${coms.length}${n ? ` · ${n} neu` : ''}</small>` : ''}
+      ${coms.some((c) => c.decision) ? `<button class="btn-text quiet" data-act="entscheidungen-open">Alle Entscheidungen ›</button>` : ''}
+    </h3>
+    ${pinned.map(decisionCardHTML).join('')}
+    ${rest.map((c) => commentHTML(c, fresh.has(c.id))).join('')}
     <textarea data-input="com" placeholder="Kommentar an ${OWN[other]} …" aria-label="Neuer Kommentar"></textarea>
+    <label class="check-label"><input type="checkbox" data-input="com-decision"> Als Entscheidung festhalten <span class="fin-note">${esc(OWN[other])} bestätigt danach</span></label>
     <div class="row"><button class="btn-secondary" data-act="com-add">Senden</button></div>`;
 }
 
