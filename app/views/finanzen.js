@@ -582,6 +582,35 @@ function bufferSettingHTML() {
 export const icsToken = () => (typeof state.settings.ics_token === 'string' && state.settings.ics_token) || '';
 export const icsUrl = (person) => `${SUPABASE_URL}/functions/v1/ics?token=${encodeURIComponent(icsToken())}&person=${person}`;
 
+// docs/changes/022c: je Person eigene Erinnerungsstufen (3 Tage / 1 Tag / am Tag), Default deckt
+// sich mit dem alten, fest verdrahteten Verhalten - dieselben Werte wie in ics.js, hier noch
+// einmal klein und lokal (Konvention der Datei: keine gemeinsame Utility über Dateigrenzen hinweg).
+const ALARM_LABEL = { 3: '3 Tage', 1: '1 Tag', 0: 'am Tag' };
+const DEFAULT_ALARM_STAGES = { S: [3, 1, 0], A: [1, 0] };
+export const alarmStagesOf = (person) => {
+  const raw = state.settings.alarm_stages && typeof state.settings.alarm_stages === 'object' ? state.settings.alarm_stages[person] : null;
+  return Array.isArray(raw) ? raw : DEFAULT_ALARM_STAGES[person];
+};
+
+function alarmStagesHTML() {
+  return `${['S', 'A']
+    .map((p) => {
+      const stages = alarmStagesOf(p);
+      return `<div class="row">
+        <div class="lbl">Erinnerungen ${esc(OWN[p])}
+          <div class="seg" role="group" aria-label="Erinnerungen ${esc(OWN[p])}">
+            ${[3, 1, 0]
+              .map((n) => `<button class="pill" data-act="alarm-stage-toggle" data-person="${p}" data-stage="${n}" aria-pressed="${stages.includes(n)}">${ALARM_LABEL[n]}</button>`)
+              .join('')}
+          </div>
+        </div>
+        <span class="fin-note">${stages.length} ${stages.length === 1 ? 'Erinnerung' : 'Erinnerungen'} je Frist</span>
+      </div>`;
+    })
+    .join('')}
+    <p class="fin-note">Immer um 09:00. Gates erinnern 7 Tage und 1 Tag vorher. Wirkt beim nächsten Abruf – iOS binnen einer Stunde, Google bis zu 24 h. Google übernimmt Erinnerungen aus Abos nicht – dort gelten die Standard-Benachrichtigungen des Kalenders.</p>`;
+}
+
 function icsHTML() {
   const token = icsToken();
   const asking = ui.confirm === 'ics-new';
@@ -603,6 +632,7 @@ function icsHTML() {
     </span>
     ${ui.icsShow ? `<input class="ics-url" type="text" readonly value="${esc(icsUrl(ui.icsShow))}" aria-label="Abo-Adresse ${esc(OWN[ui.icsShow])}">` : ''}
     <span class="fin-note">iPhone und Outlook erinnern 3 Tage vorher, 1 Tag vorher und am Tag selbst; Google nach seinen eigenen Kalender-Einstellungen. Google aktualisiert abonnierte Kalender außerdem bis zu 24 Stunden später.</span>
+    <span class="fin-note">Abhaken entfernt den Termin samt Erinnerungen beim nächsten Abruf.</span>
   </div>`;
 }
 
@@ -675,7 +705,8 @@ function rahmenHTML() {
               ([key, label, kind]) => `<label class="lbl">${label}<input type="${kind === 'date' ? 'date' : 'text'}" ${kind === 'num' ? 'inputmode="decimal"' : ''} data-setting="${key}" value="${esc(state.settings[key] ?? '')}"></label>`,
             ).join('')}
           </div>
-          ${bufferSettingHTML()}`
+          ${bufferSettingHTML()}
+          ${alarmStagesHTML()}`
         : ''
     }
     ${icsHTML()}

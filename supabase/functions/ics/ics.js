@@ -88,23 +88,28 @@ export function dueOn(task, settings) {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 }
 
-// docs/changes/022, Ergänzung 24.09.: three alarms for a critical task (3 days before, 1 day
-// before, the day itself, each 09:00 Europe/Berlin), two for a gate (7 days before, the day
-// itself). The wording names how soon the deadline is - fixed per slot, since an ICS file has no
-// "today" of its own to compute a live relative date from.
-function taskAlarms(t, on) {
-  const who = OWN[t.owner] || t.owner;
-  return [
-    { at: berlinWallToUtc(shiftDate(on, -3), 9, 0), desc: `${t.title} · ${who} · in 3 Tagen` },
-    { at: berlinWallToUtc(shiftDate(on, -1), 9, 0), desc: `${t.title} · ${who} · morgen` },
-    { at: berlinWallToUtc(on, 9, 0), desc: `${t.title} · ${who} · heute` },
-  ];
+// docs/changes/022c: how soon a stage is, in words - fixed per stage, since an ICS file has no
+// "today" of its own to compute a live relative date from. 09:00 Europe/Berlin either way.
+const STAGE_WORD = { 3: 'in 3 Tagen', 1: 'morgen', 0: 'heute' };
+const stageWord = (n) => STAGE_WORD[n] || `in ${n} Tagen`;
+
+// docs/changes/022c: each person picks their own stages (Rahmendaten, "Erinnerungen"); the
+// Function reads the stages of the requested person, the default matches the original 2.1
+// behaviour (Sebastian all three, Anna two) so an empty setting changes nothing.
+export const DEFAULT_ALARM_STAGES = { S: [3, 1, 0], A: [1, 0] };
+export function alarmStagesFor(settings, person) {
+  const raw = settings.alarm_stages && typeof settings.alarm_stages === 'object' ? settings.alarm_stages[person] : null;
+  return Array.isArray(raw) ? raw : DEFAULT_ALARM_STAGES[person] || DEFAULT_ALARM_STAGES.S;
 }
+
+function taskAlarms(t, on, stages) {
+  const who = OWN[t.owner] || t.owner;
+  return stages.map((n) => ({ at: berlinWallToUtc(shiftDate(on, -n), 9, 0), desc: `${t.title} · ${who} · ${stageWord(n)}` }));
+}
+// docs/changes/022c: a gate needs lead time, not a same-day alarm - 7 days and 1 day before, never
+// on the day itself. Not togglable (the order leaves this out of the per-task settings).
 function gateAlarms(title, on) {
-  return [
-    { at: berlinWallToUtc(shiftDate(on, -7), 9, 0), desc: `${title} · in 7 Tagen` },
-    { at: berlinWallToUtc(on, 9, 0), desc: `${title} · heute` },
-  ];
+  return [7, 1].map((n) => ({ at: berlinWallToUtc(shiftDate(on, -n), 9, 0), desc: `${title} · ${stageWord(n)}` }));
 }
 
 /**
@@ -114,6 +119,7 @@ function gateAlarms(title, on) {
 export function events({ tasks, settings, phases, person, appUrl }) {
   const open = tasks.filter((t) => !t.done && !t.deleted_at);
   const mine = open.filter((t) => t.critical && (t.owner === person || t.owner === 'B'));
+  const stages = alarmStagesFor(settings, person);
   const out = [];
   for (const t of mine) {
     const on = dueOn(t, settings);
@@ -124,7 +130,7 @@ export function events({ tasks, settings, phases, person, appUrl }) {
       summary: `Spatzlbau: ${t.title}`,
       description: [`Zuständig: ${OWN[t.owner] || t.owner}`, `Phase ${t.phase}`, `${appUrl}#task=${encodeURIComponent(t.id)}`].join('\n'),
       stamp: t.updated_at,
-      alarms: taskAlarms(t, on),
+      alarms: taskAlarms(t, on, stages),
     });
   }
   // the gate of a phase is its latest deadline - the day the phase has to be finished
@@ -219,6 +225,7 @@ export async function handleIcs({ url, method, appUrl, load }) {
       settings: {
         einzugstermin: typeof settings.einzugstermin === 'string' ? settings.einzugstermin : '',
         umzugstag: typeof settings.umzugstag === 'string' ? settings.umzugstag : '',
+        alarm_stages: settings.alarm_stages && typeof settings.alarm_stages === 'object' ? settings.alarm_stages : null,
       },
       phases: Array.isArray(settings.phases) ? settings.phases : [],
       person,
