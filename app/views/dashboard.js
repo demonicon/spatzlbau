@@ -369,7 +369,10 @@ function groupedHTML(c, rows, all) {
     rows.map(taskHTML).join('') +
     (!all && c.open.length > CAP ? `<button class="btn-text row" data-act="col-all" data-ref="${c.key}">weitere ${c.open.length - CAP} zeigen →</button>` : '');
   if (q || ui.filter || !c.open.length) return flat();
-  const groups = timeGroups(c.open);
+  // docs/changes/014d #3: a Phasen column passes its own phase id, so the gate bucket only
+  // shows when it is genuinely that phase's own gate - a Personen column passes undefined
+  const phaseId = c.key.startsWith('ph-') ? Number(c.key.slice(3)) : undefined;
+  const groups = timeGroups(c.open, phaseId);
   if (groups.length < 2) return flat();
   return groups
     .map((g) => {
