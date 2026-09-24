@@ -4,6 +4,7 @@
 import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
 import { state, ui, phases, einzug, umzugstag, subsOf, dueInfo } from '../state.js';
+import { isCritical } from '../filters.js';
 
 const METERS = ['Strom', 'Gas', 'Wasser'];
 const METER_FIELDS = ['Zählernummer', 'Stand', 'Uhrzeit'];
@@ -30,7 +31,7 @@ export function printHTML() {
   const kontakte = typeof state.settings.umzugstag_kontakte === 'string' ? state.settings.umzugstag_kontakte : '';
 
   const taskRow = (t) => `<div class="prow">${box(t.done)}<div class="pbody">
-      <div class="pt">${esc(t.title)}${t.critical ? ' <span class="pcrit">fristkritisch</span>' : ''}</div>
+      <div class="pt">${esc(t.title)}${isCritical(t) ? ' <span class="pcrit">fristkritisch</span>' : ''}</div>
       ${subsOf(t.id).map((s) => `<div class="psub">${box(s.done)}${esc(s.title)}</div>`).join('')}
     </div></div>`;
 

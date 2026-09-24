@@ -36,14 +36,20 @@
 }
 :root {
   /* surfaces & ink */
-  --bg: #e9ebe6; --paper: #f4f6f2; --card: #ffffff; --line: #d9ded8; --line-dash: #b8bfb9;
-  --ink: #1e2b24; --ink-2: #4e5b54; --ink-3: #68726b; /* ink-3: ≥ 4.5:1 on paper and card (docs/changes/008b) */
+  /* 029b #11: Seitengrund zurück auf den Wert vor 029 (v2.0.4) - Karten/Tabellen/Dialoge bleiben --card */
+  --bg: #f3f3f3; --paper: #f4f6f2; --card: #ffffff; --line: #e0e0e0; --line-dash: #c7c7c7;
+  --ink: #1e2b24; --ink-2: #4d5751; --ink-3: #616161; /* ink-2/ink-3: ≥ 4.5:1 on paper and card (docs/changes/008b, 029) */
+  /* Karten, Schatten, Fokus (docs/changes/029) */
+  --r-card: 8px; --sh-card: 0 0 2px rgba(0, 0, 0, .12), 0 2px 4px rgba(0, 0, 0, .14);
+  --sh-pop: 0 0 8px rgba(0, 0, 0, .12), 0 16px 32px rgba(0, 0, 0, .14);
+  --divider: #f0f0f0; --focus: var(--ink);
   /* owner colours (semantic, values from the handoff) */
   --seb: #2e5a9c; --seb-bg: #e4ecf7; --anna: #9a3d64; --anna-bg: #f6e4ec; --both: #2f6f4e; --both-bg: #e1efe6;
   --claude: #6b4e16; --claude-bg: #f3e9d2; --claude-past: #c9b98a;
   /* signals: yellow only for critical, red only for overdue / waiting */
   --link: #2e5a9c; /* 016c: links in the Finanzen export - 6.6:1 on paper */
-  --mark: #f7de4a; --mark-deep: #8a7300; --danger: #b33a2e; --danger-bg: #f8e3e0; --ok: #2f6f4e;
+  /* 029c #1: --mark-deep auf 5,18:1 (paper) gedunkelt - die einzige Stelle, die durchfiel (docs/changes/029c-kontrast.md) */
+  --mark: #f7de4a; --mark-deep: #7a6600; --danger: #b33a2e; --danger-bg: #f8e3e0; --ok: #2f6f4e;
   /* type scale */
   --fs-hero: 60px; --fs-kpi: 28px; --fs-tile: 24px; --fs-title: 22px; --fs-body: 16px; --fs-ui: 15px;
   --fs-meta: 14px; --fs-small: 13px; --fs-micro: 12px; --fs-nano: 11px;
@@ -85,7 +91,9 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 .on-ink .btn-secondary { border-color: var(--card); color: var(--card); }
 .on-ink .btn-text { color: var(--card); }
 .on-ink .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
-.btn-secondary { padding: 0 14px; background: transparent; border-color: var(--ink); color: var(--ink); }
+/* 029 Regel 4: Sekundär-Rahmen grau statt schwarz - Text bleibt ink (border-radius trägt schon
+   die gemeinsame Regel oben, --r-tag war hier nie eckig) */
+.btn-secondary { padding: 0 14px; background: transparent; border-color: var(--line-dash); color: var(--ink); }
 .btn-secondary:hover { background: var(--line); }
 .btn-text { padding: 0 4px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 .btn-text:hover { color: var(--ink-2); }
@@ -99,7 +107,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 .mehr-link { white-space: normal; text-align: left; line-height: 1.3; height: auto; padding: 8px 0; }
 .pill { padding: 0 14px; border-radius: var(--r-pill); border-color: var(--line); background: var(--card); color: var(--ink-2); }
 .pill:hover { border-color: var(--line-dash); color: var(--ink); }
-.pill.on, .pill[aria-pressed=true], .pill[aria-current=page] { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+/* 029b #1: gefuellt heisst primaer - eine aktive Pille bekommt einen Umriss, keine Fuellung */
+.pill.on, .pill[aria-pressed=true], .pill[aria-current=page] { background: var(--card); border-color: var(--ink); border-width: 1.5px; color: var(--ink); font-weight: 600; }
 .pill .n { color: inherit; }
 .btn-primary:disabled, .btn-secondary:disabled, .btn-text:disabled, .pill:disabled { opacity: 0.6; cursor: default; }
 .btn-wide { width: 100%; }
@@ -111,8 +120,33 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
   .btn-primary, .btn-secondary, .btn-text, .pill { min-height: var(--btn-h-desktop); }
 }
 [hidden] { display: none !important; }
-:focus-visible { outline: 2px solid var(--seb); outline-offset: 2px; }
+
+/* ---------- shared head, Aufgaben und Finanzen (docs/changes/029b #2) ----------
+   Links Titel + Vorschau-Chip + Countdown, rechts Nav-Pillen und Avatar - eine renderHeader(),
+   damit beide Ansichten dieselbe Kopfzeile zeigen (nur der Titel unterscheidet sich). */
+.apphead2 { display: flex; align-items: center; flex-wrap: wrap; gap: var(--gap); padding: 14px var(--gutter) 0; }
+.apphead2-left { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 10px; min-width: 0; }
+.apphead2-title { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+.apphead2-count { font-size: var(--fs-small); color: var(--ink-2); white-space: nowrap; }
+.apphead2-count .cd-n { font-weight: 600; color: var(--ink); }
+.apphead2-count .cd-date { color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+.apphead2-count .cd-date:hover { color: var(--ink); }
+/* 029b #3: ein leiser Chip statt der losen Textzeile - kein gefuelltes Badge */
+.preview-chip { display: inline-flex; align-items: center; min-height: 20px; line-height: 18px; padding: 0 7px; border: 1px solid var(--ink-3); border-radius: var(--r-tag); font-size: var(--fs-nano); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
+.apphead2 .mainnav { margin-left: auto; }
+.apphead2 .avatar-wrap { flex: none; }
+
+/* 029 Regel 6: ein Fokusring überall, in Tinte statt in einer Personenfarbe */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-tag); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* 029 Regel 3: Tags vereinheitlichen - .tag, .sig-chip, .st-chip, .cost-badge, .own, .tl-sig
+   bekommen eine Höhe, eine Randfarbe (Textfarbe bei 35 % über color-mix) und den Tag-Radius;
+   die Füllfarben bleiben, wie sie in jeder Klasse einzeln gesetzt sind. */
+.tag, .sig-chip, .st-chip, .cost-badge, .own, .tl-sig {
+  display: inline-flex; align-items: center; min-height: 20px; line-height: 18px; padding: 0 6px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent); border-radius: var(--r-tag);
+}
 
 /* phone column, as in the handoff */
 .wrap { width: 100%; max-width: var(--col-max); min-height: 100vh; margin: 0 auto; background: var(--paper); border-left: 1px solid var(--line); border-right: 1px solid var(--line); display: flex; flex-direction: column; }
@@ -190,21 +224,25 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 
 /* ---------- "Seit du zuletzt da warst" (docs/changes/018 §6) ----------
    One line while folded; it only exists when something actually happened. */
-.visit { margin: 10px var(--gutter) 0; border: 1px solid var(--line); background: var(--card); }
+.visit { margin: 10px var(--gutter) 0; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); }
 .visit-line { width: 100%; min-height: var(--tap); display: flex; align-items: center; gap: 6px; padding: 6px 12px; text-align: left; font-size: var(--fs-meta); }
 .visit-line .l { color: var(--ink-2); flex: none; }
 .visit-line .v { color: var(--ink); font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .visit-line .chev { margin-left: auto; color: var(--ink-3); font-size: 16px; flex: none; }
-.visit-body { border-top: 1px solid var(--line); padding: 4px 12px 8px; }
+.visit-body { border-top: 1px solid var(--divider); padding: 4px 12px 8px; }
 .visit-item { margin: 8px 0 0; font-size: var(--fs-small); line-height: 1.45; color: var(--ink-2); overflow-wrap: anywhere; }
 .visit-item b { color: var(--ink); }
 .visit-item .k { font-size: var(--fs-nano); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; margin-right: 4px; }
 
 /* ---------- the three signals (docs/changes/018 §3) ---------- */
-.kpis { margin: 10px var(--gutter) 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+/* 029 Regel 1: die Kacheln waren eine Linien-Grafik (1 px Spalt auf Linienfarbe) - jetzt eigene
+   Karten mit Luft dazwischen, kein Rahmen-Trick mehr */
+.kpis { margin: 10px var(--gutter) 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+/* 030 #3: alle drei Kennzahlen 0 - eine leise Zeile an derselben Stelle wie die Kachelreihe */
+.kpis-empty { margin: 10px var(--gutter) 0; font-size: 14px; color: var(--ink-3); }
 .kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.tile { background: var(--card); min-height: 58px; padding: 8px 8px 7px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; text-align: left; }
+.tile { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); min-height: 58px; padding: 8px 8px 7px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; text-align: left; }
 .tile[aria-pressed=true] { border-bottom-color: var(--ink); }
 .tile .n { font-size: 21px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
 .tile .n span { padding: 0 4px; margin-left: -4px; }
@@ -243,8 +281,9 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .tgroup-more { color: var(--ink-2); }
 
 /* ---------- "Zwischen euch" in the desktop panel (docs/changes/018 §5) ---------- */
-.panel.between { padding-bottom: 12px; }
-.between-block { padding: 12px 14px 4px; border-bottom: 1px solid var(--line); }
+/* 029 Regel 1/2: "Zwischen euch" ist eine Karte, ihre Blöcke trennt --divider statt --line */
+.panel.between { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); padding: 0 0 12px; margin-top: 6px; }
+.between-block { padding: 12px 14px 4px; border-bottom: 1px solid var(--divider); }
 .between-block h3 { margin: 0; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; color: var(--ink-2); }
 .between-title { display: block; width: 100%; text-align: left; font-size: var(--fs-ui); line-height: 1.35; font-weight: 600; padding: 6px 0 0; overflow-wrap: anywhere; }
 
@@ -264,8 +303,14 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 
 /* ---------- search (docs/changes/012) ---------- */
 .search-row { position: relative; display: flex; align-items: center; margin: 10px var(--gutter) 0; }
-.search-row input { width: 100%; min-height: var(--tap); padding: 8px 44px 8px 2px; border: 0; border-bottom: 1px solid var(--line-dash); border-radius: 0; background: transparent; font-size: var(--fs-ui); color: var(--ink); appearance: none; -webkit-appearance: none; }
-.search-row input:focus { border-bottom-color: var(--ink); }
+/* 029 Regel 5: die Suche behält ihren Unterstrich, bekommt aber --card als Grund; die Höhe bleibt
+   --tap (44 px) statt der Button-Höhe - die Zeile hat kein Zusatz-Padding, das den Tap-Ziel-Verlust
+   sonst auffinge (CLAUDE.md, Abweichung in 029-abweichungen.md) */
+/* 029b #7: ein Rand statt der Unterstreichung, Lupe links (Inline-SVG); Hoehe bleibt 44 px
+   (CLAUDE.md Tap-Ziele) statt der genannten 40 px - Abweichung dokumentiert */
+.search-row input { width: 100%; min-height: var(--tap); padding: 8px 44px 8px 38px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); font-size: var(--fs-ui); color: var(--ink); appearance: none; -webkit-appearance: none; }
+.search-row input:focus { border-color: var(--focus); outline: 2px solid var(--focus); outline-offset: -1px; }
+.search-row .search-ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--ink-3); pointer-events: none; }
 .search-row input::placeholder { color: var(--ink-3); }
 /* the browser's own clear button would sit next to ours and is too small to hit */
 .search-row input::-webkit-search-cancel-button, .search-row input::-webkit-search-decoration { display: none; }
@@ -292,6 +337,9 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .col .cnt { font-size: var(--fs-small); color: var(--ink-2); }
 .col .note { font-size: var(--fs-micro); color: var(--ink-3); margin-left: auto; text-align: right; }
 .col .chev { font-size: 18px; color: var(--ink-3); width: 24px; text-align: center; margin-left: 4px; }
+/* 029b #8: ein Aufklapp-Muster - Chevron vor dem Text, kein Pfeil, kein Plus */
+.disclose { display: inline-flex; align-items: center; gap: 6px; }
+.disclose .dchev { display: inline-block; font-size: 11px; color: var(--ink-3); transition: none; }
 .col-body { padding: 0 var(--gutter); }
 .col-sub { gap: var(--gap); border-bottom: 1px solid var(--line); }
 .col-sub .chev { margin-left: auto; font-size: 18px; width: 24px; text-align: center; }
@@ -314,10 +362,11 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .task.blocked .t { color: var(--ink-2); }
 /* one signal per row, and one quiet line for everything else (docs/changes/020) */
 .sig { display: flex; padding-bottom: 6px; }
-.sig-chip { font-size: var(--fs-micro); font-weight: 600; padding: 2px 8px; border-radius: var(--r-tag); border: 1px solid transparent; }
+.sig-chip { font-size: var(--fs-micro); font-weight: 600; }
 .sig-chip.late { background: var(--danger-bg); color: var(--danger); }
-.sig-chip.waitme { background: var(--card); border-color: var(--ink); color: var(--ink); }
-.sig-chip.blocked { padding-left: 0; font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); }
+.sig-chip.waitme { background: var(--card); color: var(--ink); }
+/* "wartet auf: <task>" ist kein Chip, sondern ein Textlink in der Zeile - Regel 3 gilt ihm nicht */
+.sig-chip.blocked { display: inline; min-height: auto; line-height: inherit; padding-left: 0; border: 0; font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); }
 .sig-chip.blocked .btn-text { min-height: 0; padding: 0; }
 /* docs/changes/014 #2: inline padding widens the hit area, not the line - 4 px up (the title keeps
    its own edge), 22 px down over the quiet line (positioned, so it lies on top): 44 px in all */
@@ -328,22 +377,32 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .quiet .ndot.A { background: var(--anna); }
 .quiet .ndot.C { background: var(--claude); }
 .meta { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; font-size: var(--fs-small); color: var(--ink-2); padding-bottom: 8px; }
-.own { border-radius: var(--r-tag); padding: 1px 7px; font-size: var(--fs-micro); font-weight: 600; }
+.own { font-size: var(--fs-micro); font-weight: 600; }
 .own.S { background: var(--seb-bg); color: var(--seb); }
 .own.A { background: var(--anna-bg); color: var(--anna); }
 .own.B { background: var(--both-bg); color: var(--both); }
 .own.C { background: var(--claude-bg); color: var(--claude); }
 /* "wartet auf dich" is urgent, but neither a deadline nor irreversible: weight and an outline
-   in text colour carry it, red stays with "überfällig" and with what cannot be undone (015) */
-.own.wait { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.own.H { background: var(--card); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-dash); } /* Haushaltskonto (016b): neither person */
+   in text colour carry it, red stays with "überfällig" and with what cannot be undone (015) -
+   der Rand kommt seit 029 aus der Tag-Regel (Textfarbe bei 35 %), kein eigener box-shadow mehr */
+.own.wait { background: var(--card); color: var(--ink); }
+.own.H { background: var(--card); color: var(--ink-2); } /* Haushaltskonto (016b): neither person */
+/* 029b #5: die Phase im Spaltenkopf ist keine Person - neutral, damit Gruen nur "gemeinsam" meint */
+.own.ph { background: var(--paper); color: var(--ink-2); border-color: var(--line); }
+/* 029c #2: dieselbe Klasse, ohne Chip-Huelle - farbiger Text statt Grund/Rand, fuer Meta-Zeilen */
+.own.text-only { background: transparent; border: 0; padding: 0; min-height: 0; border-radius: 0; font-weight: 600; }
+/* 029b #14: im Bearbeiten-Modus traegt das aktive Stand-Segment dieselbe Stufenfarbe */
+.seg.stand-seg .pill[aria-pressed=true][data-to=geschaetzt] { border-color: var(--ink-3); color: var(--ink-3); }
+.seg.stand-seg .pill[aria-pressed=true][data-to=faellig] { border-color: var(--ink); color: var(--ink); }
+.seg.stand-seg .pill[aria-pressed=true][data-to=bezahlt] { border-color: var(--ok); color: var(--ok); }
 .due { flex: none; font-size: var(--fs-small); color: var(--ink-2); padding: 0 3px; margin: 0 -3px; }
 .due.crit { background: var(--mark); color: var(--ink); font-weight: 600; }
 .due.late { color: var(--danger); font-weight: 600; background: transparent; }
-.tag { font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid var(--line); }
-.tag.claude { background: var(--claude-bg); color: var(--claude); border-color: transparent; }
-.tag.wait-me { background: var(--card); color: var(--ink); border-color: var(--ink); font-weight: 600; }
-.tag.block { border: 0; padding: 0; color: var(--ink-3); text-decoration: underline dotted; text-underline-offset: 2px; font-size: var(--fs-micro); }
+.tag { font-size: var(--fs-micro); }
+.tag.claude { background: var(--claude-bg); color: var(--claude); }
+.tag.wait-me { background: var(--card); color: var(--ink); font-weight: 600; }
+/* ein Textlink auf eine blockierende Aufgabe, kein Chip - Regel 3 gilt ihm nicht */
+.tag.block { display: inline; min-height: auto; line-height: inherit; border: 0; padding: 0; color: var(--ink-3); text-decoration: underline dotted; text-underline-offset: 2px; font-size: var(--fs-micro); }
 .tag.block:hover { color: var(--ink); }
 .muted { color: var(--ink-3); }
 /* new comment since the last visit, in the colour of whoever wrote it, with an initial so it
@@ -356,16 +415,23 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .meta .ndot.C { background: var(--claude); }
 
 /* ---------- detail panel ("Akte"), two weight classes since 009 ---------- */
-.detail { grid-column: 1 / -1; background: var(--card); border: 1px solid var(--line); padding: 12px 14px; margin: 6px 0 8px; }
+/* 029 Regel 1: die Akte ist immer eine Karte, auch am Handy */
+.detail { grid-column: 1 / -1; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); padding: 12px 14px; margin: 6px 0 8px; }
 .detail h3 { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; margin: 18px 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--ink); color: var(--ink-2); }
 .detail h3:first-child { margin-top: 0; }
 .detail h3 small { font-weight: 400; color: var(--ink-3); text-transform: none; letter-spacing: 0; }
 /* head of the Akte: checkbox, title as a heading, meta line - editing is its own mode (017) */
 .akte-top { display: grid; grid-template-columns: var(--tap) 1fr auto; align-items: start; margin-left: -10px; }
-.akte-title-text { font-size: var(--fs-title); font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; margin: 0; padding: 9px 6px; min-width: 0; overflow-wrap: anywhere; }
+/* 029b #9: 20/600 statt --fs-title - der sichtbare Haken bleibt 20 px, die Tipp-Flaeche (.check) 44 px */
+.akte-title-text { font-size: 20px; font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; margin: 0; padding: 9px 6px; min-width: 0; overflow-wrap: anywhere; }
+/* der Haken der mobilen Inline-Akte ist Geschwister von .task-head, nicht darin (task.js box) -
+   auf < 900 px ist eine offene Zeile immer die Akte (inlineHead), am Desktop nur ausgewaehlt */
+.akte-top .check::before { width: 20px; height: 20px; }
+@media (max-width: 899px) { .task.open > .check::before { width: 20px; height: 20px; } }
 /* the open row is the head of the Akte: title as heading, × closes */
 .task-head { display: flex; align-items: flex-start; gap: 2px; }
-.task-head .t-head { flex: 1; font-size: var(--fs-body); padding: 9px 0 4px; }
+/* 029b #9: die Groesse kommt jetzt von .akte-title-text (20px) - dieselbe Klasse traegt beide */
+.task-head .t-head { flex: 1; padding: 9px 0 4px; }
 .detail.nohead { margin-top: 0; }
 .akte-meta { display: flex; gap: 6px 10px; flex-wrap: wrap; align-items: center; font-size: var(--fs-small); color: var(--ink-2); margin: 8px 0 0; padding-left: 34px; }
 .wait-banner { margin: 14px 0 0; padding: 10px 12px; background: var(--paper); color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); font-size: var(--fs-meta); font-weight: 600; }
@@ -375,7 +441,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .akte-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
 .akte-view .nohead-meta { padding-left: 0; margin-top: 0; }
 /* a labelled line: "Kosten  1.740 € · beauftragt · fällig 01.01." */
-.akte-line { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--gap); padding: 10px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-ui); line-height: 1.4; }
+.akte-line { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--gap); padding: 10px 0; border-bottom: 1px solid var(--divider); font-size: var(--fs-ui); line-height: 1.4; }
 .akte-line .l { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; padding-top: 3px; }
 .sub-read { font-size: var(--fs-ui); padding: 10px 0; line-height: 1.35; overflow-wrap: anywhere; }
 .sub.done .sub-read { color: var(--ink-3); text-decoration: line-through; }
@@ -387,10 +453,14 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .brief-read b { display: block; font-size: var(--fs-small); color: var(--claude); }
 .brief-read p { margin: 2px 0 0; font-size: var(--fs-ui); line-height: 1.5; white-space: pre-wrap; }
 .brief-read p.none { color: var(--ink-3); font-style: italic; }
-.adv-pills { margin-top: 8px; }
-.adv-body { margin-top: 10px; padding: 12px 14px; background: var(--card); box-shadow: inset 3px 0 0 var(--line); font-size: var(--fs-ui); line-height: 1.55; white-space: pre-wrap; }
+/* 029b #9: Beratung als Akkordeon statt Pillenreihe - eine Zeile je Thema, ein Hairline je Zeile */
+.adv-acc { margin-top: 4px; border-top: 1px solid var(--divider); }
+.adv-row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: var(--tap); padding: 10px 2px; border-bottom: 1px solid var(--divider); font-size: var(--fs-ui); font-weight: 600; color: var(--ink); text-align: left; }
+.adv-row:hover { color: var(--ink-2); }
+.adv-row .dchev { font-size: 11px; color: var(--ink-3); flex: none; }
+.adv-body { margin: 0 0 10px; padding: 0 2px 12px; font-size: var(--fs-ui); line-height: 1.55; white-space: pre-wrap; border-bottom: 1px solid var(--divider); }
 .com .new { color: var(--ink); font-weight: 600; }
-.akte-changed { margin: 18px 0 0; padding-top: 10px; border-top: 1px solid var(--line); font-size: var(--fs-micro); color: var(--ink-3); }
+.akte-changed { margin: 18px 0 0; padding-top: 10px; border-top: 1px solid var(--divider); font-size: var(--fs-micro); color: var(--ink-3); }
 
 /* ---------- Bearbeiten (docs/changes/017): one bar, a counter, form fields ---------- */
 .akte-edit { background: #fff; }
@@ -404,6 +474,20 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .detail .lbl, .cost-edit .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); margin-top: 10px; flex: 1 1 140px; min-width: 0; }
 .detail .lbl.is-changed, .cost-edit .lbl.is-changed { box-shadow: inset 3px 0 0 var(--ink); padding-left: 8px; margin-left: -8px; }
 .detail .lbl > input, .detail .lbl > select, .cost-edit .lbl > input, .cost-edit .lbl > select { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
+/* 029 Regel 5: Eingabefelder (Akte-Bearbeiten, Rahmendaten, Suche) - dunkle Unterkante, im Fokus
+   2 px in der Fokusfarbe, der Tag-Radius. Ein Auswahlblock statt sieben Einzel-Regeln. */
+.detail .lbl > input, .detail .lbl > select, .cost-edit .lbl > input, .cost-edit .lbl > select,
+.sub.sub-edit input[type=text], .row select, .row input[type=text], .row input[type=number], .detail textarea,
+.cost-form .lbl input, .cost-form .lbl select, .fin .lbl input, .fin .lbl select, .fin-table.rec input,
+.fs-card .lbl > input, .fs-card .lbl > select {
+  border-bottom-color: var(--ink-3); border-radius: var(--r-tag);
+}
+.detail .lbl > input:focus, .detail .lbl > select:focus, .cost-edit .lbl > input:focus, .cost-edit .lbl > select:focus,
+.sub.sub-edit input[type=text]:focus, .row select:focus, .row input[type=text]:focus, .row input[type=number]:focus, .detail textarea:focus,
+.cost-form .lbl input:focus, .cost-form .lbl select:focus, .fin .lbl input:focus, .fin .lbl select:focus, .fin-table.rec input:focus,
+.fs-card .lbl > input:focus, .fs-card .lbl > select:focus {
+  border-bottom: 2px solid var(--focus);
+}
 .seg { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; align-items: center; }
 .sub.sub-edit { grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px; padding: 4px 0; }
 /* docs/changes/014 #3: no drag handle exists (017 chose arrows) - so the arrows get the full
@@ -432,14 +516,14 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .chip { border: 1px solid var(--line); background: var(--card); border-radius: var(--r-pill); padding: 6px 6px 6px 12px; font-size: var(--fs-meta); min-height: 40px; display: inline-flex; align-items: center; gap: 4px; }
 .ico { min-width: var(--tap); min-height: var(--tap); padding: 4px 6px; color: var(--ink-3); font-size: 18px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
 .ico:hover { background: var(--line); color: var(--ink); }
-.sub { display: grid; grid-template-columns: var(--tap) 1fr auto; align-items: center; border-bottom: 1px solid var(--line); }
+.sub { display: grid; grid-template-columns: var(--tap) 1fr auto; align-items: center; border-bottom: 1px solid var(--divider); }
 .sub input[type=checkbox] { width: 20px; height: 20px; margin: 0 auto; accent-color: var(--ok); }
 /* docs/changes/013 B2: the text is a button that opens edit mode - no more one-tap × to delete */
 .sub-text { font-size: var(--fs-ui); padding: 10px 0; min-height: var(--tap); width: 100%; }
 .sub.done .sub-text { color: var(--ink-3); text-decoration: line-through; }
 .sub.sub-editing { display: block; padding: 8px 0; }
 .sub-edit-title { width: 100%; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
-.com { padding: 10px 12px; margin: 0 -12px; border-bottom: 1px solid var(--line); font-size: var(--fs-ui); white-space: pre-wrap; }
+.com { padding: 10px 12px; margin: 0 -12px; border-bottom: 1px solid var(--divider); font-size: var(--fs-ui); white-space: pre-wrap; }
 .com .h { font-size: var(--fs-micro); color: var(--ink-3); white-space: normal; }
 .com .h b { color: var(--ink-2); }
 .com.C { background: var(--claude-bg); }
@@ -470,6 +554,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
    opens the full editor, the one action button moves it forward, amount/due date are their own
    small buttons for the one-field correction. */
 .cost { border-bottom: 1px solid var(--line); padding: 10px 0; }
+.detail .cost { border-bottom-color: var(--divider); } /* innerhalb der Akte-Karte (029 Regel 2) */
 .cost-row { display: flex; align-items: flex-start; gap: 10px; }
 .cost-label { flex: 1 1 auto; min-width: 0; min-height: var(--tap); display: flex; align-items: center; font-size: var(--fs-ui); line-height: 1.3; overflow-wrap: anywhere; }
 .cost-amount { flex: none; font-size: var(--fs-ui); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -486,8 +571,16 @@ button.cost-amount:hover { background: var(--line); }
 /* the ladder itself: dots filled up to the current rung, then the word - nothing to learn */
 .ladder { display: inline-flex; align-items: center; gap: 6px; }
 .ladder .dots { display: inline-flex; gap: 3px; }
-.ladder .dots i { width: 6px; height: 6px; border-radius: var(--r-pill); background: var(--line-dash); display: block; }
-.ladder .dots i.on { background: var(--ink); }
+/* 029c #7: hohle Kreise mit 1-px-Rand statt der fast unsichtbaren gefuellten Punkte */
+.ladder .dots i { width: 6px; height: 6px; border-radius: var(--r-pill); background: transparent; border: 1px solid var(--ink-3); box-sizing: border-box; display: block; }
+/* 029b #14: die Stufe traegt ihre eigene Farbe - geschaetzt ink-3, fest ink, bezahlt gruen
+   (--ok, dieselbe wie erledigte Aufgaben; #2f6f4e auf #fff/--paper ≈ 6:1, 008b-Check gruen) */
+.ladder.ladder-low { color: var(--ink-3); }
+.ladder.ladder-low .dots i.on { background: var(--ink-3); border-color: var(--ink-3); }
+.ladder.ladder-mid { color: var(--ink); }
+.ladder.ladder-mid .dots i.on { background: var(--ink); border-color: var(--ink); }
+.ladder.ladder-paid { color: var(--ok); }
+.ladder.ladder-paid .dots i.on { background: var(--ok); border-color: var(--ok); }
 .cost-form { padding: 8px 0 10px; }
 .cost-form .row { margin-top: 8px; align-items: flex-end; }
 .cost-form .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); flex: 1 1 140px; min-width: 0; }
@@ -497,9 +590,9 @@ button.cost-amount:hover { background: var(--line); }
 /* the full Bearbeiten-Modus of a row - same shape as the Akte's (017), but its own wrapper so
    it also stands on its own inside Finanzen (Als Nächstes zahlen, Alle Posten) */
 .cost-edit { background: var(--card); margin: 8px -8px 0; padding: 0 8px 8px; }
-.cost-edit-foot { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--line); }
+.cost-edit-foot { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--divider); }
 /* the amount a task carries, in its row in the list */
-.cost-badge { font-size: var(--fs-micro); padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid var(--line); color: var(--ink); white-space: nowrap; }
+.cost-badge { font-size: var(--fs-micro); color: var(--ink); white-space: nowrap; }
 
 /* ---------- Finanzen (docs/changes/016, layout 016c against the export "Variante B v2") ----------
    One flat list of blocks in phone order; the aside is display: contents below 900 px and a
@@ -541,17 +634,18 @@ button.cost-amount:hover { background: var(--line); }
 .fin-break-row.paid-row .l { color: var(--ink-2); }
 .fin-break-row[aria-pressed=true] { background: var(--card); box-shadow: inset 3px 0 0 var(--ink); }
 
-/* the balance: the one card with a primary action behind it */
-.fin-balance { margin-top: 16px; border: 1px solid var(--ink); background: var(--card); padding: 12px 14px; }
+/* the balance: the one card with a primary action behind it (029 Regel 1: jetzt Karte statt
+   Ink-Rahmen; die Trennlinien darin sind seit Regel 2 --divider) */
+.fin-balance { margin-top: 16px; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); padding: 12px 14px; }
 .fin-bal { font-size: 20px; font-weight: 600; margin-top: 2px; line-height: 1.45; }
 .fin-bal-sub { font-size: var(--fs-small); color: var(--ink-2); margin-top: 2px; line-height: 1.4; }
 .fin-bal-rows { display: none; width: 100%; border-collapse: collapse; margin-top: 8px; font-size: var(--fs-small); color: var(--ink-2); }
-.fin-bal-rows th, .fin-bal-rows td { padding: 6px 0; border-top: 1px solid var(--line); font-weight: 400; text-align: right; white-space: nowrap; }
+.fin-bal-rows th, .fin-bal-rows td { padding: 6px 0; border-top: 1px solid var(--divider); font-weight: 400; text-align: right; white-space: nowrap; }
 .fin-bal-rows th { text-align: left; white-space: normal; }
 .fin-bal-rows td { padding-left: 12px; }
 .fin-balance .fin-bal-actions { margin-top: 10px; align-items: center; }
-.fin-how { margin-top: 10px; border-top: 1px solid var(--line); font-size: var(--fs-meta); }
-.fin-how > div { display: flex; justify-content: space-between; gap: var(--gap); padding: 6px 0; border-bottom: 1px solid var(--line); }
+.fin-how { margin-top: 10px; border-top: 1px solid var(--divider); font-size: var(--fs-meta); }
+.fin-how > div { display: flex; justify-content: space-between; gap: var(--gap); padding: 6px 0; border-bottom: 1px solid var(--divider); }
 .fin-how .fin-note { margin: 8px 0 0; }
 
 /* section heads: a line of small caps with an optional action on the right; a 40 px button in
@@ -577,16 +671,22 @@ button.cost-amount:hover { background: var(--line); }
 .fin-pay-meta .btn-secondary { order: 3; margin-top: 8px; }
 .fin-pay-amount { font-size: 16px; font-weight: 600; line-height: 20px; white-space: nowrap; }
 .fin-pay.late .fin-pay-date b { color: var(--danger); }
-.sig-chip.state { background: var(--card); border-color: var(--line); color: var(--ink-2); font-weight: 400; }
+.sig-chip.state { background: var(--card); color: var(--ink-2); font-weight: 400; }
 /* the state as a chip, in the three words of 016b and the colours of the export */
-.st-chip { font-size: var(--fs-micro); font-weight: 600; line-height: 17px; padding: 1px 7px; border-radius: var(--r-tag); border: 1px solid transparent; white-space: nowrap; }
-.st-chip.geschaetzt { background: var(--card); border-color: var(--line-dash); color: var(--ink-2); }
+.st-chip { font-size: var(--fs-micro); font-weight: 600; white-space: nowrap; }
+.st-chip.geschaetzt { background: var(--card); color: var(--ink-2); }
 .st-chip.fest { background: var(--claude-bg); color: var(--claude); }
 .st-chip.bezahlt, .st-chip.erhalten { background: var(--both-bg); color: var(--both); }
 .st-chip.ausstehend { background: var(--ink); color: #fff; }
 .st-chip.late { background: var(--danger-bg); color: var(--danger); }
 /* titles and links that are smaller than a finger: the hit area grows, the line does not */
 .fin-task-title, .fp-title, .fin-link { position: relative; min-height: 0; padding: 0; font-size: 15px; line-height: 20px; text-align: left; overflow-wrap: anywhere; }
+/* 029b #12: Zeile 2 der Posten-Zelle - der Aufgabentitel, leise, Unterstrich erst bei Hover */
+.fp-task-link { display: block; margin-top: 2px; font-size: 13px; line-height: 16px; color: var(--ink-3); text-decoration: none; }
+.fp-task-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+.fp-no-task { display: block; margin-top: 2px; font-size: 13px; line-height: 16px; color: var(--ink-3); }
+/* 029b #13: "zahlt" ist eine Personen-Chip-Spalte, keine Textspalte - schmal, zentriert */
+.fp-who .own, .fin-pay-meta .own { min-width: 0; }
 .fin-task-title::before, .fp-title::before, .fin-link::before { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -12px; }
 .fin-task-title:hover, .fp-title:hover { text-decoration: underline; }
 .fin-link { font-size: inherit; line-height: inherit; color: var(--link); text-decoration: underline; text-underline-offset: 2px; font-weight: 400; }
@@ -594,6 +694,9 @@ button.cost-amount:hover { background: var(--line); }
 /* blocks, tables and small forms */
 .fin-hint { margin: 8px 0 0; font-size: var(--fs-small); color: var(--ink-2); }
 .fin-note { margin: 6px 0 0; font-size: var(--fs-micro); color: var(--ink-3); line-height: 1.45; }
+/* 030 #6: die Rahmendaten-Selbstpruefung ist ink-2, nicht die leisere ink-3 der anderen Hinweise */
+.fin-rahmen-check { margin-top: 4px; }
+.fin-rahmen-check .fin-note { color: var(--ink-2); }
 .fin .empty { margin: 8px 0 0; }
 .fin .row { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: flex-end; margin-top: 8px; }
 .fin .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); flex: 1 1 140px; min-width: 0; }
@@ -642,8 +745,11 @@ button.cost-amount:hover { background: var(--line); }
 .fp-l1 { display: flex; justify-content: space-between; align-items: baseline; gap: var(--gap); }
 .fp-l2 { display: flex; justify-content: space-between; align-items: center; gap: var(--gap); margin-top: 4px; min-height: 32px; }
 .fp-meta { font-size: var(--fs-micro); color: var(--ink-3); min-width: 0; }
-.fp-meta .ladder { color: var(--ink-2); }
+.fp-meta .ladder { /* 029b #14: Farbe kommt von der Stufe, nicht mehr pauschal ink-2 */ }
 .fp-amt { font-size: 15px; font-weight: 600; white-space: nowrap; }
+/* 030 #5: der Betrag ist die Aktion einer geschaetzten Zeile - Unterstrich erst bei Hover, wie ein Link */
+.fp-amt-btn { font: inherit; color: inherit; text-decoration: none; }
+.fp-amt-btn:hover { text-decoration: underline; text-underline-offset: 2px; }
 .fin-post.paid .fp-title, .fin-post.paid .fp-amt { color: var(--ink-3); }
 .fin-post.late .fp-meta { color: var(--danger); }
 .fp-amt .tax { margin-left: 3px; font-weight: 400; color: var(--ink-3); cursor: help; }
@@ -683,12 +789,14 @@ button.cost-amount:hover { background: var(--line); }
   .fin-hero { flex: 0 0 auto; min-width: 237px; padding-top: 8px; }
   .fin-number .n { font-size: 56px; letter-spacing: -0.035em; }
   .fin-number .u { font-size: var(--fs-ui); }
-  .fin-break { flex: 1 1 auto; margin-top: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
-  .fin-break-row { background: var(--card); min-height: 82px; display: flex; flex-direction: column-reverse; justify-content: center; align-items: flex-start; gap: 4px; padding: 10px 12px; border: 0; }
+  /* 029 Regel 1: die vier Kennzahlen waren eine Linien-Grafik (1 px Spalt), jetzt eigene Karten */
+  .fin-break { flex: 1 1 auto; margin-top: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  /* 029c #10: wieder eine Rand-Karte (--line), keine Schatten-Karte - Auftrag ausdruecklich so */
+  .fin-break-row { background: var(--card); border-radius: var(--r-card); border: 1px solid var(--line); min-height: 82px; display: flex; flex-direction: column-reverse; justify-content: center; align-items: flex-start; gap: 4px; padding: 10px 12px; }
   .fin-break-row .v { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; line-height: 24px; }
   .fin-break-row .l { font-size: var(--fs-micro); color: var(--ink-2); line-height: 15px; }
   .fin-break-row .arr { display: none; }
-  .fin-break-row[aria-pressed=true] { box-shadow: inset 0 -3px 0 var(--ink); }
+  .fin-break-row[aria-pressed=true] { border-color: var(--ink); box-shadow: inset 0 -3px 0 var(--ink); }
   .fin-next { grid-area: next; padding: 24px 14px 0 20px; }
   .fin-mon { grid-area: mon; padding: 24px 20px 0 14px; }
   .fin-months .paidcol { display: table-cell; }
@@ -706,29 +814,42 @@ button.cost-amount:hover { background: var(--line); }
   .fin-ph .sort-right { display: none; }
   .sort-inline { display: inline; }
   .fin-posts-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: var(--fs-meta); }
-  .fin-posts-table th, .fin-posts-table td { height: 44px; padding: 0 10px 0 0; text-align: left; vertical-align: middle; border-top: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 029b #12: die Posten-Zelle traegt jetzt zwei Zeilen - die Reihe waechst mit ihr, die uebrigen
+     Zellen bleiben vertikal mittig */
+  .fin-posts-table th, .fin-posts-table td { min-height: 44px; padding: 6px 10px 6px 0; text-align: left; vertical-align: middle; border-top: 1px solid var(--line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fin-posts-table thead th { height: 34px; border-top: 0; font-size: var(--fs-micro); font-weight: 400; color: var(--ink-3); }
-  .fin-posts-table thead th:nth-child(1) { width: 22%; }
-  .fin-posts-table thead th:nth-child(2) { width: 21%; }
-  .fin-posts-table thead th:nth-child(3) { width: 12%; }
-  .fin-posts-table thead th:nth-child(4) { width: 7%; }
-  .fin-posts-table thead th:nth-child(5) { width: 12%; }
-  .fin-posts-table thead th:nth-child(6) { width: 10%; }
-  .fin-posts-table thead th:nth-child(7) { width: 16%; }
+  /* 029c #8 (Fassung 24.09. 11:07): feste Prozentbreiten ueber <colgroup> - das vorherige
+     "width: 1%"-Rezept liess die schmalen Spalten kollabieren. Aktionsspalte bleibt immer da,
+     damit die Spalten beim Filterwechsel nicht springen. */
+  .fin-posts-table col.c-posten { width: 35%; }
+  .fin-posts-table col.c-stand { width: 10%; }
+  .fin-posts-table col.c-faellig { width: 10%; }
+  .fin-posts-table col.c-zahlt { width: 15%; }
+  .fin-posts-table col.c-betrag { width: 15%; }
+  .fin-posts-table col.c-aktion { width: 15%; }
+  @media (max-width: 1099px) {
+    /* 029c #8: 10 % reicht fuer "Stand" nur ohne Wort - die drei Kreise bleiben, das Wort */
+    /* steht als title-Tooltip (siehe ladderHTML) statt gedruckt in der Zelle */
+    .fin-posts-table .ladder .word { display: none; }
+  }
   .fin-posts-table .r, .fin-posts-table .fp-amt, .fin-posts-table .fp-act { text-align: right; }
+  .fin-posts-table .fp-amt { font-variant-numeric: tabular-nums; }
   .fin-posts-table .fp-act { padding-right: 0; }
+  .fin-posts-table tr > :last-child { padding-right: 0; }
+  /* 029b #13: Chip zentriert */
+  .fin-posts-table .fp-who { text-align: center; }
   /* in a table cell the title and the task link fill the whole 44 px row - that is their hit
      area, and it lets the ellipsis cut them at the cell edge instead of under the next column */
-  .fin-posts-table .fp-title, .fin-posts-table .fin-link { display: block; max-width: 100%; height: 43px; line-height: 43px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-meta); }
-  .fin-posts-table .fp-title::before, .fin-posts-table .fin-link::before { display: none; }
-  .fin-posts-table .fp-title { font-weight: 600; }
+  /* 029b #12: eine Zeile, nicht mehr zellenfuellend - Zeile 2 ist der Aufgabentitel */
+  .fin-posts-table .fp-title { display: block; max-width: 100%; height: 18px; line-height: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-meta); font-weight: 600; }
+  .fin-posts-table .fp-title::before { display: none; }
+  .fin-posts-table .fp-task-link, .fin-posts-table .fp-no-task { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fin-posts-table .fp-due { color: var(--ink); }
-  .fin-posts-table .fp-who { color: var(--ink-2); }
   .fin-posts-table .fp-amt { font-weight: 600; font-size: var(--fs-meta); }
   .fin-posts-table .fin-post.paid th, .fin-posts-table .fin-post.paid td, .fin-posts-table .fin-post.paid .fp-title, .fin-posts-table .fin-post.paid .fin-link { color: var(--ink-3); }
   .fin-posts-table .fin-post.late .fp-due { color: var(--danger); }
   .fin-posts-table .fin-post-open td { height: auto; padding: 8px 0; white-space: normal; overflow: visible; }
-  .fin-posts-table .ladder { font-size: var(--fs-micro); color: var(--ink-2); }
+  .fin-posts-table .ladder { font-size: var(--fs-micro); /* 029b #14: Farbe kommt von der Stufe */ }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .foot.fin-foot { padding: 4px 20px; }
 }
@@ -796,7 +917,8 @@ button.cost-amount:hover { background: var(--line); }
 .setup-next-list li { padding: 4px 0; border-bottom: 1px solid var(--line); }
 .setup-picker-list { display: flex; flex-direction: column; }
 .avatar-wrap { position: relative; }
-.avatar-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 70; min-width: 220px; background: var(--paper); border: 1px solid var(--line); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); padding: 6px; }
+/* 029 Regel 1 (+ optional): das Menü ist eine Karte, --sh-pop statt des fest eingetragenen Schattens */
+.avatar-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 70; min-width: 220px; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-pop); padding: 6px; }
 .avatar-menu-item { display: block; width: 100%; min-height: var(--tap); padding: 8px 10px; font-size: var(--fs-small); }
 .avatar-menu-item:hover { background: var(--line); }
 
@@ -857,10 +979,28 @@ button.cost-amount:hover { background: var(--line); }
   /* docs/changes/013 A2/A3: the side panel only from 1180 px - below that the list uses the
      full width and the Akte is an overlay, so no empty panel stands around */
   .board.mode-panel { display: grid; grid-template-columns: minmax(0, 1fr) clamp(420px, 30vw, 600px); align-items: start; }
+  /* 014e #6: nichts ausgewaehlt und nichts wartet zwischen ihnen - der Container bekommt die
+     Breite des leeren Panels zurueck, statt sie fuer eine leere Zeile vorzuhalten (Rest aus 030) */
+  .board.mode-panel.panel-empty { grid-template-columns: minmax(0, 1fr); }
+  .board.panel-empty .panel { display: none; }
   .col-list { min-width: 0; }
-  /* the person columns start here, as many as fit */
-  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1px; background: var(--line); margin-top: 20px; border-top: 1px solid var(--line); }
-  .col { background: var(--paper); margin-top: 0; padding-bottom: 12px; min-width: 0; }
+  /* the person columns start here, as many as fit (029 Regel 1: Karten statt der Linien-Grafik;
+     Regel 2: ihre Zeilen-Trennlinien werden hier innen zu --divider) */
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 20px; }
+  /* docs/changes/030 #4: die Phasen-Ansicht zeigt immer alle fuenf Spalten - keine faellt beim
+     Schmalerwerden weg (kein auto-fit). Passt der Platz nicht (< ~1500 px, siehe 1180-px-Regel
+     unten), scrollt die Reihe waagrecht statt Spalten zu verstecken; ein Verlauf am rechten Rand
+     zeigt es, solange noch etwas folgt (verschwindet von selbst, sobald ausgescrollt). */
+  .cols-phasen {
+    grid-template-columns: repeat(5, minmax(280px, 1fr));
+    overflow-x: auto;
+    background:
+      linear-gradient(to left, var(--paper), rgba(244, 246, 242, 0)) right / 28px 100% local,
+      linear-gradient(to left, rgba(30, 43, 36, 0.16), rgba(30, 43, 36, 0)) right / 14px 100% scroll;
+    background-repeat: no-repeat;
+  }
+  .col { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); margin-top: 0; padding-bottom: 12px; min-width: 0; }
+  .col .task, .col .col-sub { border-bottom-color: var(--divider); }
   .col-head { padding: 12px 12px 8px; flex-wrap: wrap; }
   .col .note { flex-basis: 100%; margin-left: 0; text-align: left; }
   .col-body { padding: 0 12px; }
@@ -874,7 +1014,9 @@ button.cost-amount:hover { background: var(--line); }
   .panel.empty p { margin: 0; color: var(--ink-3); font-size: var(--fs-ui); }
   .panel-head { display: flex; align-items: center; gap: 6px; padding: 8px 0 0; min-height: 52px; }
   .panel .detail { margin: 0; }
-  .task.selected { border-left: 3px solid var(--ink); margin-left: -3px; background: var(--card); }
+  /* 029: .col ist jetzt selbst eine Karte (var(--card)) - die Markierung braucht seither den
+     Seitenton, sonst verschwindet sie gegen den eigenen Kartengrund */
+  .task.selected { border-left: 3px solid var(--ink); margin-left: -3px; background: var(--paper); }
   /* the columns are grouped by owner from here on, so the chip in the row is noise */
   .cols .task .own { display: none; }
 }
@@ -884,6 +1026,8 @@ button.cost-amount:hover { background: var(--line); }
 @media (min-width: 1180px) {
   .wrap { max-width: 1800px; }
   .cols { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  /* fuenf Spalten a 280 px + vier 16-px-Luecken = 1464 px - ab hier ohne Scrollen (Auftrag: ~1.500 px) */
+  .cols-phasen { grid-template-columns: repeat(5, minmax(280px, 1fr)); }
   /* reading length in the panel: long lines of comment text are hard to follow */
   .panel .com, .panel .adv .body, .panel .empty, .panel .hint { max-width: 72ch; }
 }
@@ -964,6 +1108,8 @@ button.cost-amount:hover { background: var(--line); }
 .tl-when span { display: block; font-size: var(--fs-nano); color: var(--ink-3); line-height: 14px; white-space: nowrap; }
 .tl-row.late { background: color-mix(in srgb, var(--danger-bg) 55%, #fff); }
 .tl-row.late .tl-when b { color: var(--danger); }
+/* 029c #5: dasselbe Gelb-als-Chip wie .due.crit in den Spalten - kein eigener Signal-Chip mehr */
+.tl-row.crit .tl-when b { display: inline-block; background: var(--mark); color: var(--ink); padding: 1px 4px; border-radius: var(--r-tag); }
 .tl-row.open, .tl-row.selected { background: var(--card); }
 .tl-row.selected { box-shadow: inset 3px 0 0 var(--ink); }
 
@@ -991,10 +1137,10 @@ button.cost-amount:hover { background: var(--line); }
 .tl-row.blocked .check::before { border-color: var(--line-dash); border-style: dashed; background: transparent; }
 .tl-row.blocked .check { cursor: default; opacity: 1; }
 .tl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 8px; font-size: var(--fs-micro); line-height: 17px; color: var(--ink-3); }
-.tl-meta .own, .tl-sig { padding: 0 6px; line-height: 17px; border-radius: var(--r-tag); font-size: var(--fs-micro); font-weight: 600; white-space: nowrap; }
+.tl-sig { font-size: var(--fs-micro); font-weight: 600; white-space: nowrap; }
 .tl-sig.late { background: var(--danger-bg); color: var(--danger); }
 .tl-sig.crit { background: var(--mark); color: var(--ink); }
-.tl-sig.waitme { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.tl-sig.waitme { background: var(--card); color: var(--ink); }
 /* docs/changes/014 #2: the drawn line stays 17 px; the hit area is 44 px tall - from the title's
    lower edge (8 px above) down into the free space under the row, never over the title itself */
 .tl-wait { position: relative; min-height: 0; padding: 0; font: inherit; color: inherit; }
@@ -1020,10 +1166,10 @@ button.cost-amount:hover { background: var(--line); }
 .timeline .empty { margin: 16px var(--gutter); }
 .timeline > .btn-text.row, .tl-done > .btn-text.row { margin-left: var(--gutter); max-width: calc(100% - 2 * var(--gutter)); }
 
-/* ≥ 900 px: 3b condensed, not stretched - two lines of at most 56 px, list at most 720 px wide,
-   the Akte (or "Zwischen euch") in the panel next to it (019c §6) */
+/* ≥ 900 px: 3b condensed, not stretched - two lines of at most 56 px. docs/changes/029c #11: die
+   Liste teilt sich das Grid mit Personen/Phasen (.board.mode-panel, oben) - kein eigener 720-px-
+   Deckel mehr, die Akte (oder "Zwischen euch") sitzt an derselben Stelle wie dort. */
 @media (min-width: 900px) {
-  .board.mode-panel.v-timeline { grid-template-columns: minmax(0, 720px) minmax(360px, 1fr); }
   /* 5 + 20 + 8 + 17 + 5 + 1 = 56 px with the 8 px gap under the title (014 #2) */
   .tl-c, .tl-gate { padding-top: 5px; padding-bottom: 5px; }
   .tl-when { padding-top: 6px; }
@@ -1035,7 +1181,8 @@ button.cost-amount:hover { background: var(--line); }
 }
 
 /* ---------- phase strip (docs/changes/021, idea 4o): five labelled segments in the head ---------- */
-.pstrip { display: flex; gap: 4px; margin: 10px 0 0; }
+/* 029c #3: .dash-head ist weg (der Kopf sitzt jetzt ausserhalb des Grids) - der Streifen traegt seinen Rand selbst */
+.pstrip { display: flex; gap: 4px; margin: 12px var(--gutter) 0; }
 .pseg-ph { flex: 1 1 0; min-width: 44px; min-height: var(--tap); padding: 4px 6px 6px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; text-align: left; position: relative; }
 .pseg-ph .lbl { display: flex; align-items: baseline; gap: 4px; min-width: 0; font-size: var(--fs-micro); color: var(--ink-2); line-height: 1.1; }
 .pseg-ph .lbl .n { font-weight: 600; color: var(--ink); }
@@ -1045,7 +1192,8 @@ button.cost-amount:hover { background: var(--line); }
 .pseg-ph.complete .bar i { background: var(--ok); }
 .pseg-ph.current { box-shadow: inset 0 0 0 1px var(--ink); }
 .pseg-ph.current .lbl { color: var(--ink); font-weight: 600; }
-.pseg-ph[aria-pressed=true] { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--ink); }
+/* 029c #4: nur die laufende Phase traegt einen Rahmen (.current) - ausgewaehlt/gedrueckt bekommt nur den helleren Grund, keinen zweiten Ring */
+.pseg-ph[aria-pressed=true] { background: var(--card); }
 .pseg-ph .gate-mark { position: absolute; right: 3px; top: 2px; font-size: 10px; line-height: 1; color: var(--ok); }
 /* a narrow segment shortens its name with an ellipsis; from 600 px on it never has to (021) */
 @media (max-width: 479px) {

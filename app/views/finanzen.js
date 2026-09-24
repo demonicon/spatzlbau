@@ -5,7 +5,7 @@ import { esc } from '../ui/dom.js';
 import { OWN, PAID_BY } from '../ui/labels.js';
 import { state, ui, byId, einzug, umzugstag } from '../state.js';
 import { costHTML, costNewHTML, ladderHTML } from '../ui/detail.js';
-import { updateBarHTML, footHTML, setupHintHTML, avatarHTML } from '../ui/chrome.js';
+import { updateBarHTML, footHTML, setupHintHTML, renderHeader } from '../ui/chrome.js';
 import { SUPABASE_URL } from '../config.js';
 import {
   summary, balance, balanceParts, cashflow, peakMonth, moveOutMissing, bufferInfo, bufferPct, bufferFixed,
@@ -144,14 +144,6 @@ const monthLabel = (key) => {
   return MONTHS[Number(m) - 1] + ' ' + y;
 };
 
-function daysToEinzug() {
-  if (!einzug()) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = Math.round((new Date(einzug() + 'T00:00:00') - today) / 86400000);
-  return d >= 0 ? d : null;
-}
-
 /* ---------- 1. one answer, with the derivation next to or under it (F1, F2) ---------- */
 
 /** The rows that add up to the answer. Each one filters the list of posts (Kennzahl = Filter). */
@@ -262,18 +254,20 @@ function balanceHTML() {
 
 /* ---------- 3. what is next to pay (F5) ---------- */
 
-/** The state as one chip: the three words of 016b, in the export's chip colours. */
+/** The state: overdue stays its own red chip, everything else is the same dots-ladder as the
+    posts table and the Akte (docs/changes/029c #7 - 029b's own #14 missed this spot). */
 function stateChip(c) {
   if (isCostLate(c)) return `<span class="st-chip late">überfällig</span>`;
-  const st = rowState(c);
-  const label = c.kind === 'rueckfluss' ? REFUND_LABEL[st] : LADDER_LABEL[st];
-  return `<span class="st-chip ${st}">${esc(label)}</span>`;
+  return ladderHTML(c);
 }
 
-function actionHTML(c) {
+// docs/changes/030 #5: in der Postentabelle (>= 900 px) ist der Betrag selbst die Aktion fuer
+// eine geschaetzte Zeile - kein zweiter Button daneben. "Als Naechstes zahlen" und die
+// Handy-Liste behalten ihre drei Buttons, darum der Schalter statt eines zweiten Aufrufers.
+function actionHTML(c, { amountIsAction = false } = {}) {
   if (c.kind === 'rueckfluss') return c.status === 'bezahlt' ? '' : `<button class="btn-secondary" data-act="cost-pay" data-ref="${c.id}">Erhalten</button>`;
   const st = ladderState(c);
-  if (st === 'geschaetzt') return `<button class="btn-secondary" data-act="cost-set" data-ref="${c.id}">Betrag festlegen</button>`;
+  if (st === 'geschaetzt') return amountIsAction ? '' : `<button class="btn-secondary" data-act="cost-set" data-ref="${c.id}">Betrag festlegen</button>`;
   if (st === 'fest') return `<button class="btn-secondary" data-act="cost-pay" data-ref="${c.id}">Bezahlt</button>`;
   return '';
 }
@@ -283,9 +277,10 @@ function actionHTML(c) {
 const openRow = (c, where) =>
   (ui.costPay === c.id || ui.costEdit === c.id || ui.costSet === c.id) && (!ui.costWhere || ui.costWhere === where);
 // 014c: task_id null war einmal immer der Puffer - jetzt ist es ein normaler Posten ohne Aufgabe
-const ownerOf = (c) => {
+// 029b #13: derselbe Personen-Chip wie in der Postentabelle, statt "gemeinsam" als Text
+const ownerChip = (c) => {
   const t = c.task_id ? byId(c.task_id) : null;
-  return t ? who(t.owner) : 'ohne Aufgabe';
+  return t ? `<span class="own ${t.owner}">${esc(OWN[t.owner])}</span>` : `<span class="fp-no-task">ohne Aufgabe</span>`;
 };
 
 function payRowHTML(c) {
@@ -297,7 +292,7 @@ function payRowHTML(c) {
     <div class="fin-pay-date">${d ? `<b>${String(d.getDate()).padStart(2, '0')}.</b><span>${MONTHS[d.getMonth()]}</span>` : '<span>offen</span>'}</div>
     <div class="fin-pay-body">
       <button class="fin-task-title" data-act="fin-open" data-ref="${esc(c.task_id || '')}">${esc(c.label)}</button>
-      <div class="fin-pay-meta">${stateChip(c)}<span class="who">${esc(ownerOf(c))}</span>${actionHTML(c)}</div>
+      <div class="fin-pay-meta">${stateChip(c)}${ownerChip(c)}${actionHTML(c)}</div>
     </div>
     <div class="fin-pay-amount">${ladderState(c) === 'geschaetzt' ? '≈ ' : ''}${eurShort(c.amount)}</div>
   </div>`;
@@ -347,7 +342,9 @@ function monthsHTML() {
 const amountInput = (id, field, value) =>
   `<input type="text" inputmode="decimal" data-rec-field="${field}" data-ref="${id}" value="${value === null || value === undefined ? '' : esc(String(num(value)).replace('.', ','))}" placeholder="–" aria-label="Betrag">`;
 /** "+50 €" / "−70 €": a difference, written without the space the tiles use. */
-const delta = (v) => (v > 0 ? '+' : v < 0 ? MINUS : '') + eurShort(Math.abs(v));
+// docs/changes/014d #1: no value yet -> the column stays empty, not a wrong number
+const delta = (v) => (v === null ? '' : (v > 0 ? '+' : v < 0 ? MINUS : '') + eurShort(Math.abs(v)));
+const newAmount = (v) => (v === null || v === undefined || v === '' ? '–' : eurShort(v));
 
 function recurringHTML() {
   const rows = recurringRows();
@@ -385,14 +382,22 @@ function recurringHTML() {
       <div class="row"><button class="btn-secondary" data-act="rec-done">Fertig</button></div>`
     : // two read tables: the phone sums both old flats into "heute", the desktop rail splits them
       `<table class="fin-table rec read rec-narrow"><tbody>
-          ${rows.map((r) => `<tr><th scope="row">${esc(r.label)}</th><td>${eurShort(num(r.amount_s) + num(r.amount_a))}</td><td class="new">${eurShort(r.amount_n)}</td><td class="delta">${delta(rowDelta(r))}</td></tr>`).join('')}
+          ${rows.map((r) => `<tr><th scope="row">${esc(r.label)}</th><td>${eurShort(num(r.amount_s) + num(r.amount_a))}</td><td class="new">${newAmount(r.amount_n)}</td><td class="delta">${delta(rowDelta(r))}</td></tr>`).join('')}
         </tbody></table>
         <table class="fin-table rec read rec-wide">
           <thead><tr><th>Posten</th><th>du</th><th>${OWN[OTHER()]}</th><th>neu</th><th>Δ</th></tr></thead>
           <tbody>
-          ${rows.map((r) => `<tr><th scope="row">${esc(r.label)}</th><td>${eurShort(r[mineCol])}</td><td>${eurShort(r[theirCol])}</td><td class="new">${eurShort(r.amount_n)}</td><td class="delta">${delta(rowDelta(r))}</td></tr>`).join('')}
+          ${rows.map((r) => `<tr><th scope="row">${esc(r.label)}</th><td>${eurShort(r[mineCol])}</td><td>${eurShort(r[theirCol])}</td><td class="new">${newAmount(r.amount_n)}</td><td class="delta">${delta(rowDelta(r))}</td></tr>`).join('')}
           </tbody></table>`;
-  const diff = t.delta === 0 ? 'genauso viel wie' : `${eurShort(Math.abs(t.delta))} ${t.delta > 0 ? 'mehr' : 'weniger'} als`;
+  // docs/changes/014d #1: names the row(s) still missing a "neu"-Betrag - "(Internet offen)"
+  const missingNote = t.missing.length ? ` (${t.missing.map((r) => r.label).join(', ')} offen)` : '';
+  const diff =
+    t.delta === null ? 'noch nicht vergleichbar mit' : t.delta === 0 ? 'genauso viel wie' : `${eurShort(Math.abs(t.delta))} ${t.delta > 0 ? 'mehr' : 'weniger'} als`;
+  const diffShort =
+    t.delta === null ? 'noch nicht vergleichbar' : t.delta === 0 ? 'genauso viel wie heute zusammen' : `${eurShort(Math.abs(t.delta))} ${t.delta > 0 ? 'mehr' : 'weniger'} als heute zusammen`;
+  const missingHint = t.missing.length
+    ? `<p class="fin-hint"><button class="btn-text" data-act="rec-edit">${t.missing.length === 1 ? '1 Wert fehlt' : `${t.missing.length} Werte fehlen`} ›</button></p>`
+    : '';
   return `${head('Laufend' + (from ? ' ab ' + from : ''))}
       ${edit ? '' : `<button class="btn-text" data-act="rec-edit">Bearbeiten</button>`}
     </div>
@@ -400,9 +405,8 @@ function recurringHTML() {
       edit
         ? ''
         : `<p class="fin-lead"><b>${eurShort(t.n)}</b><span class="lg"> im Monat für die neue Wohnung</span><span class="sm"> / Monat</span>
-            <span class="fin-lead-sub"><span class="lg">${diff} eure beiden Wohnungen heute (${eurShort(t.old)})</span><span class="sm">${
-              t.delta === 0 ? 'genauso viel wie heute zusammen' : `${eurShort(Math.abs(t.delta))} ${t.delta > 0 ? 'mehr' : 'weniger'} als heute zusammen`
-            }</span></span></p>`
+            <span class="fin-lead-sub"><span class="lg">${diff} eure beiden Wohnungen heute (${eurShort(t.old)})${missingNote}</span><span class="sm">${diffShort}${missingNote}</span></span></p>
+          ${missingHint}`
     }
     ${table}`;
 }
@@ -430,21 +434,52 @@ function payerText(c) {
   if (c.status === 'bezahlt' && c.paid_by) return who(c.paid_by);
   return who(c.belongs_to || 'B');
 }
+// docs/changes/029b #13: "zahlt" als Personen-Chip statt Text - dieselben Klassen wie im Aufgaben-
+// Spaltenkopf (.own.S/.own.A/.own.B/.own.H); Punkt 10 ("Sebastian" statt "du") gilt damit mit,
+// weil der Chip nie "du" schreibt.
+function payerChip(c) {
+  if (c.kind === 'rueckfluss') {
+    if (c.belongs_to === 'B') return `<span class="own B">an beide</span>`;
+    const code = c.belongs_to || 'B';
+    return `<span class="own ${code}">an ${esc(OWN[code] || code)}</span>`;
+  }
+  const code = c.status === 'bezahlt' && c.paid_by ? c.paid_by : c.belongs_to || 'B';
+  return `<span class="own ${code}">${esc(PAID_BY[code] || OWN[code] || code)}</span>`;
+}
 const dueText = (c) => (c.due_on ? fmtDay(c.due_on) : '—');
 
 /** ≥ 900 px: one table row per post, the columns of the export plus the action of 016b. */
 function postRowHTML(c) {
-  if (openRow(c, 'list')) return `<tr class="fin-post-open" data-where="list"><td colspan="7">${costHTML(c)}</td></tr>`;
+  if (openRow(c, 'list')) return `<tr class="fin-post-open" data-where="list"><td colspan="6">${costHTML(c)}</td></tr>`;
   const t = c.task_id ? byId(c.task_id) : null;
+  // docs/changes/029b #12: Zeile 2 der Posten-Zelle ist der Aufgabentitel, leise - "ohne Aufgabe"
+  // statt einer eigenen Spalte
+  const taskLine = t
+    ? `<button class="fp-task-link" data-act="fin-open" data-ref="${esc(t.id)}">${esc(t.title)}</button>`
+    : `<span class="fp-no-task">ohne Aufgabe</span>`;
+  // docs/changes/030 #5: eine geschaetzte Zeile hat keinen Button - der Betrag selbst ist die
+  // Aktion (oeffnet dieselbe "Betrag festlegen"-Bearbeitung); die "ändern"-Ausweichzeile bleibt
+  // nur, wo tatsaechlich nichts anderes mehr zu tun ist (eine bezahlte Zeile).
+  const estimating = c.kind !== 'rueckfluss' && ladderState(c) === 'geschaetzt';
+  const amountCell = estimating
+    ? `<button class="fp-amt-btn" data-act="cost-set" data-ref="${c.id}" aria-label="Betrag festlegen: ${esc(amountText(c))}">${amountText(c)}</button>${taxMark(c)}`
+    : `${amountText(c)}${taxMark(c)}`;
   return `<tr class="fin-post ${c.status === 'bezahlt' ? 'paid' : ''} ${isCostLate(c) ? 'late' : ''}" data-cost="${c.id}" data-where="list">
-    <th scope="row"><button class="fp-title" data-act="cost-open" data-ref="${c.id}">${esc(c.label)}</button></th>
-    <td class="fp-task">${t ? `<button class="fin-link" data-act="fin-open" data-ref="${esc(t.id)}">${esc(t.title)}</button>` : '—'}</td>
+    <th scope="row"><button class="fp-title" data-act="cost-open" data-ref="${c.id}">${esc(c.label)}</button>${taskLine}</th>
     <td class="fp-state">${ladderHTML(c)}</td>
     <td class="fp-due">${dueText(c)}</td>
-    <td class="fp-who">${esc(payerText(c))}</td>
-    <td class="fp-amt">${amountText(c)}${taxMark(c)}</td>
-    <td class="fp-act">${actionHTML(c) || `<button class="btn-text" data-act="cost-open" data-ref="${c.id}">ändern</button>`}</td>
+    <td class="fp-who">${payerChip(c)}</td>
+    <td class="fp-amt">${amountCell}</td>
+    <td class="fp-act">${rowActionHTML(c)}</td>
   </tr>`;
+}
+
+// docs/changes/029c #8: was eine Zeile in der Aktionsspalte zeigt - einmal berechnet, einmal
+// benutzt, um zu wissen, ob die Spalte in dieser Auswahl ueberhaupt eine Zeile fuellt
+function rowActionHTML(c) {
+  const estimating = c.kind !== 'rueckfluss' && ladderState(c) === 'geschaetzt';
+  const action = actionHTML(c, { amountIsAction: true });
+  return action || (estimating ? '' : `<button class="btn-text" data-act="cost-open" data-ref="${c.id}">ändern</button>`);
 }
 
 /** < 900 px: at most two lines - title and amount, then state · due · who and the action. */
@@ -474,13 +509,17 @@ function postsHTML() {
         <button class="pill on filter-chip" data-act="fin-filter-clear" aria-label="Filter entfernen">Filter: ${esc(breakdown().find((r) => r.key === ui.finFilter)?.label || ui.finFilter)}<span class="x" aria-hidden="true">×</span></button>
       </div>`
     : '';
+  // docs/changes/029c #8 (Fassung 24.09. 11:07): feste Prozentbreiten statt "width: 1%" - das
+  // liess die schmalen Spalten kollabieren. Die Aktionsspalte bleibt jetzt immer da (auch leer),
+  // damit die Spalten nicht springen, sobald der Filter auf eine andere Auswahl wechselt.
   const list = !open
     ? `<button class="fin-more" data-act="post-open" data-to="offen">${openCount} offene Posten zeigen →</button>`
     : !rows.length
       ? '<p class="empty">Keine Zeile in dieser Auswahl.</p>'
       : ui.wide
         ? `<table class="fin-posts-table">
-            <thead><tr><th>Posten</th><th>Aufgabe</th><th>Stand</th><th>fällig</th><th>zahlt</th><th class="r">Betrag</th><th><span class="sr">Aktion</span></th></tr></thead>
+            <colgroup><col class="c-posten"><col class="c-stand"><col class="c-faellig"><col class="c-zahlt"><col class="c-betrag"><col class="c-aktion"></colgroup>
+            <thead><tr><th>Posten</th><th>Stand</th><th>fällig</th><th>zahlt</th><th class="r">Betrag</th><th><span class="sr">Aktion</span></th></tr></thead>
             <tbody>${rows.map(postRowHTML).join('')}</tbody>
           </table>`
         : `<div class="fin-posts">${rows.map(postLineHTML).join('')}</div>`;
@@ -508,6 +547,11 @@ const SETTINGS = [
     Summe "Posten inkl. Puffer" oben (docs/changes/014c §4). */
 function bufferFootHTML() {
   const buf = bufferInfo();
+  // docs/changes/014d #4: 0 % ist kein Puffer, keine Zeile "+ Puffer 0 % · 0 €" - ein Hinweis
+  // mit Weg zu den Rahmendaten, wo der Satz steht
+  if (buf.mode === 'pct' && bufferPct() === 0) {
+    return `<p class="fin-note fin-buffer-foot"><button class="btn-text" data-act="fin-settings">Kein Puffer eingeplant ›</button></p>`;
+  }
   const label = buf.mode === 'fixed' ? `${eurShort(buf.amount)} fest` : `${bufferPct()} % · ${eurShort(buf.amount)}`;
   return `<p class="fin-note fin-buffer-foot">+ Puffer ${label}</p>`;
 }
@@ -567,6 +611,41 @@ const fmtLong = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE',
 const fmtFull = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const set = (k) => (typeof state.settings[k] === 'string' && state.settings[k] ? state.settings[k] : '');
 
+// docs/changes/030 #6: die Rahmendaten pruefen sich selbst - leise Hinweiszeilen, kein Rot, kein
+// Gelb (das ist Fehlzustand/Frist, nicht "passt das zusammen"). Nur der erste zutreffende Fall
+// zeigt sich: mit dem heutigen Stand (28.12./31.12./01.01.) treffen der erste und der dritte
+// Fall zugleich zu (Umzug vor Einzug UND Einzug genau der Tag nach Auszug) - der Auftrag verlangt
+// "genau ein Hinweis" dafuer, also Prioritaet statt Aufzaehlung.
+function plausibilityHTML() {
+  const ein = set('einzugstermin');
+  const umzug = umzugstag();
+  const outS = set('move_out_s');
+  const outA = set('move_out_a');
+  const hints = [];
+  if (umzug && ein && umzug < ein) {
+    hints.push('Umzug vor der Schlüsselübergabe – Vorab-Schlüssel mit dem Vermieter vereinbart?');
+  }
+  if (umzug) {
+    const early = [];
+    if (outS && outS < umzug) early.push(OWN.S);
+    if (outA && outA < umzug) early.push(OWN.A);
+    if (early.length) hints.push(`Auszug ${early.join(' und ')} vor dem Umzug – Übergabe der Altwohnung vor dem Umzugstag?`);
+  }
+  if (ein && (outS || outA)) {
+    const last = [outS, outA].filter(Boolean).sort().pop();
+    const next = new Date(last + 'T00:00:00');
+    next.setDate(next.getDate() + 1);
+    // docs/changes/014e #3: local-calendar string, not toISOString() (UTC, a day early east of
+    // UTC) - the same fix as groups.js's fmt(), found while chasing the gate-date mismatch there
+    const nextISO = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
+    if (nextISO === ein) {
+      hints.push('Kein Überlappungstag – Übergabe und Einzug direkt nacheinander.');
+    }
+  }
+  if (!hints.length) return '';
+  return `<div class="fin-rahmen-check">${hints.slice(0, 1).map((h) => `<p class="fin-note">${esc(h)}</p>`).join('')}</div>`;
+}
+
 function rahmenHTML() {
   const d = (k) => (set(k) ? fmtDay(set(k)) : '–');
   const split = state.settings.split_default_s ?? 50;
@@ -588,6 +667,7 @@ function rahmenHTML() {
     <div class="fin-h fin-rahmen-h"><h2>Rahmendaten</h2><button class="btn-text" data-act="fin-settings" aria-expanded="${!!ui.finSettings}">ändern</button></div>
     ${block}
     <p class="fin-rahmen-line fin-rahmen-one">${esc(line)} · <button class="fin-link" data-act="fin-settings" aria-expanded="${!!ui.finSettings}">ändern</button></p>
+    ${plausibilityHTML()}
     ${
       ui.finSettings
         ? `<div class="row">
@@ -602,21 +682,7 @@ function rahmenHTML() {
   </section>`;
 }
 
-/* ---------- the head of the view (016c: title left, places and avatar right) ---------- */
-
-function finHeadHTML() {
-  const days = daysToEinzug();
-  return `<header class="fin-head">
-    <h1 class="fin-title">Finanzen${days !== null ? `<span class="fin-days">${days} ${days === 1 ? 'Tag' : 'Tage'} bis Einzug</span>` : ''}</h1>
-    ${ui.preview ? `<span class="preview-badge" title="Testversion unter /preview/ – gleiche Datenbank wie die echte App, aber dein Lesestand wird hier nicht gespeichert">Vorschau</span>` : ''}
-    <span class="spacer"></span>
-    <nav class="fin-nav" aria-label="Bereiche">
-      <button class="pill navbtn" data-act="home">Aufgaben</button>
-      <button class="pill navbtn on" data-act="screen" data-to="finanzen" aria-current="page">Finanzen</button>
-    </nav>
-    ${avatarHTML(true)}
-  </header>`;
-}
+/* docs/changes/029b #2: die Kopfzeile kommt jetzt aus chrome.js (renderHeader), geteilt mit Aufgaben */
 
 export function finanzenView() {
   // docs/changes/016b: without settings.fin_setup_done, Finanzen opens to the four questions
@@ -629,7 +695,7 @@ export function finanzenView() {
     updateBarHTML() +
     setupHintHTML() +
     `<div class="fin">` +
-    finHeadHTML() +
+    renderHeader('finanzen') +
     setupHint +
     `<div class="fin-grid">` +
     answerHTML() +

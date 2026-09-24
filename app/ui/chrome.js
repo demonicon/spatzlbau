@@ -4,7 +4,7 @@
 import { esc } from './dom.js';
 import { OWN } from './labels.js';
 import { BUILD } from '../config.js';
-import { state, ui } from '../state.js';
+import { state, ui, einzug, umzugstag, fmtDay } from '../state.js';
 import { ICON } from './icons.js';
 import { hasUnread } from '../changelog.js';
 
@@ -27,23 +27,52 @@ export function avatarHTML(named) {
     </div>`;
 }
 
-/** Avatar plus the two places the app has. `active`: 'dashboard' | 'finanzen'. */
-export function appHeadHTML(active) {
-  const me = state.person;
+// docs/changes/029b #2/#3/#4: one header for both screens - title left with the countdown
+// underneath it in running text ("N Tage bis Einzug · Fr 01.01.2027 · Umzug Mo 28.12."), nav
+// pills and the avatar (initial only, the name is the title attribute) on the right. Clicking
+// the date opens the same inline editor the dashboard has always had (main.js #einzug) - now
+// reachable from Finanzen too, since both screens share this one markup.
+function countdownHTML() {
+  const base = einzug();
+  if (!base) {
+    return `Einzugstermin eintragen, dann zählt die App · <button class="cd-date" data-act="date-toggle" aria-expanded="${!!ui.dateEdit}" aria-label="Einzugstermin eintragen">eintragen ›</button>`;
+  }
+  const dt = new Date(base + 'T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((dt - today) / 86400000);
+  const move = umzugstag() && umzugstag() !== base ? umzugstag() : '';
+  const dateText = fmtDay(base) + (move ? ' · Umzug ' + fmtDay(move) : '');
+  const n =
+    days > 0
+      ? `<span class="cd-n">${days}</span> ${days === 1 ? 'Tag' : 'Tage'} bis Einzug`
+      : days === 0
+        ? `Heute ist Einzug`
+        : `<span class="cd-n">${-days}</span> ${-days === 1 ? 'Tag' : 'Tage'} seit dem Einzug`;
+  return `${n} · <button class="cd-date" data-act="date-toggle" aria-expanded="${!!ui.dateEdit}" aria-label="Einzugstermin ändern">${esc(dateText)}</button>`;
+}
+
+/** The head both screens share. `active`: 'dashboard' | 'finanzen'. */
+export function renderHeader(active) {
+  const title = active === 'finanzen' ? 'Finanzen' : 'Aufgaben';
   const nav = (key, act, to, label) => {
     const on = active === key;
     return `<button class="pill navbtn ${on ? 'on' : ''}" data-act="${act}"${to ? ` data-to="${to}"` : ''} aria-label="${label}" title="${label}" aria-current="${on ? 'page' : 'false'}">${ICON[key === 'dashboard' ? 'home' : 'coin']}<span class="nl" aria-hidden="true">${label}</span></button>`;
   };
-  return `<div class="apphead">
-    ${avatarHTML(false)}
+  const showDate = ui.dateEdit || !einzug();
+  return `<header class="apphead2">
+    <div class="apphead2-left">
+      <h1 class="apphead2-title">${title}</h1>
+      ${ui.preview ? `<span class="preview-chip" title="Live-Daten · Lesestand wird nicht gespeichert">Vorschau</span>` : ''}
+      <span class="apphead2-count">${countdownHTML()}</span>
+    </div>
     <nav class="mainnav" aria-label="Bereiche">
       ${nav('dashboard', 'home', '', 'Aufgaben')}
       ${nav('finanzen', 'screen', 'finanzen', 'Finanzen')}
     </nav>
-    ${ui.preview ? `<span class="preview-badge" title="Testversion unter /preview/ – gleiche Datenbank wie die echte App, aber dein Lesestand wird hier nicht gespeichert">Vorschau</span>` : ''}
-    <span class="spacer"></span>
-    <span class="status" id="status" role="status"></span>
-  </div>`;
+    ${avatarHTML(false)}
+  </header>
+  ${showDate ? `<div class="date-edit"><label class="hint" for="einzug">Einzugstermin</label><input type="date" id="einzug" value="${esc(einzug() || '')}"></div>` : ''}`;
 }
 
 /** docs/changes/026: "Später" was chosen - a way back in, not a lock. Mirrors 016b's own hint. */
@@ -75,5 +104,5 @@ export function footHTML({ status = false } = {}) {
   const label = cur ? esc(cur.version) + (ui.preview ? '-preview' : '') : 'Version unbekannt';
   const version = `<span class="version"${tip ? ` title="${esc(tip)}"` : ''}>${label}</span>`;
   if (status) return `<footer class="foot fin-foot">${version}${info}<span class="spacer"></span><span class="status" id="status" role="status"></span></footer>`;
-  return `<footer class="foot">${info}${version}<button class="btn-text" data-act="print" aria-expanded="${!!ui.printOpen}">Umzugstag drucken</button><span class="spacer"></span><button class="btn-text" data-act="logout">Abmelden</button></footer>`;
+  return `<footer class="foot">${info}${version}<span class="status" id="status" role="status"></span><button class="btn-text" data-act="print" aria-expanded="${!!ui.printOpen}">Umzugstag drucken</button><span class="spacer"></span><button class="btn-text" data-act="logout">Abmelden</button></footer>`;
 }
