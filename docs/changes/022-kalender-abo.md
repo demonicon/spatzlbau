@@ -1,7 +1,5 @@
 # 022 – Kalender-Abo
 
-Status: umgesetzt (Branch `feat/022-kalender` → `preview`, Abweichungen in `022-abweichungen.md`; Fristen-Wecker-Ergänzung: Branch `feat/022-valarm`, Nachtrag unten)
-
 Stand: 23.09.2026 · Meilenstein 2.0 · Ziel-Branch: `preview` · Modell: Sonnet · Aufwand: S
 Quelle: Funktionsideen Teil E, 4a.
 
@@ -24,16 +22,19 @@ Migration `NNN_a022_ics_token.sql`: `settings.ics_token` (initial null; App erze
 
 Erinnerungen kommen über den Kalender, nicht über Push oder Cron: Jeder Termin im ICS bekommt `VALARM`-Blöcke.
 
-- Kritische Aufgaben: drei Alarme – `-P3D` 09:00, `-P1D` 09:00, `PT0S` 09:00 (ganztägig → Trigger relativ zum Tagesbeginn, absolut als `TRIGGER;VALUE=DATE-TIME` in `Europe/Berlin` berechnen, damit iOS und Outlook dieselbe Uhrzeit zeigen).
-- Gates: zwei Alarme – `-P7D` und `PT0S`.
+- Kritische Aufgaben: bis zu drei Alarme – 3 Tage, 1 Tag, am Tag, jeweils 09:00 (ganztägig → absolut als `TRIGGER;VALUE=DATE-TIME` in `Europe/Berlin` berechnen, damit iOS und Outlook dieselbe Uhrzeit zeigen).
+- **Stufen je Person** (Skizze 8a, 24.09.): `settings.alarm_stages` jsonb, Default `{"S":[3,1,0],"A":[1,0]}`. Die Function liest die Stufen der angefragten `person`. Rahmendaten (Ändern) bekommen den Block „Erinnerungen": je Person drei Segmente „3 Tage · 1 Tag · am Tag", an/aus; daneben leise „n Erinnerungen je Frist". Satz darunter: „Immer um 09:00. Gates erinnern 7 Tage und 1 Tag vorher. Wirkt beim nächsten Abruf – iOS binnen einer Stunde, Google bis zu 24 h. Google übernimmt Erinnerungen aus Abos nicht – dort gelten die Standard-Benachrichtigungen des Kalenders."
+- Gates: zwei Alarme – `-P7D` und `-P1D` (nicht am Tag: ein Gate braucht Vorlauf).
 - Beschreibung des Alarms = Titel + Zuständigkeit („Wohnung kündigen · Sebastian · morgen").
-- Keine Abschaltung je Aufgabe (bewusst weggelassen); wer keine Alarme will, schaltet sie im Kalender-Abo ab (iOS: „Hinweise entfernen", Outlook: Erinnerungen aus).
+- Keine Abschaltung je Aufgabe (bewusst weggelassen).
+- Abhaken entfernt den Termin samt Erinnerungen beim nächsten Abruf – als Satz unter den Abo-Links.
 - **Bekannte Grenze:** Google Kalender übernimmt `VALARM` aus abonnierten Kalendern nicht; dort gelten die Standard-Benachrichtigungen des Kalenders (in den Google-Einstellungen des Abos einmal „1 Tag vorher" setzen). Hinweistext unter den Abo-Links entsprechend ergänzen: „iOS/Outlook erinnern 3 Tage, 1 Tag und am Tag selbst; Google nach seinen Kalender-Einstellungen."
 
 Zusätzliche Akzeptanzkriterien:
-- [x] ICS-Validator akzeptiert die Alarme; ein kritischer Termin hat drei `VALARM`, ein Gate zwei
-- [x] iOS: Abo zeigt die drei Hinweise für `kuend-s` (Sebastian am Handy)
-- [x] Hinweistext unter den Links angepasst
+- [x] ICS-Validator akzeptiert die Alarme; `person=S` liefert drei `VALARM` je kritischem Termin, `person=A` zwei; ein Gate zwei
+- [x] Migration `020_a022_alarm_stages.sql` (Setting mit Default), Segment-Block in Rahmendaten schreibt es; Anna auf `[0]` → ein Alarm
+- [ ] iOS: Abo zeigt die drei Hinweise für `kuend-s` (Sebastian am Handy) – nach dem Deploy, Sebastians Schritt
+- [x] Hinweistexte wie oben; Changelog 2.1.3: „Kalender-Erinnerungen stellt jeder selbst ein."
 
 ## Deploy (Sebastian, nach Merge 2.1)
 
@@ -41,8 +42,8 @@ Zusätzliche Akzeptanzkriterien:
 
 ## Akzeptanzkriterien
 
-- [x] Function lokal (`supabase functions serve` oder Node-Test der Handler-Funktion): mit Token 200 + gültiges ICS (validator), ohne 401
-- [x] Person S: `kuend-s` drin, `kuend-a` nicht; `B`-Aufgaben in beiden
-- [x] Gates als fünf Termine mit ◆ im Titel
-- [x] "Link neu erzeugen" ändert Token, alte URL → 401
-- [x] Bericht ≤ 10 Zeilen, Changelog: "Fristen und Gates lassen sich als Kalender abonnieren."
+- [ ] Function lokal (`supabase functions serve` oder Node-Test der Handler-Funktion): mit Token 200 + gültiges ICS (validator), ohne 401
+- [ ] Person S: `kuend-s` drin, `kuend-a` nicht; `B`-Aufgaben in beiden
+- [ ] Gates als fünf Termine mit ◆ im Titel
+- [ ] "Link neu erzeugen" ändert Token, alte URL → 401
+- [ ] Bericht ≤ 10 Zeilen, Changelog: "Fristen und Gates lassen sich als Kalender abonnieren."
