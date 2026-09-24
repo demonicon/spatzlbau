@@ -9,10 +9,12 @@
       "improved": [
         "Ruhigerer Look: neutrale Flächen, Karten, feinere Linien, sichtbarer Fokus.",
         "Kopfzeile, Pillen und Signale sind aufgeräumt.",
-        "Weniger Gelb, weniger Buttons, alle Phasen im Blick – und die Rahmendaten sagen, wenn etwas nicht zusammenpasst."
+        "Weniger Gelb, weniger Buttons, alle Phasen im Blick – und die Rahmendaten sagen, wenn etwas nicht zusammenpasst.",
+        "Lesbarer: dunklerer Nebentext, feste Kopfzeile."
       ],
       "fixed": [
-        "Laufende Kosten, Monatsübersicht und Spalten-Gruppen stimmen."
+        "Laufende Kosten, Monatsübersicht und Spalten-Gruppen stimmen.",
+        "Spalten und Timeline sprechen dieselbe Sprache."
       ]
     },
     {
