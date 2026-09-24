@@ -82,6 +82,16 @@ export function freshComments(t) {
   return comsOf(t.id).filter((c) => c.author !== state.person && c.created_at > state.lastVisitAt);
 }
 export const unseenComments = (t) => freshComments(t).filter((c) => !state.seenComments.has(c.id));
+
+/* ---------- decisions (docs/changes/032): a comment marked `decision` is confirmed once both
+   ack_s and ack_a are set - the trigger sets the author's own tick and nulls both on unmarking.
+   "open" = not yet replaced by a newer confirmed decision on the same task (superseded_by). */
+export const ackedBy = (c, person) => !!(person === 'S' ? c.ack_s : c.ack_a);
+export const isConfirmedDecision = (c) => !!(c.ack_s && c.ack_a);
+export const decisionsOf = (t) => comsOf(t.id).filter((c) => c.decision);
+export const openDecisionsOf = (t) => decisionsOf(t).filter((c) => !c.superseded_by);
+// every decision across all tasks, newest first - the "Alle Entscheidungen" list (032)
+export const allDecisions = () => state.comments.filter((c) => c.decision).sort((a, b) => b.created_at.localeCompare(a.created_at));
 export const doneByOther = (t) =>
   !!state.lastVisitAt && t.done && !!t.done_by && t.done_by !== state.person && t.updated_at > state.lastVisitAt;
 
@@ -554,8 +564,8 @@ export async function updateSubtask(id, patch) {
   return write('subtask', () => supabase.from('subtasks').update(patch).eq('id', id));
 }
 
-export async function addComment(taskId, body) {
-  const row = { task_id: taskId, author: state.person, body };
+export async function addComment(taskId, body, decision = false) {
+  const row = { task_id: taskId, author: state.person, body, decision };
   status('saving', 'Speichern …');
   const { data, error } = await supabase.from('comments').insert(row).select().single();
   if (error) {
@@ -565,6 +575,17 @@ export async function addComment(taskId, body) {
   state.comments.push(data);
   status('saved', 'Gespeichert');
   notify();
+}
+
+// docs/changes/032: the author marks or unmarks their own comment as a decision - the trigger
+// sets/nulls the ticks server-side, this just flips the one column
+export async function setCommentDecision(id, decision) {
+  return updateComment(id, { decision });
+}
+// each person sets or takes back only their own tick (client rule, comsOf() enforces it in the UI)
+export async function setDecisionAck(id, on) {
+  const key = state.person === 'S' ? 'ack_s' : 'ack_a';
+  return updateComment(id, { [key]: on ? new Date().toISOString() : null });
 }
 
 // docs/changes/013 B5: only the own comments, deleting always allowed, editing only for ten

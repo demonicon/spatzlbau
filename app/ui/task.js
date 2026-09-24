@@ -3,7 +3,7 @@
 // everything else. A blocked row cannot be ticked and says what it waits for.
 import { esc } from './dom.js';
 import { OWN, STEP_TAG } from './labels.js';
-import { state, ui, blockers, subProgress, comsOf, unseenComments, dueShort, claudeStep } from '../state.js';
+import { state, ui, blockers, subProgress, comsOf, unseenComments, dueShort, claudeStep, openDecisionsOf, ackedBy } from '../state.js';
 import { isBlocked, isLate, isCritical } from '../filters.js';
 import { taskAmount, eurShort } from '../costs.js';
 import { term, mark, hitSubs } from '../search.js';
@@ -14,7 +14,8 @@ export function signalHTML(t) {
   // docs/changes/029b #6: the date next to the title is already red ("seit 1 T.") when late -
   // a second red "überfällig" chip underneath would say the same thing twice
   if (isLate(t)) return '';
-  if (!t.done && t.wait_on === state.person) return `<span class="sig-chip waitme">wartet auf dich</span>`;
+  // docs/changes/032: an open decision without my own tick waits the same way wait_on does
+  if (!t.done && (t.wait_on === state.person || openDecisionsOf(t).some((c) => !ackedBy(c, state.person)))) return `<span class="sig-chip waitme">wartet auf dich</span>`;
   // docs/changes/014e #4: "blockiert" ist kein Signal-Chip mehr - die Zeile bleibt still (Haken
   // gestrichelt, siehe box in taskHTML), der Grund steht knapp in der Meta-Zeile (quietHTML), wie
   // "wartet auf N ›" in der Timeline

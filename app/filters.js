@@ -1,6 +1,6 @@
 // Dashboard filters and the person grouping (docs/changes/002, reduced in 009).
 // Pure functions on top of state.js – no writes, no DOM.
-import { state, blockers, dueInfo, einzug, freshComments, doneByOther, claudeStep } from './state.js';
+import { state, blockers, dueInfo, einzug, freshComments, doneByOther, claudeStep, openDecisionsOf, ackedBy } from './state.js';
 
 export const isOpen = (t) => !t.done;
 export const isBlocked = (t) => !t.done && blockers(t).length > 0;
@@ -15,8 +15,10 @@ export const isWaiting = (t) => !t.done && (!!t.wait_on || (t.type === 'claude' 
 
 /* ---------- person grouping (docs/changes/009) ---------- */
 export const other = (me) => (me === 'S' ? 'A' : 'S');
-// waits for me: someone set wait_on to me, or Claude has delivered and we have to decide
-export const waitsOnMe = (t, me) => !t.done && (t.wait_on === me || (t.type === 'claude' && claudeStep(t) === 'ergebnis'));
+// waits for me: someone set wait_on to me, Claude has delivered and we have to decide, or an
+// open decision on this task still misses my own tick (docs/changes/032 - same signal, no new one)
+export const waitsOnMe = (t, me) =>
+  !t.done && (t.wait_on === me || (t.type === 'claude' && claudeStep(t) === 'ergebnis') || openDecisionsOf(t).some((c) => !ackedBy(c, me)));
 // docs/changes/018 §3: the other direction - I am waiting for the other person or for Claude
 export const waitsOnYou = (t, me) => !t.done && !!t.wait_on && t.wait_on !== me;
 // a comment the other person (or Claude) wrote since the last visit and this person has not opened
