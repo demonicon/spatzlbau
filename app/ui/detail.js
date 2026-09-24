@@ -72,7 +72,12 @@ function commentsHTML(t) {
 const fmtDM = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 const fmtDay = (iso) => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '');
 const fmtShortDay = (iso) => (iso ? new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '');
-const today = () => new Date().toISOString().slice(0, 10);
+// docs/changes/034 (Fund aus 014e): local-calendar string, not toISOString() (UTC, a day early
+// east of UTC near Mitternacht)
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 const STEP_SENTENCE = {
   briefing: 'Das Briefing geht an Claude, sobald ihr es abschickt.',
@@ -387,7 +392,11 @@ function costActionHTML(c) {
 /** "Betrag festlegen": the amount and the date it is due, plus an optional note. */
 function costSetHTML(c) {
   const t = c.task_id ? byId(c.task_id) : null;
-  const prefillDue = c.due_on || (t && anchorDate(t) ? new Date(dueInfo(t).sort).toISOString().slice(0, 10) : '');
+  // docs/changes/034 (Fund aus 014e): local-calendar string, not toISOString() (UTC, a day early
+  // east of UTC near Mitternacht) - dueInfo(t).sort sits at local midnight, converting it through
+  // UTC can slip a day
+  const dueDate = t && anchorDate(t) ? new Date(dueInfo(t).sort) : null;
+  const prefillDue = c.due_on || (dueDate ? `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}` : '');
   return `<div class="cost-form cost-set">
     <div class="row">
       <label class="lbl">Betrag<input type="text" inputmode="decimal" data-input="set-amount" value="${c.status === 'geschaetzt' && num(c.amount) ? esc(String(num(c.amount)).replace('.', ',')) : ''}" aria-label="Betrag in Euro"></label>
