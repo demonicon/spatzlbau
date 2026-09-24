@@ -5,7 +5,10 @@ import { state, blockers, dueInfo, einzug, freshComments, doneByOther, claudeSte
 export const isOpen = (t) => !t.done;
 export const isBlocked = (t) => !t.done && blockers(t).length > 0;
 export const isLate = (t) => !t.done && !!einzug() && dueInfo(t).diff < 0;
-export const isCritical = (t) => !t.done && !!t.critical && !isLate(t); // late wins over critical (one signal per task)
+// docs/changes/030 #2: fristkritisch ist jetzt die Frist selbst (<= 7 Tage), nicht mehr das
+// manuell gesetzte `critical`-Flag - dieselbe Grenze wie dueInfo()'s "soon"-Klasse (state.js),
+// eine einzige Stelle fuer die Zahl. Late gewinnt (ein Signal je Aufgabe).
+export const isCritical = (t) => !t.done && !isLate(t) && dueInfo(t).cls === 'soon';
 export const isDelegated = (t) => !t.done && t.type === 'claude';
 export const atClaude = (t) => isDelegated(t) && claudeStep(t) === 'claude';
 export const isWaiting = (t) => !t.done && (!!t.wait_on || (t.type === 'claude' && claudeStep(t) === 'ergebnis'));

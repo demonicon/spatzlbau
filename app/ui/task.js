@@ -29,8 +29,9 @@ export function signalHTML(t) {
 export function quietHTML(t, { owner = true } = {}) {
   const parts = [];
   if (owner) parts.push(esc(OWN[t.owner]));
+  // docs/changes/030 #1: "Claude unterstützt" ist mit dem Inhaltspaket kein Unterschied mehr
+  // (alle Aufgaben haben Beratung) - die Meta-Zeile nennt Claude nur noch bei echter Delegation
   if (t.type === 'claude') parts.push(esc(STEP_TAG[claudeStep(t)]));
-  else if (t.type === 'assist') parts.push('Claude unterstützt');
   if (t.wait_on && t.wait_on !== state.person) parts.push('wartet auf ' + esc(OWN[t.wait_on]));
   const sp = subProgress(t);
   if (sp) parts.push(`${sp[0]}/${sp[1]} Teilschritte`);

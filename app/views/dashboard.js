@@ -163,6 +163,12 @@ const SIGNALS = [
 ];
 
 function signalsHTML() {
+  const counts = SIGNALS.map(([key]) => count(key));
+  // docs/changes/030 #3: three zeros are not three empty tiles - one quiet line instead. As soon
+  // as one value is > 0, all three tiles come back at their usual, stable positions.
+  if (counts.every((n) => n === 0)) {
+    return `<p class="kpis-empty">Zwischen euch ist nichts offen.</p>`;
+  }
   const tiles = SIGNALS.map(([key, label]) => {
     const n = count(key);
     return `<button class="tile sig-tile ${n ? '' : 'zero'}" data-filter="${key}" aria-pressed="${ui.filter === key}">
@@ -426,7 +432,7 @@ function addBoxHTML() {
     <div class="row">
       <select data-input="new-p" aria-label="Phase">${list.map((p) => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>Phase ${p.id} · ${esc(p.short || p.name)}</option>`).join('')}</select>
       <select data-input="new-o" aria-label="Zuständig"><option value="B">gemeinsam</option><option value="S">Sebastian</option><option value="A">Anna</option></select>
-      <select data-input="new-type" aria-label="Typ"><option value="self">nur ihr</option><option value="assist">Claude unterstützt</option><option value="claude" ${claude ? 'selected' : ''}>an Claude delegiert</option></select>
+      <select data-input="new-type" aria-label="Typ"><option value="self">nur ihr</option><option value="assist">Claude hilft mit</option><option value="claude" ${claude ? 'selected' : ''}>an Claude delegiert</option></select>
       <span class="row nowrap"><input type="number" inputmode="numeric" data-input="new-w" value="2" min="0" class="num" aria-label="Wochen"><select data-input="new-dir" aria-label="Richtung"><option value="-1">Wochen vorher</option><option value="1">Wochen danach</option></select></span>
       <label class="check-label"><input type="checkbox" data-input="new-c"> kritisch</label>
       <button class="${ui.akteEdit || ui.printOpen ? 'btn-secondary' : 'btn-primary'}" data-act="add">Hinzufügen</button>
@@ -471,7 +477,7 @@ export function dashboardView() {
     (isSignal || tl
       ? ''
       : (switchShown() ? switchHTML(allColsForSwitch()) : '') +
-        (q && !cols.length ? `<p class="empty no-hits">Kein Treffer für „${esc(q)}“ – auch nicht in den Teilschritten.</p>` : `<div class="cols">${cols.map(columnHTML).join('')}</div>`)) +
+        (q && !cols.length ? `<p class="empty no-hits">Kein Treffer für „${esc(q)}“ – auch nicht in den Teilschritten.</p>` : `<div class="cols${currentView() === 'phasen' ? ' cols-phasen' : ''}">${cols.map(columnHTML).join('')}</div>`)) +
     addBoxHTML() +
     `</div>` +
     (mode === 'panel' ? panelHTML(panelTask) : '') +

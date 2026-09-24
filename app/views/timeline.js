@@ -9,7 +9,7 @@
 import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
 import { state, ui, phases, einzug, umzugstag, dueInfo, anchorDate, blockers, subProgress, comsOf } from '../state.js';
-import { isLate } from '../filters.js';
+import { isLate, isCritical } from '../filters.js';
 import { detailHTML } from '../ui/detail.js';
 import { isHit, term } from '../search.js';
 import { taskAmount, eurShort } from '../costs.js';
@@ -81,7 +81,7 @@ function signalHTML(t, at) {
   }
   if (t.wait_on === state.person) return `<span class="tl-sig waitme">wartet auf dich</span>`;
   if (dayStart(at).getTime() === dayStart().getTime()) return `<span class="tl-sig crit">heute</span>`;
-  if (t.critical) return `<span class="tl-sig crit">kritisch</span>`;
+  if (isCritical(t)) return `<span class="tl-sig crit">kritisch</span>`;
   return '';
 }
 
@@ -116,7 +116,7 @@ function rowHTML({ t, at }, rl) {
   const open = ui.expanded === t.id;
   const moved = t.anchor === 'umzugstag' && umzugstag();
   const sig = signalHTML(t, at);
-  const cls = ['tl-row', 'tl-task', late ? 'late' : '', t.critical ? 'crit' : '', blocked ? 'blocked' : '', open ? 'open' : '', open && ui.wide ? 'selected' : ''].join(' ');
+  const cls = ['tl-row', 'tl-task', late ? 'late' : '', isCritical(t) ? 'crit' : '', blocked ? 'blocked' : '', open ? 'open' : '', open && ui.wide ? 'selected' : ''].join(' ');
   const waitList =
     ui.tlWait === t.id && blocked
       ? `<div class="tl-waitlist">wartet auf: ${blockers(t)
