@@ -37,7 +37,8 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Schema-Änderungen als neue Datei in `supabase/migrations/NNN_aXXX_<thema>.sql` (NNN fortlaufend, XXX = Nummer des Änderungsauftrags, z. B. `005_a004_costs.sql`); `schema.sql` bleibt der Gesamtstand für Neueinrichtung. Die Migrationen 001–004 stammen von vor dieser Regel und behalten ihre Namen.
 - Commit-Messages: Präfix `feat:`, `fix:`, `content:`, `chore:`. Kleine Commits.
 - Vor dem Push: `index.html` lokal öffnen (Live-Server) und auf ~380 px prüfen.
-- Vor jedem Commit: `node -e "JSON.parse(require('fs').readFileSync('changelog.json'))"`; der Workflow prüft es ebenfalls. (Festgelegt am 25.09.2026, Auftrag 035.)
+- Vor jedem Commit `npm run check` (JSON-Dateien, Service-Worker-Shell-Liste, changelog.json-Form – `scripts/check.mjs`); der Commit-Bericht nennt das Ergebnis. Der Workflow ruft dasselbe Skript als ersten Schritt. (Festgelegt am 25.09.2026, Auftrag 036, ersetzt die 035-Zeile.)
+- `git push` ist kein Deploy. Nach jedem Push auf `preview` oder `main`: Run abwarten, Live-Version prüfen. (Festgelegt am 25.09.2026, Auftrag 036.)
 
 ## Design-Regeln
 - Schrift, Gewichte und Größen kommen aus dem Claude-Design-Export des jeweiligen Auftrags, nicht aus dem Bestand. Keine neue Familie, kein neues Gewicht ohne Vorlage. (Festgelegt am 23.09.2026, Auftrag 020b.)
@@ -67,6 +68,13 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Realtime-Update sichtbar
 - Keine Konsolenfehler
 - `SETUP.md` / `BRIEFING.md` angepasst, falls Verhalten oder Setup sich ändern
+
+## Fertig heißt (seit Auftrag 036)
+Ein Auftrag ist fertig, wenn (a) `npm run check` grün ist, (b) der Workflow-Lauf des Ziel-Branches
+grün ist (`gh run watch` auf den eigenen Push), und (c) die Live-URL die neue Version liefert:
+`curl -s <url>/changelog.json | node -e '…'` – oberster Eintrag = erwartete Version (preview:
+`…/preview/`, main: `…/`). Der Bericht nennt Run-Nummer und Live-Version. Ein Bericht ohne (b)
+und (c) ist kein Abschluss. Anlass: 035 – 20 Stunden ohne Deploy, ohne dass es jemand sah.
 
 ## Was du nicht tust
 - Konzept oder Datenmodell eigenmächtig umbauen – Rückfrage an Sebastian
