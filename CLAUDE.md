@@ -8,6 +8,9 @@ Claude im Chat: Konzept, Inhalte, Reviews – Änderungen kommen von dort als Au
 ## Aufträge
 `docs/changes/NNN-kurzname.md` ist die verbindliche Spezifikation; Status beim Abschluss auf „umgesetzt" setzen, offene Punkte dort notieren.
 
+## Definition of Ready (Features)
+Ein Feature-Auftrag startet erst, wenn Kontext und Ziel mit mindestens drei Fragen an Sebastian geklärt sind. Die Antworten stehen im Auftrag unter „Klärung". Bugfix und Chore starten direkt.
+
 ## Freeze und Meilensteine (seit Auftrag 015)
 Nach 1.0 nur noch Neben-/Patch-Versionen für Bugfixes; einen neuen Meilenstein eröffnet nur Sebastian. Bugfix = etwas, das vorher funktionierte und jetzt nicht mehr, oder falsch gespeicherte/gezeigte Daten – alles andere ist ein Feature (`docs/backlog.md`). `CLAUDE.md`/`BRIEFING.md` nur mit ausdrücklicher Bestätigung ändern.
 
@@ -22,9 +25,6 @@ Vanilla JS, ES-Module, kein Build-Step, kein Framework, keine neuen Abhängigkei
 
 ## Modell
 Sonnet, Effort standard als Default. Opus nur bei Aufwand L oder einem Layout-Umbau.
-
-## Schreibtests an der Live-Datenbank
-Vorher ansagen, nicht nebenbei erledigen; danach Testdaten entfernen und Nachweis zeigen. Details in `rules/tests.md`.
 
 ## Changelog
 Sichtbare Änderung = `changelog.json`-Eintrag, sonst gilt der PR als unvollständig. Regeln in `rules/changelog.md`.
