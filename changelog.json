@@ -1,6 +1,22 @@
 {
   "entries": [
     {
+      "version": "2.2.2",
+      "release": "2.2",
+      "date": "2026-09-25",
+      "title": "Entscheidungen haben jetzt eine eigene Seite – und fallen in den Kommentaren sofort auf.",
+      "new": [
+        "Entscheidungen haben jetzt eine eigene Seite, erreichbar über ein neues Symbol im Kopf – mit einer Zahl, wenn eine Entscheidung auf dich wartet."
+      ],
+      "improved": [
+        "Eine festgehaltene Entscheidung fällt in den Kommentaren jetzt sofort durch eine eigene Farbe auf.",
+        "Claude arbeitet jetzt zu fünf festen Uhrzeiten am Tag (8, 12, 15, 18, 22 Uhr) statt jede Stunde."
+      ],
+      "fixed": [
+        "In der Akte ist jetzt klar erkennbar, welcher Knopf der wichtige ist, wenn eine Entscheidung auf dich wartet."
+      ]
+    },
+    {
       "version": "2.2.1",
       "release": "2.2",
       "date": "2026-09-25",

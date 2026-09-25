@@ -28,6 +28,9 @@ der WCAG-Formel (relative Luminanz, `(L1+0,05)/(L2+0,05)`). `--paper` (`#f4f6f2`
 | `--link` | `#2e5a9c` | `--card` | 6,87:1 | 6,87:1 | grün |
 | `--mark-deep` („--mark-ink" im Auftragstext) | `#8a7300` → **`#7a6600`** | `--paper` | **4,26:1 – FAIL** | 5,18:1 | grün (gedunkelt) |
 | `--mark-deep` | `#8a7300` → `#7a6600` | `--card` | 4,63:1 | 5,63:1 | grün |
+| `--decision` (neu, 032b) | `#5c2e91` | `--paper` | – | 8,56:1 | grün |
+| `--decision` (neu, 032b) | `#5c2e91` | `--card` | – | 9,31:1 | grün |
+| `--decision` (neu, 032b) | `#5c2e91` | `--decision-bg` (`#efe9f7`) | – | 7,84:1 | grün |
 
 ## Ergebnis
 
@@ -42,3 +45,5 @@ der WCAG-Formel (relative Luminanz, `(L1+0,05)/(L2+0,05)`). `--paper` (`#f4f6f2`
   wird (keine Freigabe dafür in diesem Auftrag).
 - Owner-Hintergründe (`--seb-bg` etc.), `--line`, `--line-dash`, `--mark` selbst: bewusst nicht
   Teil dieser Matrix (Flächen/Rahmen, keine Text-Token, CLAUDE.md-Regel unverändert).
+- **Nachtrag 032b:** `--decision` (Entscheidungs-Kommentare, Violett) neu aufgenommen - alle drei
+  Paare (auf `--paper`, `--card`, dem eigenen `--decision-bg`) liegen deutlich über 4,5:1.

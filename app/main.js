@@ -130,8 +130,7 @@ ui.setupPicker = false; // "Stammdaten & Rahmendaten" step list open (026)
 ui.setupAufzug = null; // { s/a/n: bool } - Schritt 2's own tri-state toggle, not an <input> (026)
 ui.setupCostSel = null; // Set of seed_keys unchecked in Schritt 7 - "abgewählt", nichts wird angelegt (026)
 ui.avatarMenu = false; // the avatar's own small menu (026)
-ui.decisionsOpen = false; // "Entscheidungen"-Liste im Desktop-Panel statt "Zwischen euch" (032)
-ui.decisionsFilter = 'offen'; // 'alle' | 'offen' | 'bestaetigt', kept while the panel/route is open (032)
+ui.decisionsFilter = 'offen'; // 'alle' | 'offen' | 'bestaetigt', kept while the route is open (032, eigene Seite seit 032b)
 ui.decisionsMore = new Set(); // decision ids with "mehr" aufgeklappt (032)
 
 /* ---------- screens ---------- */
@@ -698,7 +697,6 @@ function wireEvents() {
       return;
     }
     ui.screen = 'dashboard';
-    ui.decisionsOpen = false;
     const id = hashTaskId();
     if (id && byId(id)) openTaskFromHash();
     else if (!id) ui.expanded = null;
@@ -1144,13 +1142,12 @@ function wireEvents() {
           return;
         case 'entscheidungen-open':
           ui.expanded = null;
-          ui.decisionsOpen = true;
-          if (ui.mode !== 'panel') openEntscheidungen();
+          openEntscheidungen();
           render();
           return;
         case 'entscheidungen-close':
-          ui.decisionsOpen = false;
           ui.screen = 'dashboard';
+          ui.expanded = null;
           syncHash();
           render();
           return;
@@ -1243,7 +1240,10 @@ function wireEvents() {
           ui.finPostAdd = false;
           ui.avatarMenu = false;
           if (b.dataset.to === 'finanzen') openFinanzen();
-          else {
+          else if (b.dataset.to === 'entscheidungen') {
+            ui.expanded = null;
+            openEntscheidungen();
+          } else {
             ui.screen = b.dataset.to;
             ui.finFilter = null;
             syncHash();

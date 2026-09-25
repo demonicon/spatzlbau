@@ -4,7 +4,7 @@
 import { esc } from './dom.js';
 import { OWN } from './labels.js';
 import { BUILD } from '../config.js';
-import { state, ui, einzug, umzugstag, fmtDay } from '../state.js';
+import { state, ui, einzug, umzugstag, fmtDay, myOpenDecisionsCount } from '../state.js';
 import { ICON } from './icons.js';
 import { hasUnread } from '../changelog.js';
 
@@ -52,12 +52,16 @@ function countdownHTML() {
   return `${n} · <button class="cd-date" data-act="date-toggle" aria-expanded="${!!ui.dateEdit}" aria-label="Einzugstermin ändern">${esc(dateText)}</button>`;
 }
 
-/** The head both screens share. `active`: 'dashboard' | 'finanzen'. */
+const NAV_ICON = { dashboard: 'home', finanzen: 'coin', entscheidungen: 'diamond' };
+const NAV_TITLE = { finanzen: 'Finanzen', entscheidungen: 'Entscheidungen' };
+
+/** The head all three screens share. `active`: 'dashboard' | 'finanzen' | 'entscheidungen' (032b). */
 export function renderHeader(active) {
-  const title = active === 'finanzen' ? 'Finanzen' : 'Aufgaben';
-  const nav = (key, act, to, label) => {
+  const title = NAV_TITLE[active] || 'Aufgaben';
+  const n = myOpenDecisionsCount();
+  const nav = (key, act, to, label, badge) => {
     const on = active === key;
-    return `<button class="pill navbtn ${on ? 'on' : ''}" data-act="${act}"${to ? ` data-to="${to}"` : ''} aria-label="${label}" title="${label}" aria-current="${on ? 'page' : 'false'}">${ICON[key === 'dashboard' ? 'home' : 'coin']}<span class="nl" aria-hidden="true">${label}</span></button>`;
+    return `<button class="pill navbtn ${on ? 'on' : ''}" data-act="${act}"${to ? ` data-to="${to}"` : ''} aria-label="${label}${badge ? ` – ${badge} wartet auf dich` : ''}" title="${label}" aria-current="${on ? 'page' : 'false'}">${ICON[NAV_ICON[key]]}<span class="nl" aria-hidden="true">${label}</span>${badge ? `<span class="pill-badge" aria-hidden="true">${badge}</span>` : ''}</button>`;
   };
   const showDate = ui.dateEdit || !einzug();
   return `<header class="apphead2">
@@ -69,6 +73,7 @@ export function renderHeader(active) {
     <nav class="mainnav" aria-label="Bereiche">
       ${nav('dashboard', 'home', '', 'Aufgaben')}
       ${nav('finanzen', 'screen', 'finanzen', 'Finanzen')}
+      ${nav('entscheidungen', 'screen', 'entscheidungen', 'Entscheidungen', n)}
     </nav>
     ${avatarHTML(false)}
   </header>
