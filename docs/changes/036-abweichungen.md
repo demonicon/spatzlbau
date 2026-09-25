@@ -43,6 +43,25 @@ getaggten Version; das ist der Normalzustand, kein Fund. Mit der ursprünglichen
   das `^` schluckt. `git rev-list -n 1` (kein `^{commit}` nötig) ist der portable Ersatz, falls
   ein commit-genauer Vergleich später gebraucht wird.
 
+## Ein zweiter Fund: der Service-Worker-Verweis steht nicht in `index.html`
+
+Der erste durchgehend grüne Lauf (main, Run #118, siehe Bericht) zeigte `smoke` rot – Build-Stempel,
+changelog-Version und HTTP-Status stimmten für main und preview, nur „references the service
+worker" schlug beidseitig fehl. `index.html` nennt „serviceWorker" nirgends wörtlich; die
+Registrierung (`navigator.serviceWorker.register('./sw.js', …)`) sitzt in `app/main.js`,
+`index.html` lädt nur `<script type="module" src="./app/main.js">`. Der Smoke-Check prüft jetzt auf
+`app/main.js` im HTML statt auf das Wort „serviceWorker" – das ist der tatsächliche Verweis, den
+der Auftrag meint.
+
+## Ein dritter Fund: `smoke` übersprang sich selbst, wenn ein Build-Job rot war
+
+Test 3 (siehe unten) zeigte: `build-preview` rot, `deploy` trotzdem grün (Fallback funktioniert
+wie gedacht) – aber `smoke` wurde **übersprungen**, nicht ausgeführt. `needs: […]` ohne eigenes
+`if:` verlangt von GitHub Actions, dass *alle* genannten Jobs erfolgreich waren; `deploy` toleriert
+längst einen roten Build-Job, `smoke` tat es nicht. Jetzt `if: always() && needs.deploy.result ==
+'success'` – smoke läuft immer, wenn tatsächlich etwas deployt wurde, unabhängig vom Zustand der
+Build-Jobs.
+
 ## Tests
 
 Reihenfolge wie im Auftrag; 1 und 2 lokal, 3 und 4 real (Live-Läufe, siehe Bericht für
