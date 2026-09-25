@@ -170,6 +170,9 @@ jobs:
 
   smoke:
     needs: [build-main, build-preview, deploy]
+    # deploy already tolerates a red build-main/build-preview (fallback); smoke has to run
+    # whenever something was actually deployed, not only when every job upstream was green.
+    if: always() && needs.deploy.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-node@v4

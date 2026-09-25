@@ -53,6 +53,15 @@ Registrierung (`navigator.serviceWorker.register('./sw.js', …)`) sitzt in `app
 `app/main.js` im HTML statt auf das Wort „serviceWorker" – das ist der tatsächliche Verweis, den
 der Auftrag meint.
 
+## Ein dritter Fund: `smoke` übersprang sich selbst, wenn ein Build-Job rot war
+
+Test 3 (siehe unten) zeigte: `build-preview` rot, `deploy` trotzdem grün (Fallback funktioniert
+wie gedacht) – aber `smoke` wurde **übersprungen**, nicht ausgeführt. `needs: […]` ohne eigenes
+`if:` verlangt von GitHub Actions, dass *alle* genannten Jobs erfolgreich waren; `deploy` toleriert
+längst einen roten Build-Job, `smoke` tat es nicht. Jetzt `if: always() && needs.deploy.result ==
+'success'` – smoke läuft immer, wenn tatsächlich etwas deployt wurde, unabhängig vom Zustand der
+Build-Jobs.
+
 ## Tests
 
 Reihenfolge wie im Auftrag; 1 und 2 lokal, 3 und 4 real (Live-Läufe, siehe Bericht für
