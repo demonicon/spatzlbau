@@ -25,5 +25,5 @@ Anweisung Sebastian 25.09.: „Beziehe mich ab sofort mehr in die Entwicklung ei
 
 ## Akzeptanzkriterien
 
-- [ ] CLAUDE.md-Zeile (≤ 50 Zeilen bleiben – ggf. eine andere Zeile nach rules/ verschieben), Kopffeld `Art`, Skill-Schritt 0, Reviewer-Punkt e, Vorlage
+- [x] CLAUDE.md-Zeile (≤ 50 Zeilen bleiben – ggf. eine andere Zeile nach rules/ verschieben), Kopffeld `Art`, Skill-Schritt 0, Reviewer-Punkt e, Vorlage
 - [ ] Drei Tests grün; Merge preview, kein Release; Bericht mit Run-Nummer und Live-Version
