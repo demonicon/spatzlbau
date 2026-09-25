@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "version": "2.2.1",
+      "release": "2.2",
+      "date": "2026-09-25",
+      "title": "Der Betrieb meldet sich, wenn etwas nicht ankommt.",
+      "new": [],
+      "improved": [
+        "Der Betrieb meldet sich, wenn etwas nicht ankommt."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2.2.0",
       "release": "2.2",
       "date": "2026-09-24",
