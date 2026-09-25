@@ -1,0 +1,4 @@
+#!/bin/sh
+# docs/changes/037 §4: optionaler Pre-Commit-Hook, ruft nur node auf (kein weiteres Werkzeug).
+# Aktivieren: git config core.hooksPath .githooks
+node scripts/check.mjs

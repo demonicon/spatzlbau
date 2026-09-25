@@ -87,6 +87,12 @@ winget install GitHub.cli
 ```
 Danach Terminal neu öffnen und einmal `gh auth login` (Browser-Login).
 
+`npm run check` (JSON-Dateien, Service-Worker-Shell-Liste, `changelog.json`-Form) läuft vor jedem
+Commit von Hand oder über den Stop-Hook (Auftrag 037). Optional als Git-Pre-Commit-Hook:
+```bash
+git config core.hooksPath .githooks
+```
+
 ---
 
 ## 6. Lokale `.env` anlegen
