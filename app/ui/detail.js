@@ -8,9 +8,10 @@ import { esc, fmtTime } from './dom.js';
 import { OWN, STEPS, STEP_OWNER, ADV, PAID_BY } from './labels.js';
 import {
   state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, umzugstag, dueInfo, anchorDate, freshComments, canEditComment, fmtDay as fmtRunningDay,
-  openDecisionsOf, ackedBy, isConfirmedDecision,
+  openDecisionsOf, ackedBy, isConfirmedDecision, anfrageOfTask,
 } from '../state.js';
 import { isLate, isCritical } from '../filters.js';
+import { CATEGORIES, STEPS as AF_STEPS, stepIndex } from '../anfragen.js';
 import {
   costsOf, isHistory, isCostLate, isCostSoon, eur, num, KIND, APARTMENT, ladderState, refundState,
   LADDER, LADDER_LABEL, REFUND, REFUND_LABEL,
@@ -43,7 +44,7 @@ const fmtWeekDay = (iso) => new Date(iso).toLocaleDateString('de-DE', { weekday:
 // docs/changes/013 B5: only the own comments carry actions - deleting always, editing only
 // inside the ten-minute window (RLS allows both for either person; the "own only" limit is
 // a rule of the interface)
-function commentHTML(c, fresh) {
+function commentHTML(c, fresh, decisions = true) {
   const own = c.author === state.person;
   const editing = own && ui.comEdit === c.id;
   const confirming = own && ui.confirm === 'comdel:' + c.id;
@@ -58,7 +59,7 @@ function commentHTML(c, fresh) {
   // like Bearbeiten) - Claude never authors its own comment as `state.person`, so it never gets
   // this button either, without a special case
   const decisionToggle =
-    own && !editing && !confirming
+    decisions && own && !editing && !confirming
       ? `<button class="btn-text quiet" data-act="com-decision-toggle" data-ref="${c.id}" aria-pressed="${!!c.decision}">${c.decision ? 'Entscheidung aufheben' : 'Als Entscheidung markieren'}</button>`
       : '';
   const actions =
@@ -105,8 +106,17 @@ function decisionCardHTML(c, primary) {
   </div>`;
 }
 
-function commentsHTML(t) {
+/** `decisions: false` (033, an anfrage): no pinning, no "Als Entscheidung" - the decision is made
+    by "Wählen" and lands on the linked task; the comments there are the way back to Claude. */
+export function commentsHTML(t, { decisions = true, placeholder = null } = {}) {
   const coms = comsOf(t.id);
+  if (!decisions) {
+    const fresh = new Set(freshComments(t).map((c) => c.id));
+    return `<h3>Kommentare ${coms.length ? `<small>${coms.length}</small>` : ''}</h3>
+      ${coms.map((c) => commentHTML(c, fresh.has(c.id), false)).join('')}
+      <textarea data-input="com" placeholder="${esc(placeholder || 'Kommentar …')}" aria-label="Neuer Kommentar"></textarea>
+      <div class="row"><button class="btn-secondary" data-act="com-add">Senden</button></div>`;
+  }
   const pinned = openDecisionsOf(t).slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
   const pinnedIds = new Set(pinned.map((c) => c.id));
   const rest = coms.filter((c) => !pinnedIds.has(c.id));
@@ -156,7 +166,7 @@ const fmtHM = (iso) => (iso ? new Date(iso).toLocaleTimeString('de-DE', { hour: 
 const RUN_HOURS = [8, 12, 15, 18, 22];
 
 /** docs/changes/024, Takt seit 032b: die nächste der fünf festen Uhrzeiten, sonst die erste am Folgetag. */
-function nextRunText() {
+export function nextRunText() {
   const h = new Date().getHours();
   const next = RUN_HOURS.find((x) => x > h);
   return `nächster Lauf um ${String(next ?? RUN_HOURS[0]).padStart(2, '0')}:00`;
@@ -190,6 +200,30 @@ function standHTML(t) {
       ${step === 'claude' ? `<button class="btn-secondary" data-act="accept">Ergebnis übernommen</button>` : ''}
     </div>
     ${open ? `<div class="brief read">${text('goal', 'Ziel') || '<div class="brief-read"><b>Ziel</b><p class="none">noch nicht geschrieben</p></div>'}${text('ctx', 'Kontext & Rahmendaten')}${text('result', 'Ergebnis von Claude')}</div>` : ''}`;
+}
+
+/** docs/changes/033: the four rungs of an anfrage - the same .steps bar as "Stand", four wide. */
+export function anfrageStepsHTML(a) {
+  const idx = stepIndex(a);
+  return `<ol class="steps four" aria-label="Stand der Anfrage">${AF_STEPS.map(
+    ([, l], i) => `<li class="${i === idx ? 'cur' : i < idx ? 'past' : ''}" ${i === idx ? 'aria-current="step"' : ''}><i></i><span>${l}</span></li>`,
+  ).join('')}</ol>`;
+}
+
+/** docs/changes/033: the anfrage linked to this task - or, on the four category tasks, a way to
+    start one. Every other task stays as it was. */
+function anfrageBlockHTML(t) {
+  const a = anfrageOfTask(t.id);
+  if (!a) {
+    const cat = Object.keys(CATEGORIES).find((k) => CATEGORIES[k].task === t.id);
+    return cat ? `<p class="row"><button class="btn-text" data-act="anfrage-create" data-to="${cat}">Anfrage stellen ›</button></p>` : '';
+  }
+  const step = AF_STEPS[stepIndex(a)][1];
+  const small = a.status === 'ergebnis' ? 'Ergebnis da' : step;
+  const link = a.status === 'ergebnis' || a.status === 'entschieden' ? 'Ergebnis ansehen ›' : 'Anfrage ansehen ›';
+  return `<h3>Anfrage <small>${small}</small></h3>
+    ${anfrageStepsHTML(a)}
+    <p class="row"><button class="btn-text" data-act="anfrage-open" data-ref="${a.id}">${link}</button></p>`;
 }
 
 function subtasksViewHTML(t) {
@@ -275,6 +309,7 @@ function viewHTML(t, withHead) {
     ${head}
     <div class="akte-actions">${edit}</div>
     ${t.type === 'claude' ? standHTML(t) : ''}
+    ${anfrageBlockHTML(t)}
     ${subtasksViewHTML(t)}
     ${costsViewHTML(t)}
     ${dependsViewHTML(t)}

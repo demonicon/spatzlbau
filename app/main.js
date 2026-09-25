@@ -40,7 +40,10 @@ import {
   deleteCost,
   addRecurring,
   updateRecurring,
+  anfrageById,
 } from './state.js';
+import { anfragenView } from './views/anfragen.js';
+import { CATEGORIES, prefill, choosePlan, unchoosePatch, offersOf } from './anfragen.js';
 import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
 import { dashboardView, columns, entscheidungenView } from './views/dashboard.js';
@@ -131,6 +134,10 @@ ui.setupAufzug = null; // { s/a/n: bool } - Schritt 2's own tri-state toggle, no
 ui.setupCostSel = null; // Set of seed_keys unchecked in Schritt 7 - "abgewählt", nichts wird angelegt (026)
 ui.avatarMenu = false; // the avatar's own small menu (026)
 ui.decisionsFilter = 'offen'; // 'alle' | 'offen' (032, eigene Seite seit 032b, "bestätigt"-Pille entfällt seit 032c)
+ui.anfrage = null; // the anfrage open on #anfragen (033)
+ui.anfrageNew = false; // the category pills of "+ Anfrage" are open (033)
+ui.anfrageMoney = null; // { id, money } - the price question after "Wählen", until Ja/Nein (033)
+ui.offerEdit = null; // { id, offerId } - an offer being added ('new') or changed (033)
 
 /* ---------- screens ---------- */
 function show(screen) {
@@ -194,7 +201,15 @@ function render() {
   // docs/changes/026: the eight-step start takes the whole screen, like the Finanzen wizard it
   // reuses parts of - first run (not skipped), or one step reopened from the avatar menu
   const showSetup = (!state.settings.setup_done && !ui.setupSkip) || ui.setupReopen || ui.setupPicker;
-  $('#view').innerHTML = showSetup ? startSetupHTML() : ui.screen === 'finanzen' ? finanzenView() : ui.screen === 'entscheidungen' ? entscheidungenView() : dashboardView();
+  $('#view').innerHTML = showSetup
+    ? startSetupHTML()
+    : ui.screen === 'finanzen'
+      ? finanzenView()
+      : ui.screen === 'entscheidungen'
+        ? entscheidungenView()
+        : ui.screen === 'anfragen'
+          ? anfragenView()
+          : dashboardView();
   // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set via CSSOM
   for (const el of $('#view').querySelectorAll('.bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
   // docs/changes/021: a segment is as wide as its share of all tasks, at least 44 px
@@ -398,7 +413,7 @@ async function finSetupSaveCost(seedKey, label, amountRaw, extra) {
 
 /* ---------- keyboard (docs/changes/006 step 3): the view is re-rendered on every change,
    so remember which control had focus and give it back afterwards ---------- */
-const FOCUS_ATTRS = ['data-act', 'data-filter', 'data-phase', 'data-field', 'data-input', 'data-brief', 'data-adv', 'data-ref', 'role'];
+const FOCUS_ATTRS = ['data-act', 'data-filter', 'data-phase', 'data-field', 'data-input', 'data-brief', 'data-adv', 'data-ref', 'data-anfrage-field', 'data-anfrage-task', 'role'];
 function keyOf(el) {
   if (!el || el === document.body || !$('#view')?.contains(el)) return null;
   // typing in a field triggers renders (the search does it on every character), so the cursor
@@ -472,6 +487,9 @@ function closeChangelog() {
 const openedViaTaskLink = () => /^#task=/.test(location.hash);
 const openedViaFinanzen = () => location.hash === '#finanzen';
 const openedViaEntscheidungen = () => location.hash === '#entscheidungen';
+// docs/changes/033: #anfragen or #anfragen=<id> - one anfrage can be shared as a link
+const openedViaAnfragen = () => /^#anfragen(=|$)/.test(location.hash);
+const hashAnfrageId = () => (/^#anfragen=/.test(location.hash) ? decodeURIComponent(location.hash.slice('#anfragen='.length)) : null);
 const hashTaskId = () => (openedViaTaskLink() ? decodeURIComponent(location.hash.slice('#task='.length)) : null);
 function openTaskFromHash() {
   const t = byId(hashTaskId());
@@ -493,9 +511,29 @@ function revealTask(t) {
 }
 // the open task lives in the URL, so a link to it can be shared (docs/changes/006)
 function syncHash() {
-  const want = ui.screen === 'finanzen' ? '#finanzen' : ui.screen === 'entscheidungen' ? '#entscheidungen' : ui.expanded ? '#task=' + encodeURIComponent(ui.expanded) : '';
+  const want =
+    ui.screen === 'finanzen'
+      ? '#finanzen'
+      : ui.screen === 'entscheidungen'
+        ? '#entscheidungen'
+        : ui.screen === 'anfragen'
+          ? '#anfragen' + (ui.anfrage ? '=' + encodeURIComponent(ui.anfrage) : '')
+          : ui.expanded
+            ? '#task=' + encodeURIComponent(ui.expanded)
+            : '';
   if (location.hash === want) return;
   history.replaceState(null, '', location.pathname + location.search + want);
+}
+// docs/changes/033: entering Anfragen gets its own step back, like Finanzen and Entscheidungen;
+// switching between anfragen inside the page only replaces (syncHash)
+function openAnfragen(id = null) {
+  const already = ui.screen === 'anfragen';
+  ui.screen = 'anfragen';
+  ui.anfrage = id;
+  ui.offerEdit = null;
+  ui.anfrageMoney = null;
+  if (already) return syncHash();
+  history.pushState(null, '', location.pathname + location.search + '#anfragen' + (id ? '=' + encodeURIComponent(id) : ''));
 }
 // docs/changes/032: same pattern as openFinanzen() - the mobile route for the decisions list
 function openEntscheidungen() {
@@ -628,6 +666,7 @@ const OFFLINE_OK = new Set([
   'bal-how', 'post-filter', 'post-open', 'rec-edit', 'rec-done',
   'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
   'entscheidungen-open', 'entscheidungen-close', 'decisions-filter', 'decisions-row-open',
+  'anfrage-new', 'anfrage-open', 'anfrage-close', 'offer-edit', 'offer-cancel', 'money-no', 'anfrage-copy',
   'cost-cancel', 'cost-discard', 'fin-setup-back', 'fin-setup-skip', 'fin-setup-resume', 'fin-setup-household',
 ]);
 
@@ -703,6 +742,12 @@ function wireEvents() {
       render();
       return;
     }
+    if (openedViaAnfragen()) {
+      ui.screen = 'anfragen';
+      ui.anfrage = hashAnfrageId();
+      render();
+      return;
+    }
     ui.screen = 'dashboard';
     const id = hashTaskId();
     if (id && byId(id)) openTaskFromHash();
@@ -761,6 +806,22 @@ function wireEvents() {
       render(); // put the control back the way the cached state says
       return toast('Ohne Netz kannst du nur lesen');
     }
+    // docs/changes/033: the frame of an anfrage draft, one field at a time straight into
+    // brief.anfrage.fields - the Akte's draft path (setDraft/taskPatch) stays untouched
+    if (el.dataset.anfrageField !== undefined || el.dataset.anfrageTask !== undefined) {
+      const a = anfrageById(el.closest('[data-id]')?.dataset.id);
+      if (!a) return;
+      const af = a.brief?.anfrage || {};
+      if (el.dataset.anfrageTask !== undefined) {
+        const t = byId(el.value);
+        const place = t ? { phase: t.phase, offset_days: t.offset_days, anchor: t.anchor } : {};
+        updateTask(a.id, { ...place, brief: { ...a.brief, anfrage: { ...af, task_id: el.value || null } } }).catch(fail);
+        return;
+      }
+      const v = el.type === 'checkbox' ? el.checked : el.value.trim();
+      updateTask(a.id, { brief: { ...a.brief, anfrage: { ...af, fields: { ...(af.fields || {}), [el.dataset.anfrageField]: v } } } }).catch(fail);
+      return;
+    }
     // monthly costs: three amounts per row, each written on its own (007 commit 3)
     if (el.dataset.recField) {
       const raw = el.value.trim();
@@ -808,7 +869,7 @@ function wireEvents() {
       return;
     }
     const row = el.closest('[data-id]'); // task row, or the side panel
-    const t = row ? byId(row.dataset.id) : null;
+    const t = row ? byId(row.dataset.id) || anfrageById(row.dataset.id) : null; // an anfrage too (033: its comments)
     if (el.dataset.act === 'sub-done') {
       setSubtaskDone(el.closest('.sub').dataset.sub, el.checked)
         .then((autoDone) => autoDone && toast('Alle Teilschritte erledigt – Aufgabe abgehakt'))
@@ -915,7 +976,7 @@ function wireEvents() {
     if (isTyping()) document.activeElement.blur();
     if (ui.offline && !OFFLINE_OK.has(act)) return toast('Ohne Netz kannst du nur lesen');
     const row = b.closest('[data-id]'); // task row, or the side panel
-    const t = row ? byId(row.dataset.id) : null;
+    const t = row ? byId(row.dataset.id) || anfrageById(row.dataset.id) : null; // an anfrage too (033: its comments)
     const input = (sel, root = row) => $(sel, root);
     try {
       switch (act) {
@@ -1170,6 +1231,144 @@ function wireEvents() {
           ui.decisionsFilter = b.dataset.to;
           render();
           return;
+        /* ---------- Anfragen (033) ---------- */
+        // `t` is the anfrage wherever the button sits in its detail (data-id on panel/page).
+        // Every action there pins it (ui.anfrage): a new status re-sorts the list, and on a wide
+        // screen without an explicit pick the panel would otherwise jump to the new first row.
+        case 'anfrage-new':
+          ui.anfrageNew = !ui.anfrageNew;
+          render();
+          return;
+        case 'anfrage-create': {
+          // from "+ Anfrage" or from "Anfrage stellen ›" in the Akte of one of the four tasks
+          const cat = CATEGORIES[b.dataset.to] ? b.dataset.to : 'sonstiges';
+          const linked = byId(CATEGORIES[cat].task);
+          const s = state.settings;
+          const id = await insertTask({
+            type: 'anfrage',
+            title: CATEGORIES[cat].label,
+            owner: 'B',
+            // phase and deadline of the linked task, so the anfrage sorts where the task is
+            phase: linked?.phase ?? (phases()[0]?.id || 1),
+            offset_days: linked?.offset_days ?? 0,
+            anchor: linked?.anchor ?? 'einzug',
+            brief: { anfrage: { category: cat, task_id: linked?.id || null, fields: prefill(cat, { stammdaten: s.stammdaten, umzugstag: s.umzugstag, einzug: s.einzugstermin }) } },
+          });
+          ui.anfrageNew = false;
+          openAnfragen(id);
+          render();
+          window.scrollTo({ top: 0 });
+          return;
+        }
+        case 'anfrage-open': // a row of the list, or the block in the Akte of the linked task
+          ui.anfrageNew = false;
+          openAnfragen(b.dataset.ref);
+          render();
+          if (!ui.wide) window.scrollTo({ top: 0 });
+          return;
+        case 'anfrage-close':
+          ui.anfrage = null;
+          ui.offerEdit = null;
+          ui.anfrageMoney = null;
+          syncHash();
+          render();
+          return;
+        case 'anfrage-send': {
+          const af = t?.brief?.anfrage;
+          if (!t || t.type !== 'anfrage' || !af?.task_id) return;
+          ui.anfrage = t.id;
+          syncHash();
+          // like "Claude jetzt starten" (024): the next scheduled run picks it up
+          await updateTask(t.id, { status: 'claude', brief: { ...t.brief, anfrage: { ...af, sent_at: new Date().toISOString(), requested_by: state.person } } });
+          await addComment(af.task_id, `Anfrage „${t.title}“ an Claude gesendet – das Ergebnis erscheint unter Anfragen.`);
+          return;
+        }
+        case 'offer-choose': {
+          if (!t || t.type !== 'anfrage' || t.status !== 'ergebnis') return;
+          const offer = offersOf(t).find((o) => o.id === b.dataset.to);
+          if (!offer) return;
+          const plan = choosePlan({ anfrage: t, offer, person: state.person, now: new Date().toISOString(), costs: state.costs, recurring: state.recurring });
+          ui.anfrage = t.id;
+          syncHash();
+          await updateTask(t.id, plan.patch);
+          // the decision lands on the linked task (032) - the other person confirms it there
+          if (plan.comment) await addComment(plan.comment.taskId, plan.comment.body, true);
+          ui.anfrageMoney = { id: t.id, money: plan.money };
+          render();
+          return;
+        }
+        case 'money-yes': {
+          const m = ui.anfrageMoney?.money;
+          ui.anfrageMoney = null;
+          if (m?.kind === 'cost-update') await updateCost(m.id, m.patch);
+          else if (m?.kind === 'cost-new') await addCost(m.taskId, m.fields);
+          else if (m?.kind === 'recurring') await updateRecurring(m.id, m.patch);
+          if (m && m.kind !== 'none') toast('Übernommen');
+          render();
+          return;
+        }
+        case 'money-no':
+          ui.anfrageMoney = null;
+          render();
+          return;
+        case 'offer-unchoose': // comment, posten and Laufend value stay (033)
+          if (!t || t.type !== 'anfrage') return;
+          ui.anfrageMoney = null;
+          ui.anfrage = t.id;
+          syncHash();
+          await updateTask(t.id, unchoosePatch(t));
+          return;
+        case 'offer-edit':
+          if (!t || t.type !== 'anfrage') return;
+          ui.anfrage = t.id;
+          syncHash();
+          ui.offerEdit = { id: t.id, offerId: b.dataset.to };
+          render();
+          return;
+        case 'offer-cancel':
+          ui.offerEdit = null;
+          render();
+          return;
+        case 'offer-save': {
+          const e = ui.offerEdit;
+          if (!t || !e || e.id !== t.id) return;
+          const val = (k) => input(`[data-input="of-${k}"]`)?.value.trim() || '';
+          const name = val('name');
+          if (!name) return toast('Bitte einen Anbieter eintragen');
+          const raw = val('price');
+          const price = raw === '' ? null : parseAmount(raw);
+          if (raw !== '' && price === null) return toast('Preis nicht lesbar – z. B. 1740 oder 29,99');
+          const offers = offersOf(t);
+          const prev = e.offerId === 'new' ? null : offers.find((o) => o.id === e.offerId);
+          // added or changed by a person: Claude's run never overwrites it again (standing rule)
+          const offer = {
+            ...(prev || {}),
+            id: prev?.id || 'm_' + Date.now(),
+            name,
+            price,
+            price_kind: val('price_kind') || 'fest',
+            service: val('service'),
+            term: val('term'),
+            valid_until: val('valid_until') || null,
+            plus: val('plus'),
+            minus: val('minus'),
+            url: val('url'),
+            author: state.person,
+            source: 'manual',
+            date: todayISO(),
+          };
+          const next = prev ? offers.map((o) => (o.id === prev.id ? offer : o)) : [...offers, offer];
+          ui.offerEdit = null;
+          await updateTask(t.id, { brief: { ...t.brief, vergleich: { ...(t.brief?.vergleich || {}), offers: next } } });
+          return;
+        }
+        case 'anfrage-copy': {
+          const text = t?.brief?.vergleich?.request_text;
+          if (!text) return;
+          await navigator.clipboard.writeText(text);
+          toast('Anfragetext kopiert');
+          return;
+        }
         /* ---------- navigation (013 A6) ---------- */
         case 'home': // the house: back to the plain list, no filter, all phases
           ui.screen = 'dashboard';
@@ -1253,6 +1452,9 @@ function wireEvents() {
           else if (b.dataset.to === 'entscheidungen') {
             ui.expanded = null;
             openEntscheidungen();
+          } else if (b.dataset.to === 'anfragen') {
+            ui.expanded = null;
+            openAnfragen(ui.screen === 'anfragen' ? ui.anfrage : null);
           } else {
             ui.screen = b.dataset.to;
             ui.finFilter = null;
@@ -1818,6 +2020,10 @@ async function enter(session) {
   if (viaLink) openTaskFromHash();
   if (openedViaFinanzen()) ui.screen = 'finanzen';
   if (openedViaEntscheidungen()) ui.screen = 'entscheidungen';
+  if (openedViaAnfragen()) {
+    ui.screen = 'anfragen';
+    ui.anfrage = hashAnfrageId();
+  }
   // docs/changes/021: a phase the other person finished while I was away - the moment is mine
   // too, once, and it waits for the next opening instead of interrupting anything
   if (!viaLink) ui.gate = unseenGate();
