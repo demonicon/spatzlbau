@@ -197,7 +197,9 @@ jobs:
           get_sha() { curl -fsS "$1app/config.js" 2>/dev/null | grep -o "BUILD = '[0-9a-f]*'" | cut -d"'" -f2; }
           get_version() { curl -fsS "$1changelog.json" 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{process.stdout.write(JSON.parse(s).entries[0].version)}catch(e){}})"; }
           get_status() { curl -fsS -o /dev/null -w '%{http_code}' "$1" 2>/dev/null; }
-          has_sw_ref() { curl -fsS "$1" 2>/dev/null | grep -q serviceWorker; }
+          # index.html selbst nennt "serviceWorker" nicht woertlich - die Registrierung sitzt in
+          # app/main.js (navigator.serviceWorker.register), index.html laedt nur das <script>
+          has_sw_ref() { curl -fsS "$1" 2>/dev/null | grep -q 'app/main\.js'; }
 
           # name, getter function, url, expected value
           retry() {

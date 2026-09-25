@@ -43,6 +43,16 @@ getaggten Version; das ist der Normalzustand, kein Fund. Mit der ursprünglichen
   das `^` schluckt. `git rev-list -n 1` (kein `^{commit}` nötig) ist der portable Ersatz, falls
   ein commit-genauer Vergleich später gebraucht wird.
 
+## Ein zweiter Fund: der Service-Worker-Verweis steht nicht in `index.html`
+
+Der erste durchgehend grüne Lauf (main, Run #118, siehe Bericht) zeigte `smoke` rot – Build-Stempel,
+changelog-Version und HTTP-Status stimmten für main und preview, nur „references the service
+worker" schlug beidseitig fehl. `index.html` nennt „serviceWorker" nirgends wörtlich; die
+Registrierung (`navigator.serviceWorker.register('./sw.js', …)`) sitzt in `app/main.js`,
+`index.html` lädt nur `<script type="module" src="./app/main.js">`. Der Smoke-Check prüft jetzt auf
+`app/main.js` im HTML statt auf das Wort „serviceWorker" – das ist der tatsächliche Verweis, den
+der Auftrag meint.
+
 ## Tests
 
 Reihenfolge wie im Auftrag; 1 und 2 lokal, 3 und 4 real (Live-Läufe, siehe Bericht für
