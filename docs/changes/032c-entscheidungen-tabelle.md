@@ -55,3 +55,15 @@ Befund Sebastian (Screenshot preview 2.2.2, 19:38) + Reviewer-Fund aus 037. Erse
   gegen den gerenderten Code: `state`/`ui` simuliert (keine Schreibzugriffe), Klick-Resolution als
   Eins-zu-eins-Nachbildung der main.js-Zeilen gegen das echte Markup geprüft (nicht nur State
   gesetzt). Zwei Browserprofile als Sebastian/Anna bitte separat prüfen.
+- **Zeilenhöhe ≤ 56 px nicht eingehalten:** Zwei Zeilen Entscheidungstext (`--fs-ui`, 1.45
+  Zeilenhöhe) plus die Zeile mit dem Aufgabentitel brauchen real ca. 60–85 px, je nach Textlänge.
+  56 px wären nur mit einzeiligem Text ohne Aufgabentitel erreichbar – beides ist Pflichtinhalt
+  laut Auftrag (Punkt 16). Nicht nachgezogen, um keinen Inhalt zu verlieren; bewusste Abweichung,
+  kein Test dafür vorgesehen.
+- **Reviewer-Runde 1 fand zwei echte Fehler**, beide behoben: (a) `case 'open'` schaltete um -
+  ein Klick auf die zweite Zeile derselben, bereits offenen Aufgabe hätte die Akte geschlossen
+  statt zur zweiten Karte zu scrollen; jetzt eine eigene, nicht umschaltende Aktion
+  (`decisions-row-open`) für die Entscheidungen-Zeilen. (b) „n offen" im Kopf zählte theoretisch
+  auch ersetzte, nie bestätigte Entscheidungen mit (laut Trigger in der Praxis nicht erreichbar,
+  aber die Zählung ist jetzt trotzdem robust). Dazu die Pillenreihenfolge auf „offen · alle"
+  gedreht (Auftragswortlaut). Zweite Reviewer-Runde: keine Lücken.

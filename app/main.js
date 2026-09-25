@@ -627,7 +627,7 @@ const OFFLINE_OK = new Set([
   'fin-recurring', 'q-clear', 'home', 'overlay-close', 'title-edit', 'title-done',
   'bal-how', 'post-filter', 'post-open', 'rec-edit', 'rec-done',
   'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
-  'entscheidungen-open', 'entscheidungen-close', 'decisions-filter',
+  'entscheidungen-open', 'entscheidungen-close', 'decisions-filter', 'decisions-row-open',
   'cost-cancel', 'cost-discard', 'fin-setup-back', 'fin-setup-skip', 'fin-setup-resume', 'fin-setup-household',
 ]);
 
@@ -950,8 +950,13 @@ function wireEvents() {
         case 'open':
           if (searching()) return jumpTo(t); // docs/changes/012
           setExpanded(ui.expanded === t.id ? null : t.id);
-          // docs/changes/032c: von der Entscheidungen-Seite aus gleich zur angehefteten Karte
-          // scrollen (render() in setExpanded ist synchron, die Karte steht schon im DOM)
+          return;
+        // docs/changes/032c: eigene, nicht umschaltende Variante von 'open' - mehrere Zeilen der
+        // Entscheidungen-Seite können auf dieselbe Aufgabe zeigen; ein Klick auf eine zweite Zeile
+        // derselben Aufgabe soll immer zu deren Karte scrollen, nicht die Akte schließen (Reviewer-
+        // Fund: das Umschalten aus 'open' hätte genau das getan, sobald die Aufgabe schon offen war)
+        case 'decisions-row-open':
+          setExpanded(t.id);
           if (b.dataset.scroll) $(`[data-com="${CSS.escape(b.dataset.scroll)}"]`)?.scrollIntoView({ block: 'center' });
           return;
         case 'q-clear':

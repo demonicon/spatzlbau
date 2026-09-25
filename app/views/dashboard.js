@@ -433,7 +433,7 @@ function betweenHTML() {
 
 /* ---------- Entscheidungen (docs/changes/032): the list of every decision, newest first ---------- */
 
-const DECISION_FILTERS = [['alle', 'alle'], ['offen', 'offen']];
+const DECISION_FILTERS = [['offen', 'offen'], ['alle', 'alle']];
 
 // docs/changes/032c #3: mein Zug zuerst, dann der der anderen Person, dann bestätigt, dann
 // ersetzt; allDecisions() liefert schon neueste zuerst, ein stabiler Sort genügt
@@ -469,7 +469,7 @@ function decisionRowHTML(c, selectedTaskId) {
   const t = byId(c.task_id);
   if (!t) return '';
   const cls = `${c.superseded_by ? 'replaced' : ''} ${t.id === selectedTaskId ? 'selected' : ''}`.trim();
-  const attrs = `data-act="open" data-id="${t.id}" data-scroll="${c.id}"`;
+  const attrs = `data-act="decisions-row-open" data-id="${t.id}" data-scroll="${c.id}"`;
   if (ui.wide) {
     return `<tr class="${cls}" ${attrs} tabindex="0" role="button" aria-label="Akte öffnen: ${esc(t.title)}">
       <td class="fin-note">${esc(fmtDay(c.created_at.slice(0, 10)))}</td>
@@ -528,7 +528,7 @@ export function entscheidungenView() {
   const wide = ui.mode === 'panel';
   const panelTask = wide ? explicitOpen || defaultDecisionTask() : null;
   const all = allDecisions();
-  const openCount = all.filter((c) => !isConfirmedDecision(c)).length;
+  const openCount = all.filter((c) => !isConfirmedDecision(c) && !c.superseded_by).length;
   const confirmedCount = all.filter((c) => isConfirmedDecision(c) && !c.superseded_by).length;
   const list = `<div class="col-list">
       <div class="fin-h"><h2>Entscheidungen · ${openCount} offen · ${confirmedCount} bestätigt</h2></div>
