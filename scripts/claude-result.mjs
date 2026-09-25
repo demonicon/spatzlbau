@@ -25,7 +25,7 @@ const env = loadEnv();
 const db = restClient(env);
 
 for (const u of input.tasks) {
-  const rows = await db.select('tasks', `select=id,brief,advice,deleted_at&id=eq.${encodeURIComponent(u.id)}`);
+  const rows = await db.select('tasks', `select=id,type,status,brief,advice,deleted_at&id=eq.${encodeURIComponent(u.id)}`);
   const t = rows[0];
   if (!t || t.deleted_at) {
     console.warn(`! ${u.id}: not found – skipped`);
@@ -34,7 +34,11 @@ for (const u of input.tasks) {
   const patch = {};
   if (u.status) {
     if (!STATUS.includes(u.status)) throw new Error(`${u.id}: invalid status ${u.status}`);
-    patch.status = u.status;
+    // 033: an anfrage only ever goes claude -> ergebnis here. A follow-up run (after "@claude …")
+    // on a decided one must not put it back - offers and comment still land, the status stays.
+    if (t.type === 'anfrage' && !(t.status === 'claude' && u.status === 'ergebnis')) {
+      console.warn(`! ${u.id}: anfrage steht auf ${t.status} – status bleibt, nur claude → ergebnis ist erlaubt`);
+    } else patch.status = u.status;
   }
   if (typeof u.result === 'string') patch.brief = { ...(t.brief || {}), result: u.result };
   if (u.vergleich && typeof u.vergleich === 'object') {

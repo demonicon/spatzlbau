@@ -1,6 +1,6 @@
 # 033 v2 – Anfragen: Anbieter-Vergleich als eigene Seite (4z)
 
-**Status: umgesetzt** (Branch `feat/033` → `preview`, `main` folgt über `/release 2.2.4`; v1 liegt unter `archiv/`)
+**Status: umgesetzt – Login-Tests offen** (Testkonten fehlen; Branch `feat/033` → `preview`, `main` folgt über `/release 2.2.4`; v1 liegt unter `archiv/`)
 
 Stand: 24.09.2026 (v2 nach Skizze 8d, Entscheidung Sebastian: eigene Seite) · Meilenstein 2.2 · Ziel-Branch: `preview` · Modell: Opus · Aufwand: M–L
 Setzt 024 (Delegation, Stundenlauf) und 032 (Entscheidungen) voraus.
@@ -56,12 +56,12 @@ Automatische Angebotsanfrage durch Claude an Firmen, Anhänge in der App, Mehrfa
 
 ## Akzeptanzkriterien
 
-- [ ] Migration (Status-Check) im Dry-Run, dann anwenden; CLAUDE.md-Regel erweitert
-- [ ] Sechs Tests grün; Anfragen nie in Spalten, Timeline, Kalender-Abo oder Kennzahlen
-- [ ] Ein Primär je Ansicht (Anfragen: „An Claude senden" nur im Entwurf; im Ergebnis keiner)
-- [ ] Tabelle bis 5 Angebote ohne horizontales Scrollen bei 1280; 380 px Karten
-- [ ] Regression grün, Screenshots, Bericht ≤ 12 Zeilen
-- [ ] Changelog 2.2.x: „Anfragen: Vergleiche zentral bei Claude anfordern – Ergebnis als Tabelle, ein Tipp entscheidet."
+- [x] Migration (Status- **und** Typ-Check) im Dry-Run, dann anwenden; Regel erweitert (Dry-Run ohne explizites `rollback`, siehe unten)
+- [ ] Sechs Tests grün – **offen:** Tests 1, 3, 4, 6 in der App nicht getestet (Testkonten fehlen), 2 und 7 in der Darstellung nur simuliert. Erfüllt: Anfragen nie in Spalten, Timeline, Kalender-Abo oder Kennzahlen.
+- [x] Ein Primär je Ansicht (Anfragen: „An Claude senden" nur im Entwurf; im Ergebnis keiner)
+- [x] Tabelle bis 5 Angebote ohne horizontales Scrollen bei 1280; 380 px Karten
+- [ ] Regression grün, Screenshots, Bericht ≤ 12 Zeilen – `npm run check` grün, Regression Aufgaben/Entscheidungen simuliert; Screenshot bei 1280 gemacht, bei 380 lief er in einen Timeout (Maße stattdessen gemessen)
+- [x] Changelog 2.2.4: „Anfragen: Vergleiche zentral bei Claude anfordern – Ergebnis als Tabelle, ein Tipp entscheidet."
 
 ## Umsetzung 25.09.2026 – Tests, Entscheidungen, Abweichungen
 
@@ -69,11 +69,11 @@ Automatische Angebotsanfrage durch Claude an Firmen, Anhänge in der App, Mehrfa
 
 | # | Test | Ergebnis |
 |---|---|---|
-| 1 | Anfrage anlegen, senden | DB-Seite **real**: Migration nimmt `type=anfrage`/`status=claude` an (Dry-Run + Test-Zeile). Anfragen nie in Spalten, Timeline, Kennzahlen, Gate, Druck: **simuliert** gerendert, kein Treffer; Kalender-Abo **real** mit `events()` geprüft (kein Termin, Gate unverändert). Anlegen/Senden in der App als Person: **nicht getestet – Testkonten fehlen**. |
+| 1 | Anfrage anlegen, senden | DB-Seite **real**: Migration nimmt `type=anfrage`/`status=claude` an (Dry-Run + Test-Zeile). Anfragen nie in Spalten, Timeline, Kennzahlen, Gate, Druck: **simuliert** gerendert, kein Treffer; Kalender-Abo: `events()` lokal in Node geprüft (kein Termin, Gate unverändert), danach die Edge Function deployt (Version 3, Filter per Abruf der deployten Quelle bestätigt); die Wirkung im Live-Feed ist ohne Anfragen in der DB nicht beobachtbar. Anlegen/Senden in der App als Person: **nicht getestet – Testkonten fehlen**. |
 | 2 | `brief.vergleich` per Connector, Badge, Tabelle 1280, Karten 380 | Schreiben **real** über `claude-result.mjs`. Darstellung **simuliert**: Badge 1, Tabelle 867 px im 943-px-Panel, 5 × 146 px, kein horizontales Scrollen; 380 px Karten, Empfehlung zuerst; günstigster fett, abgelaufen grau. |
 | 3 | Wählen → Entscheidung, Betragsfrage, Posten fest | Rechenweg **real** (Node): Kommentar „Entschieden: Firma B – 1.740 € Festpreis …" an `umzugsfirma`, Frage „1.740 € als fest übernehmen? (Firma B)", Ziel `umzugsfirma-schaetzung` (nicht die Transportversicherung), `faellig` + Notiz. Darstellung **simuliert**. In der App: **nicht getestet – Testkonten fehlen**. |
 | 4 | Internet-Tarif → `recurring.amount_n` | Rechenweg **real**: Ziel `recurring internet`, `amount_n 29.99`, kein Posten. In der App: **nicht getestet – Testkonten fehlen**. |
-| 5 | Manuelles Angebot bleibt bei Claudes Lauf | **real, live**: A (1.390 €, S, manual) blieb, Claudes 1.600 € ignoriert; ein von Claude als „S" ausgegebenes Angebot verworfen; `chosen` blieb leer. |
+| 5 | Manuelles Angebot bleibt bei Claudes Lauf | **real, live**: A (1.390 €, S, manual) blieb, Claudes 1.600 € ignoriert; ein von Claude als „S" ausgegebenes Angebot verworfen; `chosen` blieb leer. (Lief vor dem Merge-Fix aus Reviewer-Runde 1; der geänderte Merge danach in Node erneut geprüft, der Schutzweg ist unverändert.) |
 | 6 | Wahl aufheben | Rechenweg **real** (`unchoosePatch`); in der App: **nicht getestet – Testkonten fehlen**. |
 | 7 | Akte `umzugsfirma` zeigt „Anfrage · Ergebnis da ›" | **simuliert** gerendert: „Anfrage Ergebnis da", Link „Ergebnis ansehen ›". |
 
@@ -96,4 +96,6 @@ Live-Schreibzugriffe: nur die Migration und die Test-Anfrage `test_033` (ohne Ve
 - **Sicherheit:** Links aus Claudes Daten oder Eingaben werden nur bei `http(s)` zu Links (`javascript:` bleibt Text).
 - **Branch** `feat/033` statt `feat/033-anfragen` und v1 nach `archiv/` (Entscheidung Sebastian): der `migration-guard` fand bei zwei `033-*`-Dateien die falsche.
 - **Nicht meins:** Den Prompt des Claude-Laufs passt Claude im Chat an (Schreibweg `claude-result.mjs` mit `vergleich` steht). Altfehler `costdel:`/`cost-del:` als eigene Aufgabe vorgeschlagen, nicht hier gefixt.
+- **Doku außerhalb von 033:** In BRIEFING.md und `rules/db.md` auch die Laufzeiten aus 032b (stündlich → 8, 12, 15, 18, 22 Uhr) nachgezogen – für BRIEFING.md von Sebastian mit Frage B freigegeben, in der Regel dieselbe Tatsache. `brief.ergebnis` → `brief.result` in BRIEFING.md korrigiert: der Code schrieb immer `result`, die Doku war falsch.
+- **Reviewer-Runde 1** fand drei echte Fehler, behoben: (a) `claude-result.mjs` hätte eine entschiedene Anfrage bei einem Folgelauf auf `ergebnis` zurückgesetzt – jetzt nur `claude → ergebnis`, sonst bleibt der Status (Angebote und Kommentar landen trotzdem); die App zeigt „Ergebnis da", Badge und „Wählen" zusätzlich nur ohne getroffene Wahl. (b) Ein Lauf ohne `offers` hätte Claudes Angebote gelöscht, eine neue Liste das gewählte – der Merge behält jetzt beide; die Tabelle zeigt Gewähltes und Eigenes immer unter den fünf Plätzen, „Wahl aufheben" findet das Angebot in der ganzen Liste. (c) Quellen-Links und der Aufgaben-Link im Kopf hatten unter 44 px Tipp-Fläche. Dazu: Kalender-Test ehrlich als lokal + deployt statt „real" beschrieben, Kästchen oben ehrlich gesetzt.
 - **Lokal beobachtet:** Der Service Worker mischte beim ersten Laden gecachtes altes `state.js` mit der neuen Datei (lokal ändert sich die Build-Kennung nie). Auf der echten Seite wechselt sie je Deploy – kein Produktionsfehler.

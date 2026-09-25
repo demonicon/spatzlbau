@@ -106,7 +106,7 @@ export const allDecisions = () => state.comments.filter((c) => c.decision).sort(
 // the "Entscheidungen · n" card share this one number
 export const myOpenDecisionsCount = () => allDecisions().filter((c) => !c.superseded_by && !ackedBy(c, state.person)).length;
 // docs/changes/033: results nobody has chosen from yet - the badge on the Anfragen pill
-export const openAnfragenCount = () => state.anfragen.filter((a) => a.status === 'ergebnis').length;
+export const openAnfragenCount = () => state.anfragen.filter((a) => a.status === 'ergebnis' && !a.brief?.vergleich?.chosen).length;
 // the newest anfrage linked to a task - the "Anfrage" block in that task's Akte
 export const anfrageOfTask = (taskId) =>
   state.anfragen.filter((a) => a.brief?.anfrage?.task_id === taskId).sort((x, y) => (y.created_at || '').localeCompare(x.created_at || ''))[0] || null;

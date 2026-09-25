@@ -8,7 +8,7 @@ import { renderHeader, updateBarHTML, footHTML, setupHintHTML } from '../ui/chro
 import { state, ui, byId, anfrageById, fmtDay } from '../state.js';
 import { commentsHTML, nextRunText, anfrageStepsHTML } from '../ui/detail.js';
 import {
-  CATEGORIES, FIELDS, categoryOf, offersOf, cheapestId, isExpired, fmtPrice, PRICE_KIND,
+  CATEGORIES, FIELDS, categoryOf, offersOf, shownOffers, cheapestId, isExpired, fmtPrice, PRICE_KIND,
 } from '../anfragen.js';
 
 const today = () => {
@@ -51,7 +51,7 @@ function whenText(a) {
 function rowHTML(a, selectedId) {
   const t = taskOf(a);
   return `<article class="af-row${a.id === selectedId ? ' selected' : ''}" data-act="anfrage-open" data-ref="${a.id}" tabindex="0" role="button" aria-label="Anfrage öffnen: ${esc(titleOf(a))}">
-    <div class="af-row1"><b class="af-title">${esc(titleOf(a))}</b>${a.status === 'ergebnis' ? '<span class="own C">Ergebnis da</span>' : ''}</div>
+    <div class="af-row1"><b class="af-title">${esc(titleOf(a))}</b>${a.status === 'ergebnis' && !a.brief?.vergleich?.chosen ? '<span class="own C">Ergebnis da</span>' : ''}</div>
     <div class="af-row2"><span class="dr-task">${t ? esc(t.title) : 'ohne Aufgabe'} · ${esc(whenText(a))}</span></div>
     ${anfrageStepsHTML(a)}
   </article>`;
@@ -174,7 +174,7 @@ function cellHTML(o, key, cheap) {
 function offerActionsHTML(a, o) {
   const v = a.brief?.vergleich || {};
   if (v.chosen === o.id) return `<span class="vg-chosen-mark">✓ gewählt</span>`;
-  const choose = a.status === 'ergebnis' ? `<button class="btn-secondary" data-act="offer-choose" data-to="${esc(o.id)}">Wählen</button>` : '';
+  const choose = a.status === 'ergebnis' && !v.chosen ? `<button class="btn-secondary" data-act="offer-choose" data-to="${esc(o.id)}">Wählen</button>` : '';
   return `${choose}<button class="btn-text quiet" data-act="offer-edit" data-to="${esc(o.id)}">ändern</button>`;
 }
 
@@ -237,11 +237,11 @@ function moneyHTML(a) {
 
 function resultHTML(a) {
   const v = a.brief?.vergleich || {};
-  const offers = offersOf(a).slice(0, 5);
+  const offers = shownOffers(a);
   const more = offersOf(a).length - offers.length;
   const cheap = cheapestId(offers);
   const reco = v.recommendation ? (/^claude empfiehlt/i.test(v.recommendation) ? v.recommendation : `Claude empfiehlt: ${v.recommendation}`) : '';
-  const chosen = offers.find((o) => o.id === v.chosen);
+  const chosen = offersOf(a).find((o) => o.id === v.chosen);
   return `${reco ? `<p class="vg-reco">${esc(reco)}</p>` : ''}
     ${moneyHTML(a)}
     ${

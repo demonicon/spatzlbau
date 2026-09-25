@@ -98,6 +98,15 @@ export function fmtPrice(o) {
   const s = `${Number.isInteger(v) ? n0.format(v) : n2.format(v)} €`;
   return o.price_kind === 'ab' ? `ab ${s}` : o.price_kind === 'monat' ? `${s}/Monat` : s;
 }
+/** At most `max` offers are shown - the chosen one and those a person added always among them,
+    Claude's fill the remaining places in their order. */
+export function shownOffers(a, max = 5) {
+  const all = offersOf(a);
+  const chosen = a?.brief?.vergleich?.chosen;
+  const must = (o) => o.id === chosen || isHumanOffer(o);
+  let room = Math.max(0, max - all.filter(must).length);
+  return all.filter((o) => must(o) || room-- > 0);
+}
 /** the cheapest offer is marked bold, never coloured (design rule) */
 export function cheapestId(offers) {
   const priced = offers.filter(hasPrice);
@@ -167,15 +176,15 @@ export function unchoosePatch(anfrage) {
  * added or changed (author S|A or source 'manual'). Those and chosen* come from the server copy.
  */
 export function mergeVergleich(server = {}, incoming = {}) {
-  const human = (server.offers || []).filter(isHumanOffer);
+  const before = server.offers || [];
+  const choice = { chosen: server.chosen ?? null, chosen_by: server.chosen_by ?? null, chosen_at: server.chosen_at ?? null };
+  // a run that only answers a follow-up (reason, recommendation) keeps every offer as it was
+  if (!Array.isArray(incoming.offers)) return { ...server, ...incoming, offers: before, ...choice };
+  const human = before.filter(isHumanOffer);
   const taken = new Set(human.map((o) => o.id));
-  const claude = (incoming.offers || []).filter((o) => !taken.has(o.id) && !isHumanOffer(o)).map((o) => ({ ...o, author: 'C' }));
-  return {
-    ...server,
-    ...incoming,
-    offers: [...claude, ...human],
-    chosen: server.chosen ?? null,
-    chosen_by: server.chosen_by ?? null,
-    chosen_at: server.chosen_at ?? null,
-  };
+  const claude = incoming.offers.filter((o) => !taken.has(o.id) && !isHumanOffer(o)).map((o) => ({ ...o, author: 'C' }));
+  // the offer that was chosen never disappears, even if Claude's new list leaves it out
+  const kept = new Set([...claude, ...human].map((o) => o.id));
+  const chosen = choice.chosen && !kept.has(choice.chosen) ? before.filter((o) => o.id === choice.chosen) : [];
+  return { ...server, ...incoming, offers: [...claude, ...chosen, ...human], ...choice };
 }

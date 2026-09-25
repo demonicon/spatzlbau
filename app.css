@@ -609,7 +609,9 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .vg-plus, .vg-minus { display: block; }
 .vg-chosen-mark { font-size: var(--fs-meta); font-weight: 600; color: var(--ink); }
 .vg-sources { margin: 4px 0 0; padding-left: 18px; font-size: var(--fs-meta); }
-.vg-sources li { margin: 4px 0; overflow-wrap: anywhere; }
+.vg-sources li { overflow-wrap: anywhere; }
+/* links in running text still get the full 44 px as their hit area (tap rule) */
+.vg-sources a, .vg-dl dd a, .vg-table td a, .af-detail .akte-meta .tlink { display: inline-flex; align-items: center; min-height: var(--tap); }
 /* < 900 px: one card per offer, the seven rows as label/value lines */
 .vg-card { padding: 12px 0; border-bottom: 1px solid var(--divider); }
 .vg-card.vg-chosen { box-shadow: inset 3px 0 0 var(--ink); padding-left: 10px; }
