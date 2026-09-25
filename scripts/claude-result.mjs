@@ -7,8 +7,12 @@
 // - comment  optional, inserted with author 'C'
 // - sub_add  optional, new subtasks appended
 // - advice   optional, object with keys why|how|need|law|traps – merged key by key
+// - vergleich optional, for an anfrage (033): {offers:[…], recommendation, recommended, reason,
+//            sources, request_text} – merged into brief.vergleich; offers a person added or changed
+//            (author S|A, source 'manual') and the choice (chosen*) always stay as they are
 import { readFileSync } from 'node:fs';
 import { loadEnv, restClient } from './lib.mjs';
+import { mergeVergleich } from '../app/anfragen.js';
 
 const STATUS = ['briefing', 'claude', 'ergebnis'];
 const ADVICE = ['why', 'how', 'need', 'law', 'traps'];
@@ -21,7 +25,7 @@ const env = loadEnv();
 const db = restClient(env);
 
 for (const u of input.tasks) {
-  const rows = await db.select('tasks', `select=id,brief,advice,deleted_at&id=eq.${encodeURIComponent(u.id)}`);
+  const rows = await db.select('tasks', `select=id,type,status,brief,advice,deleted_at&id=eq.${encodeURIComponent(u.id)}`);
   const t = rows[0];
   if (!t || t.deleted_at) {
     console.warn(`! ${u.id}: not found – skipped`);
@@ -30,9 +34,17 @@ for (const u of input.tasks) {
   const patch = {};
   if (u.status) {
     if (!STATUS.includes(u.status)) throw new Error(`${u.id}: invalid status ${u.status}`);
-    patch.status = u.status;
+    // 033: an anfrage only ever goes claude -> ergebnis here. A follow-up run (after "@claude …")
+    // on a decided one must not put it back - offers and comment still land, the status stays.
+    if (t.type === 'anfrage' && !(t.status === 'claude' && u.status === 'ergebnis')) {
+      console.warn(`! ${u.id}: anfrage steht auf ${t.status} – status bleibt, nur claude → ergebnis ist erlaubt`);
+    } else patch.status = u.status;
   }
   if (typeof u.result === 'string') patch.brief = { ...(t.brief || {}), result: u.result };
+  if (u.vergleich && typeof u.vergleich === 'object') {
+    const incoming = { ...u.vergleich, updated_at: u.vergleich.updated_at || new Date().toISOString() };
+    patch.brief = { ...(patch.brief || t.brief || {}), vergleich: mergeVergleich(t.brief?.vergleich, incoming) };
+  }
   if (u.advice && typeof u.advice === 'object') {
     const advice = { ...(t.advice || {}) };
     for (const k of ADVICE) if (typeof u.advice[k] === 'string') advice[k] = u.advice[k];
