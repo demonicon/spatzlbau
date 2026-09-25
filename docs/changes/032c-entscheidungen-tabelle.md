@@ -60,10 +60,20 @@ Befund Sebastian (Screenshot preview 2.2.2, 19:38) + Reviewer-Fund aus 037. Erse
   56 px wären nur mit einzeiligem Text ohne Aufgabentitel erreichbar – beides ist Pflichtinhalt
   laut Auftrag (Punkt 16). Nicht nachgezogen, um keinen Inhalt zu verlieren; bewusste Abweichung,
   kein Test dafür vorgesehen.
+- **Aufgabentitel als leiser Text, nicht als eigener Link** (Punkt 16 wörtlich: „als Link"): die
+  ganze Zeile/Karte ist schon das Tipp-Ziel (Fehler 1), ein zusätzlicher verschachtelter Link auf
+  dasselbe Ziel wäre doppelt gemoppelt. Bewusste Vereinfachung, hier nachgetragen, weil sie in
+  Runde 1 noch nicht als Abweichung stand.
 - **Reviewer-Runde 1 fand zwei echte Fehler**, beide behoben: (a) `case 'open'` schaltete um -
   ein Klick auf die zweite Zeile derselben, bereits offenen Aufgabe hätte die Akte geschlossen
   statt zur zweiten Karte zu scrollen; jetzt eine eigene, nicht umschaltende Aktion
   (`decisions-row-open`) für die Entscheidungen-Zeilen. (b) „n offen" im Kopf zählte theoretisch
   auch ersetzte, nie bestätigte Entscheidungen mit (laut Trigger in der Praxis nicht erreichbar,
   aber die Zählung ist jetzt trotzdem robust). Dazu die Pillenreihenfolge auf „offen · alle"
-  gedreht (Auftragswortlaut). Zweite Reviewer-Runde: keine Lücken.
+  gedreht (Auftragswortlaut).
+- **Reviewer-Runde 2 fand zwei weitere echte Fehler**, beide behoben: (c) Zeilen mit
+  `role="button"` ließen sich per Tab fokussieren, aber nicht per Enter/Leertaste auslösen – ein
+  generischer Tastatur-Handler in `app/main.js` (`el.click()` bei `role="button"` + `data-act`)
+  behebt das für diese und künftige gleich gebaute Zeilen. (d) Die Tabelle hat sechs Spalten
+  (fünf plus „Luft"), Datenzeilen hatten aber nur fünf `<td>` – die Hairline/Hover/Auswahlfarbe
+  endeten dadurch vor dem rechten Rand; jetzt eine leere sechste Zelle je Zeile.

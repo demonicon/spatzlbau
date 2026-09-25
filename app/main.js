@@ -637,6 +637,14 @@ function wireEvents() {
   document.addEventListener('keydown', (e) => {
     // docs/changes/012: Escape empties the search field and leaves it, "/" jumps into it
     const el = document.activeElement;
+    // docs/changes/032c: Zeilen mit role="button" (Entscheidungen-Tabelle/-Karten) sind per Tab
+    // erreichbar - Enter/Leertaste lösen denselben Klick aus wie ein Tap, sonst wäre die Tastatur
+    // ausgesperrt (echte <button>-Elemente bekommen das schon vom Browser geschenkt)
+    if ((e.key === 'Enter' || e.key === ' ') && el?.getAttribute('role') === 'button' && el.dataset.act) {
+      e.preventDefault();
+      el.click();
+      return;
+    }
     if (e.key === 'Escape' && el?.id === 'search') {
       el.blur(); // before the render, so the focus is not handed back to the field
       setQuery('');

@@ -477,6 +477,7 @@ function decisionRowHTML(c, selectedTaskId) {
       <td><p class="dt-text">${esc(c.body)}</p><span class="dr-task">${esc(t.title)}</span></td>
       <td>${decisionStatusHTML(c)}</td>
       <td>${decisionActionHTML(c)}</td>
+      <td></td>
     </tr>`;
   }
   return `<article class="decision-row ${cls}" ${attrs} tabindex="0" role="button" aria-label="Akte öffnen: ${esc(t.title)}">
