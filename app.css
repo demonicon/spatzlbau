@@ -558,17 +558,36 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* 032b #4: eine ersetzte Entscheidung bleibt in der Chronologie erkennbar - nur noch der graue
    Balken, kein Grund mehr (der gehört ausschließlich der aktuell angehefteten Karte) */
 .com.decision-replaced { box-shadow: inset 3px 0 0 var(--ink-3); }
-/* docs/changes/032: the "Entscheidungen" list - panel (desktop) and full route (phone) share it.
-   032b: die eigene Seite (eigenes Nav-Pill statt eingebettetes Panel) und die Zeile bekommt einen
-   Tipp-Ziel auf die ganze Karte (Text + Aufgabentitel), nicht mehr nur den Aufgaben-Link. */
-.decision-row { padding: 10px 0; border-bottom: 1px solid var(--divider); }
-.dr-meta { display: flex; align-items: center; gap: 8px; }
-.dr-body-btn { display: block; width: 100%; text-align: left; padding: 0; background: none; border: 0; min-height: 0; color: inherit; }
-.dr-body { margin: 6px 0 0; font-size: var(--fs-ui); }
-.dr-body.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.decision-row.replaced .dr-body { color: var(--ink-3); text-decoration: line-through; }
-.dr-task { display: block; margin-top: 6px; font-size: var(--fs-meta); color: var(--ink-2); }
-.dr-status { margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* docs/changes/032: the "Entscheidungen" list. 032c: unter 900 px eine zweizeilige, klickbare
+   Karte (Text | Aufgabe · Datum · Am-Zug-Chip) - die Tabelle ab 900 px folgt gleich danach in
+   einer eigenen 900-px-Query, derselben ui.wide-Umschalttechnik wie .fin-posts-table. */
+.decision-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--divider); cursor: pointer; }
+.decision-row:hover, .decision-row:focus-visible { background: var(--divider); }
+.dt-text { margin: 0; font-size: var(--fs-ui); color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.decision-row.replaced .dt-text { color: var(--ink-3); text-decoration: line-through; }
+.dr-meta2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.dr-task { font-size: var(--fs-meta); color: var(--ink-2); }
+.decision-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--paper); padding-left: 8px; margin-left: -8px; }
+/* docs/changes/032c: ab 900 px eine echte Tabelle statt der Karten - feste Prozentbreiten wie
+   .fin-posts-table (029c #8: kein "width: 1%", sonst kollabieren die schmalen Spalten). */
+@media (min-width: 900px) {
+  .dt-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: var(--fs-meta); }
+  .dt-table th { text-align: left; padding: 0 8px 8px; font-size: var(--fs-micro); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; color: var(--ink-2); border-bottom: 1px solid var(--ink); }
+  .dt-table td { padding: 8px; border-bottom: 1px solid var(--divider); vertical-align: top; }
+  .dt-table tbody tr { cursor: pointer; }
+  .dt-table tbody tr:hover, .dt-table tbody tr:focus-visible { background: var(--divider); }
+  .dt-table tr.selected { background: var(--paper); }
+  .dt-table tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--ink); }
+  .dt-table .dt-text { -webkit-line-clamp: 2; }
+  .dt-table tr.replaced .dt-text { color: var(--ink-3); text-decoration: line-through; }
+  .dt-table .dr-task { display: block; margin-top: 4px; }
+  .dt-table col.c-datum { width: 10%; }
+  .dt-table col.c-von { width: 10%; }
+  .dt-table col.c-entscheidung { width: 44%; }
+  .dt-table col.c-amzug { width: 14%; }
+  .dt-table col.c-aktion { width: 12%; }
+  .dt-table col.c-luft { width: 10%; }
+}
 .brief { background: var(--claude-bg); padding: 14px 14px 12px; margin-top: 6px; }
 .brief label { display: block; font-size: var(--fs-small); color: var(--claude); margin-top: 10px; }
 .brief .turn { font-size: var(--fs-small); color: var(--claude); }

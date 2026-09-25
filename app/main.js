@@ -130,8 +130,7 @@ ui.setupPicker = false; // "Stammdaten & Rahmendaten" step list open (026)
 ui.setupAufzug = null; // { s/a/n: bool } - Schritt 2's own tri-state toggle, not an <input> (026)
 ui.setupCostSel = null; // Set of seed_keys unchecked in Schritt 7 - "abgewählt", nichts wird angelegt (026)
 ui.avatarMenu = false; // the avatar's own small menu (026)
-ui.decisionsFilter = 'offen'; // 'alle' | 'offen' | 'bestaetigt', kept while the route is open (032, eigene Seite seit 032b)
-ui.decisionsMore = new Set(); // decision ids with "mehr" aufgeklappt (032)
+ui.decisionsFilter = 'offen'; // 'alle' | 'offen' (032, eigene Seite seit 032b, "bestätigt"-Pille entfällt seit 032c)
 
 /* ---------- screens ---------- */
 function show(screen) {
@@ -628,7 +627,7 @@ const OFFLINE_OK = new Set([
   'fin-recurring', 'q-clear', 'home', 'overlay-close', 'title-edit', 'title-done',
   'bal-how', 'post-filter', 'post-open', 'rec-edit', 'rec-done',
   'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
-  'entscheidungen-open', 'entscheidungen-close', 'decisions-filter', 'decisions-more',
+  'entscheidungen-open', 'entscheidungen-close', 'decisions-filter', 'decisions-row-open',
   'cost-cancel', 'cost-discard', 'fin-setup-back', 'fin-setup-skip', 'fin-setup-resume', 'fin-setup-household',
 ]);
 
@@ -638,6 +637,14 @@ function wireEvents() {
   document.addEventListener('keydown', (e) => {
     // docs/changes/012: Escape empties the search field and leaves it, "/" jumps into it
     const el = document.activeElement;
+    // docs/changes/032c: Zeilen mit role="button" (Entscheidungen-Tabelle/-Karten) sind per Tab
+    // erreichbar - Enter/Leertaste lösen denselben Klick aus wie ein Tap, sonst wäre die Tastatur
+    // ausgesperrt (echte <button>-Elemente bekommen das schon vom Browser geschenkt)
+    if ((e.key === 'Enter' || e.key === ' ') && el?.getAttribute('role') === 'button' && el.dataset.act) {
+      e.preventDefault();
+      el.click();
+      return;
+    }
     if (e.key === 'Escape' && el?.id === 'search') {
       el.blur(); // before the render, so the focus is not handed back to the field
       setQuery('');
@@ -952,6 +959,14 @@ function wireEvents() {
           if (searching()) return jumpTo(t); // docs/changes/012
           setExpanded(ui.expanded === t.id ? null : t.id);
           return;
+        // docs/changes/032c: eigene, nicht umschaltende Variante von 'open' - mehrere Zeilen der
+        // Entscheidungen-Seite können auf dieselbe Aufgabe zeigen; ein Klick auf eine zweite Zeile
+        // derselben Aufgabe soll immer zu deren Karte scrollen, nicht die Akte schließen (Reviewer-
+        // Fund: das Umschalten aus 'open' hätte genau das getan, sobald die Aufgabe schon offen war)
+        case 'decisions-row-open':
+          setExpanded(t.id);
+          if (b.dataset.scroll) $(`[data-com="${CSS.escape(b.dataset.scroll)}"]`)?.scrollIntoView({ block: 'center' });
+          return;
         case 'q-clear':
           setQuery('');
           $('#search')?.focus();
@@ -1153,11 +1168,6 @@ function wireEvents() {
           return;
         case 'decisions-filter':
           ui.decisionsFilter = b.dataset.to;
-          render();
-          return;
-        case 'decisions-more':
-          if (ui.decisionsMore.has(b.dataset.ref)) ui.decisionsMore.delete(b.dataset.ref);
-          else ui.decisionsMore.add(b.dataset.ref);
           render();
           return;
         /* ---------- navigation (013 A6) ---------- */
