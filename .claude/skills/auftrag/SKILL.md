@@ -8,11 +8,11 @@ disable-model-invocation: true
 
 Setzt den Änderungsauftrag `docs/changes/$ARGUMENTS-*.md` um, Schritt für Schritt, nie einen Schritt überspringen.
 
-1. **Lesen.** `CLAUDE.md` und genau eine Datei `docs/changes/$ARGUMENTS-*.md`. Treffen mehrere Dateien auf das Muster zu, abbrechen und nachfragen, welche gemeint ist.
+1. **Lesen.** `CLAUDE.md` und genau eine Datei `docs/changes/$ARGUMENTS-*.md`. Treffen mehrere Dateien auf das Muster zu, abbrechen und nachfragen, welche gemeint ist. Danach Startzeitstempel `Start: <ISO-Zeit>` in `docs/changes/$ARGUMENTS-abweichungen.md` festhalten (Datei bei Bedarf neu anlegen) – Grundlage für die Ist-Laufzeit in Schritt 8.
 2. **Branch.** Anlegen nach Typ und Kurzname aus der Kopfzeile des Auftrags (`feat/`, `fix/`, `chore/`, `content/`), Basis `preview` (`rules/git.md`). Ohne Branch keine Arbeit.
 3. **Plan Mode bei Aufwand M oder L.** Betroffene Dateien, Reihenfolge, Migrationen, offene Fragen als Liste – dann **Stopp**, bis Sebastian „Go" schreibt. Bei Aufwand S direkt weiter zu 4.
 4. **Umsetzen.** Migrationen immer zuerst als Dry-Run melden (in einer Transaktion, zurückgerollt), dann anwenden (`rules/db.md`).
-5. **Testen.** Die Tests aus dem Auftrag real ausführen, dazu Regression und `npm run check`.
+5. **Testen.** Die Tests aus dem Auftrag real ausführen, dazu Regression und `npm run check`. Tests, die einen Login verlangen, laufen mit den Konten aus `.env` (`TEST_EMAIL_S`/`TEST_PW_S`/`TEST_EMAIL_A`/`TEST_PW_A`, Playwright, zwei Kontexte = zwei Personen). Fehlen die Variablen: den Test im Bericht als **„nicht getestet – Testkonten fehlen"** markieren – nie als grün, nie als „simuliert" ohne dieses Wort. Schreibtests weiterhin vorher ansagen und danach mit Nachweis aufräumen (`rules/tests.md`).
 6. **Review.** Den Subagenten `reviewer` mit dem Diff (`git diff preview...HEAD`) und dem Auftrag aufrufen. Gemeldete Lücken beheben, Review wiederholen, bis er leer ist.
 7. **Merge.** Nach `preview` (nie nach `main` – das ist `/release`). `gh run watch` auf den eigenen Push, bis der Lauf grün ist. Live-Version des preview-Pfads per `curl` prüfen (`CLAUDE.md`, „Definition of Done").
-8. **Bericht.** Im Format aus `.claude/rules/report.md`: Commit, Tests n/n, Abweichungen, Run-Nummer, Live-Version, Review-Ergebnis. Ohne Schritt 7 (grüner Lauf + geprüfte Live-Version) gibt es keinen Bericht – dann ist der Auftrag noch nicht fertig.
+8. **Bericht.** Im Format aus `.claude/rules/report.md`: Commit, Tests n/n, Abweichungen, Run-Nummer, Live-Version, Review-Ergebnis, Ist-Laufzeit (berechnet aus dem Startzeitstempel aus Schritt 1). Ohne Schritt 7 (grüner Lauf + geprüfte Live-Version) gibt es keinen Bericht – dann ist der Auftrag noch nicht fertig.
