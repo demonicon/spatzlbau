@@ -1,6 +1,6 @@
 # 037c – Definition of Ready: Klärung vor jedem Auftrag
 
-Stand: 25.09.2026 · Status: umgesetzt · Release 2.2 · Branch: `chore/037c` von `preview` · Modell: Sonnet · Aufwand: S · Art: Chore · Klärung: Chat, 25.09.
+Stand: 25.09.2026 · Release 2.2 · Branch: `chore/037c` von `preview` · Modell: Sonnet · Aufwand: S · Art: Chore · Klärung: Chat, 25.09.
 Anweisung Sebastian 25.09.: „Beziehe mich ab sofort mehr in die Entwicklung ein und stelle mindestens drei Fragen, um Kontext und Ziel klar zu haben – das darf auch Claude Code machen." Kein Changelog, kein Release.
 
 ## Klärung (Sebastian, 25.09. 22:44)
