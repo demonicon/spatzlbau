@@ -1,6 +1,6 @@
 # 037c – Definition of Ready: Klärung vor jedem Auftrag
 
-Stand: 25.09.2026 · Release 2.2 · Branch: `chore/037c` von `preview` · Modell: Sonnet · Aufwand: S · Art: Chore · Klärung: Chat, 25.09.
+Stand: 25.09.2026 · Status: umgesetzt · Release 2.2 · Branch: `chore/037c` von `preview` (Merge cf29543) · Modell: Sonnet · Aufwand: S · Art: Chore · Klärung: Chat, 25.09.
 Anweisung Sebastian 25.09.: „Beziehe mich ab sofort mehr in die Entwicklung ein und stelle mindestens drei Fragen, um Kontext und Ziel klar zu haben – das darf auch Claude Code machen." Kein Changelog, kein Release.
 
 ## Klärung (Sebastian, 25.09. 22:44)
@@ -26,4 +26,4 @@ Anweisung Sebastian 25.09.: „Beziehe mich ab sofort mehr in die Entwicklung ei
 ## Akzeptanzkriterien
 
 - [x] CLAUDE.md-Zeile (≤ 50 Zeilen bleiben – ggf. eine andere Zeile nach rules/ verschieben), Kopffeld `Art`, Skill-Schritt 0, Reviewer-Punkt e, Vorlage
-- [ ] Drei Tests grün; Merge preview, kein Release; Bericht mit Run-Nummer und Live-Version
+- [x] Drei Tests grün (Test 2 Bugfix-Teil real per zweitem Testauftrag geprüft, siehe Abweichungen); Merge preview (Commit cf29543), kein Release, kein Changelog-Eintrag; Run [36191180787](https://github.com/demonicon/spatzlbau/actions/runs/36191180787) grün, Live-Version `/preview/` unverändert 2.2.5
