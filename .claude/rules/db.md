@@ -6,4 +6,5 @@
 - Migrationen sind immer additiv (neue Spalte/Tabelle/Trigger, nie ein bestehendes Feld umbauen oder löschen); erst Dry-Run (in einer Transaktion, zurückgerollt) melden, dann anwenden.
 - Eine geänderte View: droppen und neu anlegen, nicht `alter view` versuchen.
 - Summen (Beträge, Salden) nie im Frontend berechnen – `costs_summary` (SQL-View) ist die einzige Quelle.
-- Der stündliche Claude-Lauf schreibt nur über seinen eigenen, feldgenauen Weg (`scripts/claude-result.mjs`, Autor `C`); er markiert nie selbst eine Entscheidung (Auftrag 032) und ändert nie fremde Felder.
+- Der Claude-Lauf (8, 12, 15, 18, 22 Uhr) schreibt nur über seinen eigenen, feldgenauen Weg (`scripts/claude-result.mjs`, Autor `C`); er markiert nie selbst eine Entscheidung (Auftrag 032) und ändert nie fremde Felder.
+- Anfragen (Auftrag 033, freigegeben): der Lauf schreibt `brief.vergleich` (Angebote, Empfehlung, Begründung, Quellen, Anfragetext) und setzt `status` nur von `claude` auf `ergebnis` – nie `chosen*`, nie `entschieden`, nie ein Angebot, das eine Person angelegt oder geändert hat (`author` S/A oder `source = manual`). Der Schutz sitzt im Merge (`mergeVergleich` in `app/anfragen.js`), nicht nur in dieser Regel.
