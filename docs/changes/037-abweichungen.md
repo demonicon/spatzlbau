@@ -86,6 +86,14 @@ die dieser Auftrag selbst einführt) – als eigene Aufgabe an Sebastian überge
 (`spawn_task`, task_ee9f8817). Das bestätigt zugleich, dass der Reviewer-Prompt tut, was er soll:
 echte Lücken melden, keine Stilmeinungen.
 
+## Ein Bonus-Beleg: der eigene Commit blockierte sich selbst
+
+Der Commit, der diese Hooks einführt, wurde zweimal vom eigenen `bash-guard`-Hook abgewiesen – die
+Commit-Nachricht nannte zur Beschreibung wörtlich „taskkill /IM" bzw. „truncate/drop/delete", und
+der Hook erkennt das unabhängig davon, ob es echter Befehl oder nur Beschreibungstext ist. Nach
+dem Umformulieren (ohne die wörtlichen Muster) ging der Commit durch. Kein Bug, aber ein weiterer
+echter Beleg, dass die Hooks aktiv sind und genau das tun, was Punkt 4 verlangt.
+
 ## Test 1 (`/auftrag`-Logik) – als Datei-Abgleich statt vollem Lauf
 
 Ein echter `/auftrag 032b`/`/auftrag 033`-Lauf hätte (bei S sofort, bei M–L nach dem Plan-Stopp)
