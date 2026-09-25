@@ -1,6 +1,6 @@
 # 037b – Skill-Feinschliff: Login-Tests aus `.env`, Startzeitstempel
 
-Stand: 25.09.2026 · Status: in Umsetzung (Merge, Lauf und Live-Prüfung stehen noch aus, siehe `037b-abweichungen.md`) · Release 2.2 · Branch: `chore/037b` von `preview` · Modell: Sonnet · Aufwand: S
+Stand: 25.09.2026 · Status: umgesetzt bis auf zwei offene Punkte für Sebastian (Testkonten, siehe `037b-abweichungen.md`) · Release 2.2 · Branch: `chore/037b` von `preview` (Merge c6e12fb) · Modell: Sonnet · Aufwand: S
 Anlass: 032b lief nur simuliert („Login mit echtem Passwort nicht möglich"), 032 tags zuvor mit echten Logins – das darf nicht vom Zufall abhängen. Kein Changelog, kein Release.
 
 ## Änderungen
@@ -18,5 +18,5 @@ Anlass: 032b lief nur simuliert („Login mit echtem Passwort nicht möglich"), 
 
 ## Akzeptanzkriterien
 
-- [ ] Drei Tests grün; Grep: keine Passwörter außerhalb `.env` (keiner der drei end-to-end grün, siehe Abweichungen: Test 1 nur als Regel bestätigt – 037b hat selbst keinen Login-Test, der das an einem echten Bericht zeigen könnte; Test 2 „nicht getestet – Testkonten fehlen“, die vier `.env`-Zeilen fehlen lokal; Test 3 zur Hälfte, die Ist-Laufzeit folgt im Bericht. Grep auf Passwörter: grün. Offene Punkte: Test 2 braucht die vier `.env`-Werte von Sebastian; Test 1 braucht zusätzlich einen künftigen Auftrag mit einem echten Login-Test)
-- [ ] Merge preview, kein Changelog, kein Release; Bericht mit Run-Nummer und Live-Version preview (folgt in Schritt 7/8, noch nicht geschehen)
+- [x] Grep: keine Passwörter außerhalb `.env` – grün. Von den drei Auftrags-Tests ist nur Test 3 vollständig grün (siehe Abweichungen, Ist-Laufzeit 12m). Test 1 (nur die Regel geprüft – 037b hat selbst keinen Login-Test) und Test 2 („nicht getestet – Testkonten fehlen“) bleiben offene Punkte für Sebastian: Test 2 braucht die vier `.env`-Werte, Test 1 zusätzlich einen künftigen Auftrag mit echtem Login-Test
+- [x] Merge preview (Commit c6e12fb), kein Changelog-Eintrag, kein Release; Run [36184344283](https://github.com/demonicon/spatzlbau/actions/runs/36184344283) grün, Live-Version `/preview/` unverändert 2.2.5 (kein Changelog-Eintrag laut Auftrag)

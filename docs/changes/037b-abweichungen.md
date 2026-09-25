@@ -1,7 +1,7 @@
 # 037b – Abweichungen und Entscheidungen
 
-Stand: 25.09.2026 · Branch `chore/037b` → `preview` · Aufwand S · Status: in Umsetzung (Merge, Lauf und Live-Prüfung stehen noch aus)
-Start: 2026-09-25T20:01:42Z
+Stand: 25.09.2026 · Branch `chore/037b` → `preview` (Merge c6e12fb) · Aufwand S · Status: umgesetzt bis auf zwei offene Punkte für Sebastian
+Start: 2026-09-25T20:01:42Z · Ende: 2026-09-25T20:13:44Z · Ist-Laufzeit: 12 Minuten
 
 ## Umsetzung
 
@@ -48,13 +48,19 @@ getrennt, keiner der drei ist zum Zeitpunkt dieser Review (Schritt 6) vollständ
 | --- | --- | --- |
 | 1 | „`.env` ohne Testkonten → Bericht enthält ‚nicht getestet – Testkonten fehlen' für jeden Login-Test" | **nur die Regel geprüft, nicht der Bericht**: `.env` hat aktuell kein `TEST_*` (`grep -oE '^[A-Z_]+' .env`), und `/auftrag` Schritt 5 verlangt für diesen Fall wörtlich diesen Satz. Ein echter Bericht mit einem Login-Test, der das zeigt, existiert in 037b nicht |
 | 2 | „`.env` mit Testkonten → Login-Test real, zwei Kontexte, Nachweis im Bericht" | **nicht getestet – Testkonten fehlen** (die vier Variablen sind lokal nicht gesetzt) |
-| 3 | „Abweichungsliste hat `Start:`-Zeile, Bericht die berechnete Laufzeit" | **teilweise**: Diese Datei trägt oben `Start: 2026-09-25T20:01:42Z`, genau nach dem neuen Verfahren geschrieben (dieser Teil grün) – die daraus berechnete Ist-Laufzeit steht erst im Chat-Bericht nach dem Merge (Schritt 8), zum jetzigen Zeitpunkt also noch offen |
+| 3 | „Abweichungsliste hat `Start:`-Zeile, Bericht die berechnete Laufzeit" | **grün** – `Start: 2026-09-25T20:01:42Z` oben, `Ende: 2026-09-25T20:13:44Z`, Ist-Laufzeit 12 Minuten, hier und im Chat-Bericht |
 | 4 | `npm run check` (Regression, nicht Teil der drei Auftrags-Tests) | grün (`check ok`) |
 | 5 | Grep: keine Passwörter außerhalb `.env` (Regression, nicht Teil der drei Auftrags-Tests) | grün – `.env.example`, `SETUP.md`, `.claude/**` enthalten nur Variablennamen, keine Werte |
 
-Test 3 wird mit dem Chat-Bericht dieses Auftrags vollständig grün (die Ist-Laufzeit steht dort).
 Test 2 braucht die vier `.env`-Werte von Sebastian, dann ist er in einem künftigen Login-Test
 nachholbar. Test 1 braucht zusätzlich einen künftigen Auftrag mit einem echten Login-Test – die
 vier `.env`-Werte einzutragen würde an Test 1 nichts ändern, der setzt gerade `.env` **ohne**
 Testkonten voraus (siehe Auftrag). Beides ist für Sebastian ein offener Punkt (siehe
 Akzeptanzkriterien im Auftrag).
+
+## Merge
+
+Merge-Commit `c6e12fb` (`chore/037b` → `preview`), Run
+[36184344283](https://github.com/demonicon/spatzlbau/actions/runs/36184344283) grün
+(`build-main`/`build-preview`/`deploy`/`smoke`). Live-Version `/preview/` unverändert **2.2.5**
+(kein Changelog-Eintrag, wie im Auftrag verlangt).
