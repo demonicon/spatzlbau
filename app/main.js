@@ -1898,7 +1898,7 @@ function wireEvents() {
           render();
           return;
         case 'cost-del':
-          ui.confirm = 'cost-del:' + b.dataset.ref;
+          ui.confirm = 'costdel:' + b.dataset.ref; // the prefix costEditHTML asks for (like subdel:/comdel:)
           render();
           return;
         case 'cost-del-yes':
