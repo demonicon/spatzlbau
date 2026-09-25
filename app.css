@@ -46,6 +46,9 @@
   /* owner colours (semantic, values from the handoff) */
   --seb: #2e5a9c; --seb-bg: #e4ecf7; --anna: #9a3d64; --anna-bg: #f6e4ec; --both: #2f6f4e; --both-bg: #e1efe6;
   --claude: #6b4e16; --claude-bg: #f3e9d2; --claude-past: #c9b98a;
+  /* 032b: Entscheidungs-Kommentare bekommen eine eigene Farbe (Violett), analog zu --claude/--claude-bg -
+     Kontrast gegen --decision-bg/--paper/--card in docs/changes/029c-kontrast.md nachgetragen */
+  --decision: #5c2e91; --decision-bg: #efe9f7;
   /* signals: yellow only for critical, red only for overdue / waiting */
   --link: #2e5a9c; /* 016c: links in the Finanzen export - 6.6:1 on paper */
   /* 029c #1: --mark-deep auf 5,18:1 (paper) gedunkelt - die einzige Stelle, die durchfiel (docs/changes/029c-kontrast.md) */
@@ -196,8 +199,11 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .avatar.S { --who-fg: var(--seb); --who-bg: var(--seb-bg); }
 .avatar.A { --who-fg: var(--anna); --who-bg: var(--anna-bg); }
 .mainnav { display: flex; gap: 4px; }
-.navbtn { min-width: var(--tap); padding: 0 10px; }
+.navbtn { position: relative; min-width: var(--tap); padding: 0 10px; }
 .navbtn .nl { display: none; font-size: var(--fs-small); font-weight: 600; }
+/* 032b #2: Zähler-Badge an der Entscheidungen-Pille - Ink statt Rot, zählt nur die eigene
+   fehlende Entscheidung, kein Rot (Rot bleibt überfällig/unwiderruflich vorbehalten) */
+.pill-badge { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: var(--r-pill); background: var(--ink); color: var(--paper); font-size: var(--fs-nano); font-weight: 700; line-height: 16px; text-align: center; }
 /* docs/changes/013 A1: the countdown is one line, not a poster */
 .countdown { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; margin-top: 4px; }
 .countdown .n { font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
@@ -533,11 +539,11 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .com-own-actions { display: flex; gap: 14px; align-items: center; white-space: normal; }
 .com-own-actions .btn-text { padding: 6px 0; }
 .com-own-actions .quiet { margin-left: auto; }
-/* docs/changes/032: pinned decision card - a comment row with a border of its own, not the
-   hairline the rest of the list shares */
-.decision-card { border: 1px solid var(--ink); margin: 10px -12px; padding: 10px 12px; white-space: normal; }
+/* docs/changes/032, Farbe seit 032b: pinned decision card - eigene Farbe (Violett) statt der
+   Ink-Umrandung, 3-px-Balken links wie .wait-banner (inset statt eigener box, kein doppelter Rand) */
+.decision-card { border: 0; border-radius: var(--r-card); box-shadow: inset 3px 0 0 var(--decision); background: var(--decision-bg); margin: 10px -12px; padding: 10px 12px; white-space: normal; }
 .dc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--fs-micro); }
-.dc-tag { font-weight: 600; color: var(--ink); }
+.dc-tag { font-weight: 600; color: var(--decision); }
 .dc-body { margin: 6px 0 0; font-size: var(--fs-ui); white-space: pre-wrap; }
 .dc-action, .dc-confirmed { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
 .dc-circles { display: flex; gap: 4px; }
@@ -549,14 +555,20 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .dc-circle.A { background: var(--anna); color: #fff; }
 .tag.replaced { color: var(--ink-3); background: var(--paper); }
 .com s { color: var(--ink-3); }
-/* docs/changes/032: the "Entscheidungen" list - panel (desktop) and full route (phone) share it */
+/* 032b #4: eine ersetzte Entscheidung bleibt in der Chronologie erkennbar - nur noch der graue
+   Balken, kein Grund mehr (der gehört ausschließlich der aktuell angehefteten Karte) */
+.com.decision-replaced { box-shadow: inset 3px 0 0 var(--ink-3); }
+/* docs/changes/032: the "Entscheidungen" list - panel (desktop) and full route (phone) share it.
+   032b: die eigene Seite (eigenes Nav-Pill statt eingebettetes Panel) und die Zeile bekommt einen
+   Tipp-Ziel auf die ganze Karte (Text + Aufgabentitel), nicht mehr nur den Aufgaben-Link. */
 .decision-row { padding: 10px 0; border-bottom: 1px solid var(--divider); }
 .dr-meta { display: flex; align-items: center; gap: 8px; }
+.dr-body-btn { display: block; width: 100%; text-align: left; padding: 0; background: none; border: 0; min-height: 0; color: inherit; }
 .dr-body { margin: 6px 0 0; font-size: var(--fs-ui); }
-.dr-body.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.dr-body.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .decision-row.replaced .dr-body { color: var(--ink-3); text-decoration: line-through; }
-.dr-task { display: block; margin-top: 6px; padding: 0; background: none; border: 0; color: var(--link); text-decoration: underline; text-underline-offset: 2px; font-size: var(--fs-meta); cursor: pointer; }
-.dr-status { margin-top: 6px; }
+.dr-task { display: block; margin-top: 6px; font-size: var(--fs-meta); color: var(--ink-2); }
+.dr-status { margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .brief { background: var(--claude-bg); padding: 14px 14px 12px; margin-top: 6px; }
 .brief label { display: block; font-size: var(--fs-small); color: var(--claude); margin-top: 10px; }
 .brief .turn { font-size: var(--fs-small); color: var(--claude); }

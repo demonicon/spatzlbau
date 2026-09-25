@@ -68,11 +68,16 @@ function commentHTML(c, fresh) {
         : `<div class="com-own-actions">${canEditComment(c) ? `<button class="btn-text" data-act="com-edit" data-ref="${c.id}">Bearbeiten</button>` : ''}<button class="btn-text" data-act="com-del" data-ref="${c.id}">Löschen</button>${decisionToggle}</div>`
       : '';
   // docs/changes/029c #6: der Autor ist derselbe Chip wie Punkt 2 (own.S/.A/.C), nicht mehr nur fett
-  return `<div class="com ${c.author}" data-com="${c.id}"><div class="h"><span class="own ${c.author}">${OWN[c.author] || c.author}</span> · ${fmtTime(c.created_at)}${fresh ? ' · <span class="new">neu</span>' : ''}</div>${body}${actions}</div>`;
+  // docs/changes/032b #4: eine ersetzte Entscheidung bleibt hier nur am grauen Balken erkennbar,
+  // ohne Grund - der violette Grund gehört ausschließlich der aktuell angehefteten Karte
+  return `<div class="com ${c.author}${superseded ? ' decision-replaced' : ''}" data-com="${c.id}"><div class="h"><span class="own ${c.author}">${OWN[c.author] || c.author}</span> · ${fmtTime(c.created_at)}${fresh ? ' · <span class="new">neu</span>' : ''}</div>${body}${actions}</div>`;
 }
 
-/** docs/changes/032: an open (not yet replaced) decision, pinned above the chronological list. */
-function decisionCardHTML(c) {
+/** docs/changes/032: an open (not yet replaced) decision, pinned above the chronological list.
+    032b #1 (Reviewer-Fund 037): nur die erste wartende Karte bekommt den primären Button - bei
+    zwei gleichzeitig offenen Entscheidungen auf derselben Aufgabe wäre sonst "Einverstanden"
+    zweimal gefüllt zu sehen (Regel: ein Primär je Ansicht). */
+function decisionCardHTML(c, primary) {
   const author = OWN[c.author] || c.author;
   const myAck = ackedBy(c, state.person);
   const confirmed = isConfirmedDecision(c);
@@ -91,7 +96,7 @@ function decisionCardHTML(c) {
       ? `<p class="fin-note">wartet auf ${esc(OWN[otherOf(c.author)])}</p>`
       : `<div class="dc-action">
           <span class="sig-chip waitme">wartet auf dich</span>
-          <button class="btn-primary" data-act="decision-ack" data-ref="${c.id}">Einverstanden</button>
+          <button class="${primary ? 'btn-primary' : 'btn-secondary'}" data-act="decision-ack" data-ref="${c.id}">Einverstanden</button>
         </div>`;
   return `<div class="com decision-card" data-com="${c.id}">
     <div class="dc-head"><span class="dc-tag">◆ ENTSCHEIDUNG · ${esc(author)} · ${esc(fmtWeekDay(c.created_at))}</span><span class="fin-note">angeheftet</span></div>
@@ -108,10 +113,18 @@ function commentsHTML(t) {
   const fresh = new Set(freshComments(t).map((c) => c.id));
   const other = state.person === 'S' ? 'A' : 'S';
   const n = fresh.size;
+  let primaryUsed = false;
   return `<h3>Kommentare ${coms.length ? `<small>${coms.length}${n ? ` · ${n} neu` : ''}</small>` : ''}
       ${coms.some((c) => c.decision) ? `<button class="btn-text quiet" data-act="entscheidungen-open">Alle Entscheidungen ›</button>` : ''}
     </h3>
-    ${pinned.map(decisionCardHTML).join('')}
+    ${pinned
+      .map((c) => {
+        const waiting = !isConfirmedDecision(c) && !ackedBy(c, state.person);
+        const primary = waiting && !primaryUsed;
+        if (waiting) primaryUsed = true;
+        return decisionCardHTML(c, primary);
+      })
+      .join('')}
     ${rest.map((c) => commentHTML(c, fresh.has(c.id))).join('')}
     <textarea data-input="com" placeholder="Kommentar an ${OWN[other]} …" aria-label="Neuer Kommentar"></textarea>
     <label class="check-label"><input type="checkbox" data-input="com-decision"> Als Entscheidung festhalten <span class="fin-note">${esc(OWN[other])} bestätigt danach</span></label>
@@ -139,20 +152,24 @@ const STEP_SENTENCE = {
 
 const fmtHM = (iso) => (iso ? new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '');
 
-/** docs/changes/024: 07-22 Uhr stündlich, sonst wartet die nächste Zeile bis 07:00. */
+// docs/changes/032b #5: seit 25.09. läuft Claude um 8, 12, 15, 18 und 22 Uhr statt stündlich
+const RUN_HOURS = [8, 12, 15, 18, 22];
+
+/** docs/changes/024, Takt seit 032b: die nächste der fünf festen Uhrzeiten, sonst die erste am Folgetag. */
 function nextRunText() {
   const h = new Date().getHours();
-  return h >= 7 && h < 22 ? `nächster Lauf bis ${String(h + 1).padStart(2, '0')}:00` : 'nächster Lauf ab 07:00';
+  const next = RUN_HOURS.find((x) => x > h);
+  return `nächster Lauf um ${String(next ?? RUN_HOURS[0]).padStart(2, '0')}:00`;
 }
 
-/** docs/changes/024: wie es um den stündlichen Takt steht, nur solange etwas dazu zu sagen ist. */
+/** docs/changes/024: wie es um den Takt steht, nur solange etwas dazu zu sagen ist. */
 function rhythmHTML(t) {
   if (t.status === 'claude' && t.brief?.requested_at) {
     return `<p class="stand-line quiet">bei Claude seit ${fmtHM(t.brief.requested_at)} · ${nextRunText()}</p>`;
   }
   if (t.status === 'briefing' || !t.status) {
     const last = state.settings.claude_last_run;
-    return `<p class="stand-line quiet">Claude prüft stündlich${last ? ` · zuletzt ${fmtHM(last)}` : ''}</p>`;
+    return `<p class="stand-line quiet">Claude arbeitet um 8, 12, 15, 18 und 22 Uhr – oder jetzt mit dem Button${last ? ` · zuletzt ${fmtHM(last)}` : ''}</p>`;
   }
   return '';
 }

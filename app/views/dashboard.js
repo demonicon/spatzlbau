@@ -7,7 +7,7 @@ import { OWN, STEPS } from '../ui/labels.js';
 import { renderHeader, updateBarHTML, footHTML, setupHintHTML } from '../ui/chrome.js';
 import {
   state, ui, byId, phases, einzug, umzugstag, dueInfo, dueShort, freshComments, doneByOther, claudeStep, fmtDay,
-  allDecisions, ackedBy, isConfirmedDecision,
+  allDecisions, ackedBy, isConfirmedDecision, myOpenDecisionsCount, openDecisionsOf,
 } from '../state.js';
 import { FILTERS, matches, count, isBlocked, isLate, isCritical, waitsOnMe, waitsOnYou, hasNews, other } from '../filters.js';
 import { timeGroups, gate, gateInDays } from '../groups.js';
@@ -397,12 +397,8 @@ const BETWEEN = [
   ['waityou', (n) => `${n}× du wartest auf ${OWN[other(state.person)]}`, 'Erinnern'],
 ];
 
-// docs/changes/032: how many decisions still miss this person's own tick - the same number the
-// "Entscheidungen · n" card shows, the card only appears once at least one decision exists at all
-function myOpenDecisionsCount() {
-  return allDecisions().filter((c) => !c.superseded_by && !ackedBy(c, state.person)).length;
-}
-
+// docs/changes/032: the card only appears once at least one decision exists at all. 032b: it now
+// links to the dedicated #entscheidungen page (own nav pill) instead of an embedded panel.
 function decisionsCardHTML() {
   const all = allDecisions();
   if (!all.length) return '';
@@ -439,23 +435,37 @@ function betweenHTML() {
 
 const DECISION_FILTERS = [['alle', 'alle'], ['offen', 'offen'], ['bestaetigt', 'bestätigt']];
 
+// docs/changes/032b #3: "Am Zug: <Name>" ist ein Chip in der Personenfarbe (wiederverwendet
+// .own.S/.A), "wartet auf dich" bleibt der Signal-Chip; bei "alle" kommt das Datum zum Haken dazu
 function decisionStatusHTML(c) {
   if (c.superseded_by) return `<span class="tag replaced">ersetzt</span>`;
-  if (isConfirmedDecision(c)) return `<span class="tag ok">✓ bestätigt</span>`;
-  if (!ackedBy(c, state.person)) return `<span class="sig-chip waitme">wartet auf dich</span>`;
-  const other = c.author === 'S' ? 'A' : 'S';
-  return `<span class="fin-note">wartet auf ${esc(OWN[other])}</span>`;
+  if (isConfirmedDecision(c)) {
+    const at = c.ack_s > c.ack_a ? c.ack_s : c.ack_a;
+    return `<span class="tag ok">✓ bestätigt · ${esc(fmtDay(at.slice(0, 10)))}</span>`;
+  }
+  if (!ackedBy(c, state.person)) {
+    return `<span class="sig-chip waitme">wartet auf dich</span><button class="btn-secondary" data-act="decision-ack" data-ref="${c.id}">Einverstanden</button>`;
+  }
+  const waiting = other(state.person);
+  return `<span class="own ${waiting}">Am Zug: ${esc(OWN[waiting])}</span>`;
+}
+
+// docs/changes/032b #3: mein Zug zuerst, dann der der anderen Person, dann (innerhalb einer
+// Gruppe) nach Datum - allDecisions() liefert schon neueste zuerst, ein stabiler Sort genügt
+function decisionTurnRank(c) {
+  if (c.superseded_by || isConfirmedDecision(c)) return 2;
+  return ackedBy(c, state.person) ? 1 : 0;
 }
 
 function decisionRowHTML(c) {
   const t = byId(c.task_id);
-  const long = c.body.length > 180;
+  const long = c.body.length > 140;
   const more = ui.decisionsMore && ui.decisionsMore.has(c.id);
+  const body = `<p class="dr-body ${long && !more ? 'clamp' : ''}">${esc(c.body)}</p>${t ? `<span class="dr-task">${esc(t.title)}</span>` : ''}`;
   return `<article class="decision-row ${c.superseded_by ? 'replaced' : ''}">
     <div class="dr-meta"><span class="own ${c.author}">${OWN[c.author] || c.author}</span><span class="fin-note">${esc(fmtDay(c.created_at.slice(0, 10)))}</span></div>
-    <p class="dr-body ${long && !more ? 'clamp' : ''}">${esc(c.body)}</p>
+    ${t ? `<button class="dr-body-btn" data-act="open" data-ref="${t.id}" aria-label="Akte öffnen: ${esc(t.title)}">${body}</button>` : body}
     ${long ? `<button class="btn-text quiet" data-act="decisions-more" data-ref="${c.id}">${more ? 'weniger' : 'mehr'}</button>` : ''}
-    ${t ? `<button class="dr-task" data-act="open" data-ref="${t.id}">${esc(t.title)} ›</button>` : ''}
     <div class="dr-status">${decisionStatusHTML(c)}</div>
   </article>`;
 }
@@ -463,34 +473,49 @@ function decisionRowHTML(c) {
 export function decisionsListHTML() {
   const filter = ['alle', 'offen', 'bestaetigt'].includes(ui.decisionsFilter) ? ui.decisionsFilter : 'offen';
   const all = allDecisions();
-  const rows = all.filter((c) => (filter === 'offen' ? !isConfirmedDecision(c) : filter === 'bestaetigt' ? isConfirmedDecision(c) : true));
+  const rows = all
+    .filter((c) => (filter === 'offen' ? !isConfirmedDecision(c) : filter === 'bestaetigt' ? isConfirmedDecision(c) : true))
+    .slice()
+    .sort((a, b) => decisionTurnRank(a) - decisionTurnRank(b));
+  const empty = filter === 'offen' ? 'Keine offenen Entscheidungen.' : 'Nichts in dieser Auswahl.';
   return `<div class="pchips" role="group" aria-label="Entscheidungen filtern">${DECISION_FILTERS.map(
     ([k, l]) => `<button class="pill" data-act="decisions-filter" data-to="${k}" aria-pressed="${filter === k}">${l}</button>`,
   ).join('')}</div>
-    ${rows.length ? rows.map(decisionRowHTML).join('') : `<p class="empty">Nichts in dieser Auswahl.</p>`}`;
+    ${rows.length ? rows.map(decisionRowHTML).join('') : `<p class="empty">${empty}</p>`}`;
 }
 
-function decisionsPanelHTML() {
-  return `<aside class="panel decisions" id="panel" aria-label="Entscheidungen">
-    <div class="panel-head"><span class="hint">Entscheidungen</span><button class="btn-text" data-act="entscheidungen-close">schließen</button></div>
-    ${decisionsListHTML()}
-  </aside>`;
-}
-
+// docs/changes/032b #3: eigene Seite `#entscheidungen` statt eingebettetem Panel (032) - Desktop
+// (>= 1180 px, ui.mode 'panel') zeigt die Liste links und die Akte der angetippten Entscheidung
+// rechts im selben Grid wie Aufgaben; darunter ersetzt die Akte die Liste als eigene "Seite".
 export function entscheidungenView() {
+  const open = ui.expanded ? byId(ui.expanded) : null;
+  const wide = ui.mode === 'panel';
+  const list = `<div class="col-list">
+      <div class="fin-h"><h2>Entscheidungen</h2><button class="btn-text" data-act="entscheidungen-close">zurück</button></div>
+      ${decisionsListHTML()}
+    </div>`;
+  const akte = open
+    ? `<div class="col-list">
+      <div class="fin-h"><button class="btn-text" data-act="panel-close">‹ Entscheidungen</button></div>
+      ${detailHTML(open)}
+    </div>`
+    : '';
   return (
     updateBarHTML() +
     setupHintHTML() +
-    renderHeader('dashboard') +
-    `<div class="board"><div class="col-list">
-      <div class="fin-h"><h2>Entscheidungen</h2><button class="btn-text" data-act="entscheidungen-close">zurück</button></div>
-      ${decisionsListHTML()}
-    </div></div>` +
+    renderHeader('entscheidungen') +
+    (wide
+      ? `<div class="board mode-panel">${list}${
+          open
+            ? `<aside class="panel" id="panel" data-id="${open.id}" aria-label="Akte: ${esc(open.title)}">${panelHeadHTML(open)}${detailHTML(open)}</aside>`
+            : `<aside class="panel empty" id="panel" aria-label="Akte"><p>Entscheidung antippen, um die Akte zu sehen.</p></aside>`
+        }</div>`
+      : `<div class="board">${open ? akte : list}</div>`) +
     footHTML()
   );
 }
 
-function addBoxHTML() {
+function addBoxHTML(disablePrimary) {
   const claude = ui.filter === 'claude';
   const list = phases();
   const sel = ui.phase || (list[0] ? list[0].id : 1);
@@ -502,7 +527,7 @@ function addBoxHTML() {
       <select data-input="new-type" aria-label="Typ"><option value="self">nur ihr</option><option value="assist">Claude hilft mit</option><option value="claude" ${claude ? 'selected' : ''}>an Claude delegiert</option></select>
       <span class="row nowrap"><input type="number" inputmode="numeric" data-input="new-w" value="2" min="0" class="num" aria-label="Wochen"><select data-input="new-dir" aria-label="Richtung"><option value="-1">Wochen vorher</option><option value="1">Wochen danach</option></select></span>
       <label class="check-label"><input type="checkbox" data-input="new-c"> kritisch</label>
-      <button class="${ui.akteEdit || ui.printOpen ? 'btn-secondary' : 'btn-primary'}" data-act="add">Hinzufügen</button>
+      <button class="${ui.akteEdit || ui.printOpen || disablePrimary ? 'btn-secondary' : 'btn-primary'}" data-act="add">Hinzufügen</button>
     </div></div>`;
 }
 
@@ -544,6 +569,11 @@ export function dashboardView() {
   // reserving it forever (030's own Abweichung). The Timeline almost always has a default task
   // (#5) and keeps its panel share regardless.
   const panelEmpty = mode === 'panel' && !panelTask && !tl && BETWEEN.every(([key]) => !state.tasks.some((t) => matches(t, key)));
+  // docs/changes/037 Reviewer-Fund, behoben in 032b #1: "Hinzufügen" wird sekundär, sobald die
+  // gezeigte Akte selbst eine offene, auf mich wartende Entscheidung mit primärem "Einverstanden"
+  // zeigt - sonst stünden zwei gefüllte Buttons gleichzeitig auf dem Schirm (Regel: einer je Ansicht)
+  const akteTask = mode === 'panel' ? panelTask : open;
+  const hasPrimaryDecision = !!akteTask && openDecisionsOf(akteTask).some((c) => !isConfirmedDecision(c) && !ackedBy(c, state.person));
   // docs/changes/029c #3: der Kopf sitzt jetzt ueber dem Grid, nicht mehr in der schmaleren
   // col-list - genau wie in Finanzen, auf allen drei Ansichten deckungsgleich
   return (
@@ -563,7 +593,7 @@ export function dashboardView() {
       ? ''
       : (switchShown() ? switchHTML(allColsForSwitch()) : '') +
         (q && !cols.length ? `<p class="empty no-hits">Kein Treffer für „${esc(q)}“ – auch nicht in den Teilschritten.</p>` : `<div class="cols${currentView() === 'phasen' ? ' cols-phasen' : ''}">${cols.map(columnHTML).join('')}</div>`)) +
-    addBoxHTML() +
+    addBoxHTML(hasPrimaryDecision) +
     `</div>` +
     (mode === 'panel' ? panelHTML(panelTask) : '') +
     `</div>` +
@@ -576,7 +606,6 @@ export function dashboardView() {
 }
 
 function panelHTML(t) {
-  if (ui.decisionsOpen) return decisionsPanelHTML(); // docs/changes/032: desktop opens the list in the panel
   if (!t) return betweenHTML(); // docs/changes/018 §5: no selection = "Zwischen euch"
   return `<aside class="panel" id="panel" data-id="${t.id}" aria-label="Akte: ${esc(t.title)}">
     ${panelHeadHTML(t)}

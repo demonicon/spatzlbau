@@ -92,6 +92,9 @@ export const decisionsOf = (t) => comsOf(t.id).filter((c) => c.decision);
 export const openDecisionsOf = (t) => decisionsOf(t).filter((c) => !c.superseded_by);
 // every decision across all tasks, newest first - the "Alle Entscheidungen" list (032)
 export const allDecisions = () => state.comments.filter((c) => c.decision).sort((a, b) => b.created_at.localeCompare(a.created_at));
+// docs/changes/032b: how many decisions still miss this person's own tick - the nav badge and
+// the "Entscheidungen · n" card share this one number
+export const myOpenDecisionsCount = () => allDecisions().filter((c) => !c.superseded_by && !ackedBy(c, state.person)).length;
 export const doneByOther = (t) =>
   !!state.lastVisitAt && t.done && !!t.done_by && t.done_by !== state.person && t.updated_at > state.lastVisitAt;
 
