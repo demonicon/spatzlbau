@@ -180,11 +180,10 @@ export function mergeVergleich(server = {}, incoming = {}) {
   const choice = { chosen: server.chosen ?? null, chosen_by: server.chosen_by ?? null, chosen_at: server.chosen_at ?? null };
   // a run that only answers a follow-up (reason, recommendation) keeps every offer as it was
   if (!Array.isArray(incoming.offers)) return { ...server, ...incoming, offers: before, ...choice };
-  const human = before.filter(isHumanOffer);
-  const taken = new Set(human.map((o) => o.id));
+  // kept as they are: what a person added or changed, and the offer that was chosen - so the
+  // table can never show other numbers than the decision comment and the price taken over
+  const keep = before.filter((o) => isHumanOffer(o) || (choice.chosen && o.id === choice.chosen));
+  const taken = new Set(keep.map((o) => o.id));
   const claude = incoming.offers.filter((o) => !taken.has(o.id) && !isHumanOffer(o)).map((o) => ({ ...o, author: 'C' }));
-  // the offer that was chosen never disappears, even if Claude's new list leaves it out
-  const kept = new Set([...claude, ...human].map((o) => o.id));
-  const chosen = choice.chosen && !kept.has(choice.chosen) ? before.filter((o) => o.id === choice.chosen) : [];
-  return { ...server, ...incoming, offers: [...claude, ...chosen, ...human], ...choice };
+  return { ...server, ...incoming, offers: [...claude, ...keep], ...choice };
 }
