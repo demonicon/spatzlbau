@@ -1,6 +1,20 @@
 {
   "entries": [
     {
+      "version": "2.2.3",
+      "release": "2.2",
+      "date": "2026-09-25",
+      "title": "Entscheidungen als Übersicht – ein Tipp öffnet die Akte.",
+      "new": [],
+      "improved": [
+        "Die Liste der Entscheidungen zeigt jetzt eine Übersicht mit Datum, Person, Text und wer am Zug ist.",
+        "Ohne eigene Auswahl zeigt die Seite gleich die Akte der Entscheidung, bei der am ehesten etwas zu tun ist."
+      ],
+      "fixed": [
+        "Ein Tipp auf eine Entscheidung öffnet jetzt wirklich die zugehörige Akte – vorher passierte nichts."
+      ]
+    },
+    {
       "version": "2.2.2",
       "release": "2.2",
       "date": "2026-09-25",

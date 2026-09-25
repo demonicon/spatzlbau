@@ -433,71 +433,111 @@ function betweenHTML() {
 
 /* ---------- Entscheidungen (docs/changes/032): the list of every decision, newest first ---------- */
 
-const DECISION_FILTERS = [['alle', 'alle'], ['offen', 'offen'], ['bestaetigt', 'bestätigt']];
+const DECISION_FILTERS = [['alle', 'alle'], ['offen', 'offen']];
 
-// docs/changes/032b #3: "Am Zug: <Name>" ist ein Chip in der Personenfarbe (wiederverwendet
-// .own.S/.A), "wartet auf dich" bleibt der Signal-Chip; bei "alle" kommt das Datum zum Haken dazu
+// docs/changes/032c #3: mein Zug zuerst, dann der der anderen Person, dann bestätigt, dann
+// ersetzt; allDecisions() liefert schon neueste zuerst, ein stabiler Sort genügt
+function decisionTurnRank(c) {
+  if (c.superseded_by) return 3;
+  if (isConfirmedDecision(c)) return 2;
+  return ackedBy(c, state.person) ? 1 : 0;
+}
+
+// docs/changes/032c: reine Status-Zelle ("Am Zug") - der Name trägt keinen "Am Zug:"-Vorsatz
+// mehr, das sagt jetzt der Spaltenkopf; bestätigt ist bewusst leise (.fin-note), nicht mehr .tag.ok
 function decisionStatusHTML(c) {
   if (c.superseded_by) return `<span class="tag replaced">ersetzt</span>`;
   if (isConfirmedDecision(c)) {
     const at = c.ack_s > c.ack_a ? c.ack_s : c.ack_a;
-    return `<span class="tag ok">✓ bestätigt · ${esc(fmtDay(at.slice(0, 10)))}</span>`;
+    return `<span class="fin-note">✓ bestätigt · ${esc(fmtDay(at.slice(0, 10)))}</span>`;
   }
-  if (!ackedBy(c, state.person)) {
-    return `<span class="sig-chip waitme">wartet auf dich</span><button class="btn-secondary" data-act="decision-ack" data-ref="${c.id}">Einverstanden</button>`;
-  }
-  const waiting = other(state.person);
-  return `<span class="own ${waiting}">Am Zug: ${esc(OWN[waiting])}</span>`;
+  if (!ackedBy(c, state.person)) return `<span class="sig-chip waitme">wartet auf dich</span>`;
+  return `<span class="own ${other(state.person)}">${esc(OWN[other(state.person)])}</span>`;
 }
 
-// docs/changes/032b #3: mein Zug zuerst, dann der der anderen Person, dann (innerhalb einer
-// Gruppe) nach Datum - allDecisions() liefert schon neueste zuerst, ein stabiler Sort genügt
-function decisionTurnRank(c) {
-  if (c.superseded_by || isConfirmedDecision(c)) return 2;
-  return ackedBy(c, state.person) ? 1 : 0;
+// docs/changes/032c #3: eigene Aktions-Zelle, getrennt von der Status-Zelle - nur Rang 0 bekommt
+// den sekundären "Einverstanden" (der Primär bleibt der angehefteten Karte in der Akte vorbehalten)
+function decisionActionHTML(c) {
+  if (c.superseded_by || isConfirmedDecision(c) || ackedBy(c, state.person)) return '';
+  return `<button class="btn-secondary" data-act="decision-ack" data-ref="${c.id}">Einverstanden</button>`;
 }
 
-function decisionRowHTML(c) {
+// docs/changes/032c #1: data-id direkt an der klickbaren Zeile - main.js löst die Aufgabe über
+// b.closest('[data-id]') auf, nicht über data-ref (Kontrastprobe: signalRowHTML macht es richtig,
+// die alte decisionRowHTML hatte data-id vergessen - deshalb tat der Klick nichts).
+function decisionRowHTML(c, selectedTaskId) {
   const t = byId(c.task_id);
-  const long = c.body.length > 140;
-  const more = ui.decisionsMore && ui.decisionsMore.has(c.id);
-  const body = `<p class="dr-body ${long && !more ? 'clamp' : ''}">${esc(c.body)}</p>${t ? `<span class="dr-task">${esc(t.title)}</span>` : ''}`;
-  return `<article class="decision-row ${c.superseded_by ? 'replaced' : ''}">
-    <div class="dr-meta"><span class="own ${c.author}">${OWN[c.author] || c.author}</span><span class="fin-note">${esc(fmtDay(c.created_at.slice(0, 10)))}</span></div>
-    ${t ? `<button class="dr-body-btn" data-act="open" data-ref="${t.id}" aria-label="Akte öffnen: ${esc(t.title)}">${body}</button>` : body}
-    ${long ? `<button class="btn-text quiet" data-act="decisions-more" data-ref="${c.id}">${more ? 'weniger' : 'mehr'}</button>` : ''}
-    <div class="dr-status">${decisionStatusHTML(c)}</div>
+  if (!t) return '';
+  const cls = `${c.superseded_by ? 'replaced' : ''} ${t.id === selectedTaskId ? 'selected' : ''}`.trim();
+  const attrs = `data-act="open" data-id="${t.id}" data-scroll="${c.id}"`;
+  if (ui.wide) {
+    return `<tr class="${cls}" ${attrs} tabindex="0" role="button" aria-label="Akte öffnen: ${esc(t.title)}">
+      <td class="fin-note">${esc(fmtDay(c.created_at.slice(0, 10)))}</td>
+      <td><span class="own ${c.author}">${OWN[c.author] || c.author}</span></td>
+      <td><p class="dt-text">${esc(c.body)}</p><span class="dr-task">${esc(t.title)}</span></td>
+      <td>${decisionStatusHTML(c)}</td>
+      <td>${decisionActionHTML(c)}</td>
+    </tr>`;
+  }
+  return `<article class="decision-row ${cls}" ${attrs} tabindex="0" role="button" aria-label="Akte öffnen: ${esc(t.title)}">
+    <p class="dt-text">${esc(c.body)}</p>
+    <div class="dr-meta2"><span class="dr-task">${esc(t.title)} · ${esc(fmtDay(c.created_at.slice(0, 10)))}</span>${decisionStatusHTML(c)}</div>
   </article>`;
 }
 
-export function decisionsListHTML() {
-  const filter = ['alle', 'offen', 'bestaetigt'].includes(ui.decisionsFilter) ? ui.decisionsFilter : 'offen';
-  const all = allDecisions();
-  const rows = all
-    .filter((c) => (filter === 'offen' ? !isConfirmedDecision(c) : filter === 'bestaetigt' ? isConfirmedDecision(c) : true))
+function sortedDecisions(filter) {
+  return allDecisions()
+    .filter((c) => (filter === 'offen' ? !isConfirmedDecision(c) : true))
     .slice()
     .sort((a, b) => decisionTurnRank(a) - decisionTurnRank(b));
-  const empty = filter === 'offen' ? 'Keine offenen Entscheidungen.' : 'Nichts in dieser Auswahl.';
+}
+
+// docs/changes/032c: das Panel ohne eigene Auswahl zeigt nicht mehr "antippen, um zu sehen",
+// sondern gleich die Akte, bei der am ehesten etwas zu tun ist - dieselbe Rangfolge wie die Liste
+function defaultDecisionTask() {
+  const first = sortedDecisions('alle')[0];
+  return first ? byId(first.task_id) : null;
+}
+
+const DT_HEAD = ['Datum', 'Von', 'Entscheidung', 'Am Zug', ''];
+
+export function decisionsListHTML(selectedTaskId) {
+  const filter = ['alle', 'offen'].includes(ui.decisionsFilter) ? ui.decisionsFilter : 'offen';
+  const rows = sortedDecisions(filter);
+  const empty = filter === 'offen' ? 'Keine offenen Entscheidungen.' : 'Keine Entscheidungen.';
+  const body = !rows.length
+    ? `<p class="empty">${empty}</p>`
+    : ui.wide
+      ? `<table class="dt-table">
+          <colgroup><col class="c-datum"><col class="c-von"><col class="c-entscheidung"><col class="c-amzug"><col class="c-aktion"><col class="c-luft"></colgroup>
+          <thead><tr>${DT_HEAD.map((h) => `<th>${h}</th>`).join('')}<th></th></tr></thead>
+          <tbody>${rows.map((c) => decisionRowHTML(c, selectedTaskId)).join('')}</tbody>
+        </table>`
+      : rows.map((c) => decisionRowHTML(c, selectedTaskId)).join('');
   return `<div class="pchips" role="group" aria-label="Entscheidungen filtern">${DECISION_FILTERS.map(
     ([k, l]) => `<button class="pill" data-act="decisions-filter" data-to="${k}" aria-pressed="${filter === k}">${l}</button>`,
   ).join('')}</div>
-    ${rows.length ? rows.map(decisionRowHTML).join('') : `<p class="empty">${empty}</p>`}`;
+    ${body}`;
 }
 
-// docs/changes/032b #3: eigene Seite `#entscheidungen` statt eingebettetem Panel (032) - Desktop
-// (>= 1180 px, ui.mode 'panel') zeigt die Liste links und die Akte der angetippten Entscheidung
-// rechts im selben Grid wie Aufgaben; darunter ersetzt die Akte die Liste als eigene "Seite".
+// docs/changes/032b #3, Tabelle seit 032c: eigene Seite `#entscheidungen` statt eingebettetem
+// Panel (032) - Desktop (>= 1180 px, ui.mode 'panel') zeigt die Liste links und die Akte rechts
+// im selben Grid wie Aufgaben; darunter ersetzt die Akte die Liste als eigene "Seite".
 export function entscheidungenView() {
-  const open = ui.expanded ? byId(ui.expanded) : null;
+  const explicitOpen = ui.expanded ? byId(ui.expanded) : null;
   const wide = ui.mode === 'panel';
+  const panelTask = wide ? explicitOpen || defaultDecisionTask() : null;
+  const all = allDecisions();
+  const openCount = all.filter((c) => !isConfirmedDecision(c)).length;
+  const confirmedCount = all.filter((c) => isConfirmedDecision(c) && !c.superseded_by).length;
   const list = `<div class="col-list">
-      <div class="fin-h"><h2>Entscheidungen</h2><button class="btn-text" data-act="entscheidungen-close">zurück</button></div>
-      ${decisionsListHTML()}
+      <div class="fin-h"><h2>Entscheidungen · ${openCount} offen · ${confirmedCount} bestätigt</h2></div>
+      ${decisionsListHTML(panelTask?.id)}
     </div>`;
-  const akte = open
+  const akte = explicitOpen
     ? `<div class="col-list">
       <div class="fin-h"><button class="btn-text" data-act="panel-close">‹ Entscheidungen</button></div>
-      ${detailHTML(open)}
+      ${detailHTML(explicitOpen)}
     </div>`
     : '';
   return (
@@ -506,11 +546,11 @@ export function entscheidungenView() {
     renderHeader('entscheidungen') +
     (wide
       ? `<div class="board mode-panel">${list}${
-          open
-            ? `<aside class="panel" id="panel" data-id="${open.id}" aria-label="Akte: ${esc(open.title)}">${panelHeadHTML(open)}${detailHTML(open)}</aside>`
-            : `<aside class="panel empty" id="panel" aria-label="Akte"><p>Entscheidung antippen, um die Akte zu sehen.</p></aside>`
+          panelTask
+            ? `<aside class="panel" id="panel" data-id="${panelTask.id}" aria-label="Akte: ${esc(panelTask.title)}">${panelHeadHTML(panelTask)}${detailHTML(panelTask)}</aside>`
+            : `<aside class="panel empty" id="panel" aria-label="Akte"><p>Keine Entscheidungen – halte eine im Kommentar einer Aufgabe fest.</p></aside>`
         }</div>`
-      : `<div class="board">${open ? akte : list}</div>`) +
+      : `<div class="board">${explicitOpen ? akte : list}</div>`) +
     footHTML()
   );
 }

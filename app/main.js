@@ -130,8 +130,7 @@ ui.setupPicker = false; // "Stammdaten & Rahmendaten" step list open (026)
 ui.setupAufzug = null; // { s/a/n: bool } - Schritt 2's own tri-state toggle, not an <input> (026)
 ui.setupCostSel = null; // Set of seed_keys unchecked in Schritt 7 - "abgewählt", nichts wird angelegt (026)
 ui.avatarMenu = false; // the avatar's own small menu (026)
-ui.decisionsFilter = 'offen'; // 'alle' | 'offen' | 'bestaetigt', kept while the route is open (032, eigene Seite seit 032b)
-ui.decisionsMore = new Set(); // decision ids with "mehr" aufgeklappt (032)
+ui.decisionsFilter = 'offen'; // 'alle' | 'offen' (032, eigene Seite seit 032b, "bestätigt"-Pille entfällt seit 032c)
 
 /* ---------- screens ---------- */
 function show(screen) {
@@ -628,7 +627,7 @@ const OFFLINE_OK = new Set([
   'fin-recurring', 'q-clear', 'home', 'overlay-close', 'title-edit', 'title-done',
   'bal-how', 'post-filter', 'post-open', 'rec-edit', 'rec-done',
   'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
-  'entscheidungen-open', 'entscheidungen-close', 'decisions-filter', 'decisions-more',
+  'entscheidungen-open', 'entscheidungen-close', 'decisions-filter',
   'cost-cancel', 'cost-discard', 'fin-setup-back', 'fin-setup-skip', 'fin-setup-resume', 'fin-setup-household',
 ]);
 
@@ -951,6 +950,9 @@ function wireEvents() {
         case 'open':
           if (searching()) return jumpTo(t); // docs/changes/012
           setExpanded(ui.expanded === t.id ? null : t.id);
+          // docs/changes/032c: von der Entscheidungen-Seite aus gleich zur angehefteten Karte
+          // scrollen (render() in setExpanded ist synchron, die Karte steht schon im DOM)
+          if (b.dataset.scroll) $(`[data-com="${CSS.escape(b.dataset.scroll)}"]`)?.scrollIntoView({ block: 'center' });
           return;
         case 'q-clear':
           setQuery('');
@@ -1153,11 +1155,6 @@ function wireEvents() {
           return;
         case 'decisions-filter':
           ui.decisionsFilter = b.dataset.to;
-          render();
-          return;
-        case 'decisions-more':
-          if (ui.decisionsMore.has(b.dataset.ref)) ui.decisionsMore.delete(b.dataset.ref);
-          else ui.decisionsMore.add(b.dataset.ref);
           render();
           return;
         /* ---------- navigation (013 A6) ---------- */
