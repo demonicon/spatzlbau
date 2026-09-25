@@ -401,6 +401,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .tag { font-size: var(--fs-micro); }
 .tag.claude { background: var(--claude-bg); color: var(--claude); }
 .tag.wait-me { background: var(--card); color: var(--ink); font-weight: 600; }
+.tag.ok { background: var(--card); color: var(--ok); font-weight: 600; } /* docs/changes/032: "✓ bestätigt" */
 /* ein Textlink auf eine blockierende Aufgabe, kein Chip - Regel 3 gilt ihm nicht */
 .tag.block { display: inline; min-height: auto; line-height: inherit; border: 0; padding: 0; color: var(--ink-3); text-decoration: underline dotted; text-underline-offset: 2px; font-size: var(--fs-micro); }
 .tag.block:hover { color: var(--ink); }
@@ -531,6 +532,31 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* docs/changes/013 B5: only the own comments carry these - delete always, edit within ten minutes */
 .com-own-actions { display: flex; gap: 14px; align-items: center; white-space: normal; }
 .com-own-actions .btn-text { padding: 6px 0; }
+.com-own-actions .quiet { margin-left: auto; }
+/* docs/changes/032: pinned decision card - a comment row with a border of its own, not the
+   hairline the rest of the list shares */
+.decision-card { border: 1px solid var(--ink); margin: 10px -12px; padding: 10px 12px; white-space: normal; }
+.dc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: var(--fs-micro); }
+.dc-tag { font-weight: 600; color: var(--ink); }
+.dc-body { margin: 6px 0 0; font-size: var(--fs-ui); white-space: pre-wrap; }
+.dc-action, .dc-confirmed { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.dc-circles { display: flex; gap: 4px; }
+.dc-circle {
+  display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+  border-radius: 50%; font-size: var(--fs-micro); font-weight: 600; border: none;
+}
+.dc-circle.S { background: var(--seb); color: #fff; }
+.dc-circle.A { background: var(--anna); color: #fff; }
+.tag.replaced { color: var(--ink-3); background: var(--paper); }
+.com s { color: var(--ink-3); }
+/* docs/changes/032: the "Entscheidungen" list - panel (desktop) and full route (phone) share it */
+.decision-row { padding: 10px 0; border-bottom: 1px solid var(--divider); }
+.dr-meta { display: flex; align-items: center; gap: 8px; }
+.dr-body { margin: 6px 0 0; font-size: var(--fs-ui); }
+.dr-body.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.decision-row.replaced .dr-body { color: var(--ink-3); text-decoration: line-through; }
+.dr-task { display: block; margin-top: 6px; padding: 0; background: none; border: 0; color: var(--link); text-decoration: underline; text-underline-offset: 2px; font-size: var(--fs-meta); cursor: pointer; }
+.dr-status { margin-top: 6px; }
 .brief { background: var(--claude-bg); padding: 14px 14px 12px; margin-top: 6px; }
 .brief label { display: block; font-size: var(--fs-small); color: var(--claude); margin-top: 10px; }
 .brief .turn { font-size: var(--fs-small); color: var(--claude); }

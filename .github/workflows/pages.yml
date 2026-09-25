@@ -30,9 +30,27 @@ jobs:
         with:
           ref: main
           path: site
-      - name: Validate changelog.json (main)
+      # docs/changes/035: every *.json in the repo, parsed before anything else touches it - a
+      # single broken file (changelog.json after 034 slipped through unnoticed and broke every
+      # deploy, main and preview alike, until this caught it) now fails loud, with file and line.
+      - name: Validate JSON (main)
         working-directory: site
-        run: python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          from pathlib import Path
+          ok = True
+          for path in sorted(Path('.').rglob('*.json')):
+              if '.git' in path.parts:
+                  continue
+              try:
+                  json.loads(path.read_text(encoding='utf-8'))
+              except json.JSONDecodeError as e:
+                  print(f"::error file={path},line={e.lineno},col={e.colno}::{path}: {e.msg} (Zeile {e.lineno}, Spalte {e.colno})")
+                  ok = False
+          sys.exit(0 if ok else 1)
+          PY
+          python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
       - name: Stamp main build with its own commit SHA
         working-directory: site
         run: |
@@ -53,10 +71,25 @@ jobs:
         with:
           ref: preview
           path: site/preview
-      - name: Validate changelog.json (preview)
+      - name: Validate JSON (preview)
         if: steps.preview.outputs.exists == 'true'
         working-directory: site/preview
-        run: python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          from pathlib import Path
+          ok = True
+          for path in sorted(Path('.').rglob('*.json')):
+              if '.git' in path.parts:
+                  continue
+              try:
+                  json.loads(path.read_text(encoding='utf-8'))
+              except json.JSONDecodeError as e:
+                  print(f"::error file={path},line={e.lineno},col={e.colno}::{path}: {e.msg} (Zeile {e.lineno}, Spalte {e.colno})")
+                  ok = False
+          sys.exit(0 if ok else 1)
+          PY
+          python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
       - name: Stamp preview build with its own commit SHA
         if: steps.preview.outputs.exists == 'true'
         working-directory: site/preview

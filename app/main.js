@@ -24,6 +24,8 @@ import {
   updateComment,
   deleteComment,
   canEditComment,
+  setCommentDecision,
+  setDecisionAck,
   setSetting,
   loadPersonRow,
   setLastSeenVersion,
@@ -41,7 +43,7 @@ import {
 } from './state.js';
 import { FILTERS } from './filters.js';
 import { compareVersions, newestVersion, hasUnread } from './changelog.js';
-import { dashboardView, columns } from './views/dashboard.js';
+import { dashboardView, columns, entscheidungenView } from './views/dashboard.js';
 import { finanzenView } from './views/finanzen.js';
 import { startSetupHTML, SETUP_STEPS, SETUP_STEP_TITLES, OWNER_PROPOSAL } from './views/start.js';
 import { draftOf, draftCount, fieldValue, costDraftOf, costDraftCount, costFieldValue } from './ui/detail.js';
@@ -128,6 +130,9 @@ ui.setupPicker = false; // "Stammdaten & Rahmendaten" step list open (026)
 ui.setupAufzug = null; // { s/a/n: bool } - Schritt 2's own tri-state toggle, not an <input> (026)
 ui.setupCostSel = null; // Set of seed_keys unchecked in Schritt 7 - "abgewählt", nichts wird angelegt (026)
 ui.avatarMenu = false; // the avatar's own small menu (026)
+ui.decisionsOpen = false; // "Entscheidungen"-Liste im Desktop-Panel statt "Zwischen euch" (032)
+ui.decisionsFilter = 'offen'; // 'alle' | 'offen' | 'bestaetigt', kept while the panel/route is open (032)
+ui.decisionsMore = new Set(); // decision ids with "mehr" aufgeklappt (032)
 
 /* ---------- screens ---------- */
 function show(screen) {
@@ -191,7 +196,7 @@ function render() {
   // docs/changes/026: the eight-step start takes the whole screen, like the Finanzen wizard it
   // reuses parts of - first run (not skipped), or one step reopened from the avatar menu
   const showSetup = (!state.settings.setup_done && !ui.setupSkip) || ui.setupReopen || ui.setupPicker;
-  $('#view').innerHTML = showSetup ? startSetupHTML() : ui.screen === 'finanzen' ? finanzenView() : dashboardView();
+  $('#view').innerHTML = showSetup ? startSetupHTML() : ui.screen === 'finanzen' ? finanzenView() : ui.screen === 'entscheidungen' ? entscheidungenView() : dashboardView();
   // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set via CSSOM
   for (const el of $('#view').querySelectorAll('.bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
   // docs/changes/021: a segment is as wide as its share of all tasks, at least 44 px
@@ -468,6 +473,7 @@ function closeChangelog() {
 // opened via a task link (#task=<id>)? then the person has a goal – no automatic panel
 const openedViaTaskLink = () => /^#task=/.test(location.hash);
 const openedViaFinanzen = () => location.hash === '#finanzen';
+const openedViaEntscheidungen = () => location.hash === '#entscheidungen';
 const hashTaskId = () => (openedViaTaskLink() ? decodeURIComponent(location.hash.slice('#task='.length)) : null);
 function openTaskFromHash() {
   const t = byId(hashTaskId());
@@ -489,9 +495,16 @@ function revealTask(t) {
 }
 // the open task lives in the URL, so a link to it can be shared (docs/changes/006)
 function syncHash() {
-  const want = ui.screen === 'finanzen' ? '#finanzen' : ui.expanded ? '#task=' + encodeURIComponent(ui.expanded) : '';
+  const want = ui.screen === 'finanzen' ? '#finanzen' : ui.screen === 'entscheidungen' ? '#entscheidungen' : ui.expanded ? '#task=' + encodeURIComponent(ui.expanded) : '';
   if (location.hash === want) return;
   history.replaceState(null, '', location.pathname + location.search + want);
+}
+// docs/changes/032: same pattern as openFinanzen() - the mobile route for the decisions list
+function openEntscheidungen() {
+  const already = ui.screen === 'entscheidungen';
+  ui.screen = 'entscheidungen';
+  if (already) return;
+  history.pushState(null, '', location.pathname + location.search + '#entscheidungen');
 }
 // docs/changes/013 B3: entering Finanzen gets its own step back - Browser-Zurück leaves it
 // again and lands on the list. Opening an Akte still replaces (decision from 006), unaffected.
@@ -616,6 +629,7 @@ const OFFLINE_OK = new Set([
   'fin-recurring', 'q-clear', 'home', 'overlay-close', 'title-edit', 'title-done',
   'bal-how', 'post-filter', 'post-open', 'rec-edit', 'rec-done',
   'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
+  'entscheidungen-open', 'entscheidungen-close', 'decisions-filter', 'decisions-more',
   'cost-cancel', 'cost-discard', 'fin-setup-back', 'fin-setup-skip', 'fin-setup-resume', 'fin-setup-household',
 ]);
 
@@ -678,7 +692,13 @@ function wireEvents() {
       render();
       return;
     }
+    if (openedViaEntscheidungen()) {
+      ui.screen = 'entscheidungen';
+      render();
+      return;
+    }
     ui.screen = 'dashboard';
+    ui.decisionsOpen = false;
     const id = hashTaskId();
     if (id && byId(id)) openTaskFromHash();
     else if (!id) ui.expanded = null;
@@ -721,6 +741,12 @@ function wireEvents() {
   // docs/changes/012: from the first character, without a delay
   view.addEventListener('input', (e) => {
     if (e.target.dataset.input === 'q') setQuery(e.target.value);
+    // docs/changes/032: "Entschieden: …" pre-checks the checkbox below, live, without a render
+    // (a full render mid-keystroke would drop the cursor position)
+    if (e.target.dataset.input === 'com') {
+      const box = e.target.closest('[data-id]')?.querySelector('[data-input="com-decision"]');
+      if (box) box.checked = /^entschieden:/i.test(e.target.value.trim());
+    }
   });
 
   view.addEventListener('change', (e) => {
@@ -1066,7 +1092,8 @@ function wireEvents() {
           const ta = input('[data-input=com]');
           const v = ta.value.trim();
           if (!v) return;
-          await addComment(t.id, v);
+          const decision = !!input('[data-input=com-decision]')?.checked;
+          await addComment(t.id, v, decision);
           return;
         }
         /* ---------- own comments (013 B5) ---------- */
@@ -1100,6 +1127,41 @@ function wireEvents() {
           ui.confirm = null;
           await deleteComment(b.dataset.ref);
           toast('Kommentar gelöscht');
+          return;
+        /* ---------- decisions (docs/changes/032) ---------- */
+        case 'com-decision-toggle': {
+          const c = state.comments.find((x) => x.id === b.dataset.ref);
+          if (!c) return;
+          await setCommentDecision(c.id, !c.decision);
+          return;
+        }
+        case 'decision-ack':
+          await setDecisionAck(b.dataset.ref, true);
+          toast('Bestätigt');
+          return;
+        case 'decision-ack-toggle': // the filled circle is only ever tappable to take the own tick back
+          await setDecisionAck(b.dataset.ref, false);
+          return;
+        case 'entscheidungen-open':
+          ui.expanded = null;
+          ui.decisionsOpen = true;
+          if (ui.mode !== 'panel') openEntscheidungen();
+          render();
+          return;
+        case 'entscheidungen-close':
+          ui.decisionsOpen = false;
+          ui.screen = 'dashboard';
+          syncHash();
+          render();
+          return;
+        case 'decisions-filter':
+          ui.decisionsFilter = b.dataset.to;
+          render();
+          return;
+        case 'decisions-more':
+          if (ui.decisionsMore.has(b.dataset.ref)) ui.decisionsMore.delete(b.dataset.ref);
+          else ui.decisionsMore.add(b.dataset.ref);
+          render();
           return;
         /* ---------- navigation (013 A6) ---------- */
         case 'home': // the house: back to the plain list, no filter, all phases
@@ -1745,6 +1807,7 @@ async function enter(session) {
   const viaLink = openedViaTaskLink();
   if (viaLink) openTaskFromHash();
   if (openedViaFinanzen()) ui.screen = 'finanzen';
+  if (openedViaEntscheidungen()) ui.screen = 'entscheidungen';
   // docs/changes/021: a phase the other person finished while I was away - the moment is mine
   // too, once, and it waits for the next opening instead of interrupting anything
   if (!viaLink) ui.gate = unseenGate();

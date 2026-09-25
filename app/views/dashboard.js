@@ -5,7 +5,10 @@
 import { esc } from '../ui/dom.js';
 import { OWN, STEPS } from '../ui/labels.js';
 import { renderHeader, updateBarHTML, footHTML, setupHintHTML } from '../ui/chrome.js';
-import { state, ui, byId, phases, einzug, umzugstag, dueInfo, dueShort, freshComments, doneByOther, claudeStep, fmtDay } from '../state.js';
+import {
+  state, ui, byId, phases, einzug, umzugstag, dueInfo, dueShort, freshComments, doneByOther, claudeStep, fmtDay,
+  allDecisions, ackedBy, isConfirmedDecision,
+} from '../state.js';
 import { FILTERS, matches, count, isBlocked, isLate, isCritical, waitsOnMe, waitsOnYou, hasNews, other } from '../filters.js';
 import { timeGroups, gate, gateInDays } from '../groups.js';
 import { taskHTML } from '../ui/task.js';
@@ -394,6 +397,21 @@ const BETWEEN = [
   ['waityou', (n) => `${n}× du wartest auf ${OWN[other(state.person)]}`, 'Erinnern'],
 ];
 
+// docs/changes/032: how many decisions still miss this person's own tick - the same number the
+// "Entscheidungen · n" card shows, the card only appears once at least one decision exists at all
+function myOpenDecisionsCount() {
+  return allDecisions().filter((c) => !c.superseded_by && !ackedBy(c, state.person)).length;
+}
+
+function decisionsCardHTML() {
+  const all = allDecisions();
+  if (!all.length) return '';
+  const n = myOpenDecisionsCount();
+  return `<section class="between-block">
+    <h3><button class="between-title" data-act="entscheidungen-open">Entscheidungen · ${n}</button></h3>
+  </section>`;
+}
+
 function betweenHTML() {
   const blocks = BETWEEN.map(([key, label, action]) => {
     const rows = state.tasks.filter((t) => matches(t, key)).sort(order);
@@ -409,12 +427,67 @@ function betweenHTML() {
         ${rows.length > 1 ? `<button class="btn-text" data-filter="${key}">alle ${rows.length} zeigen</button>` : ''}
       </div>
     </section>`;
-  }).join('');
+  }).join('') + decisionsCardHTML();
   if (!blocks) return `<aside class="panel empty" id="panel" aria-label="Akte"><p>Nichts hängt gerade zwischen euch.</p></aside>`;
   return `<aside class="panel between" id="panel" aria-label="Zwischen euch">
     <div class="panel-head"><span class="hint">Zwischen euch</span></div>
     ${blocks}
   </aside>`;
+}
+
+/* ---------- Entscheidungen (docs/changes/032): the list of every decision, newest first ---------- */
+
+const DECISION_FILTERS = [['alle', 'alle'], ['offen', 'offen'], ['bestaetigt', 'bestätigt']];
+
+function decisionStatusHTML(c) {
+  if (c.superseded_by) return `<span class="tag replaced">ersetzt</span>`;
+  if (isConfirmedDecision(c)) return `<span class="tag ok">✓ bestätigt</span>`;
+  if (!ackedBy(c, state.person)) return `<span class="sig-chip waitme">wartet auf dich</span>`;
+  const other = c.author === 'S' ? 'A' : 'S';
+  return `<span class="fin-note">wartet auf ${esc(OWN[other])}</span>`;
+}
+
+function decisionRowHTML(c) {
+  const t = byId(c.task_id);
+  const long = c.body.length > 180;
+  const more = ui.decisionsMore && ui.decisionsMore.has(c.id);
+  return `<article class="decision-row ${c.superseded_by ? 'replaced' : ''}">
+    <div class="dr-meta"><span class="own ${c.author}">${OWN[c.author] || c.author}</span><span class="fin-note">${esc(fmtDay(c.created_at.slice(0, 10)))}</span></div>
+    <p class="dr-body ${long && !more ? 'clamp' : ''}">${esc(c.body)}</p>
+    ${long ? `<button class="btn-text quiet" data-act="decisions-more" data-ref="${c.id}">${more ? 'weniger' : 'mehr'}</button>` : ''}
+    ${t ? `<button class="dr-task" data-act="open" data-ref="${t.id}">${esc(t.title)} ›</button>` : ''}
+    <div class="dr-status">${decisionStatusHTML(c)}</div>
+  </article>`;
+}
+
+export function decisionsListHTML() {
+  const filter = ['alle', 'offen', 'bestaetigt'].includes(ui.decisionsFilter) ? ui.decisionsFilter : 'offen';
+  const all = allDecisions();
+  const rows = all.filter((c) => (filter === 'offen' ? !isConfirmedDecision(c) : filter === 'bestaetigt' ? isConfirmedDecision(c) : true));
+  return `<div class="pchips" role="group" aria-label="Entscheidungen filtern">${DECISION_FILTERS.map(
+    ([k, l]) => `<button class="pill" data-act="decisions-filter" data-to="${k}" aria-pressed="${filter === k}">${l}</button>`,
+  ).join('')}</div>
+    ${rows.length ? rows.map(decisionRowHTML).join('') : `<p class="empty">Nichts in dieser Auswahl.</p>`}`;
+}
+
+function decisionsPanelHTML() {
+  return `<aside class="panel decisions" id="panel" aria-label="Entscheidungen">
+    <div class="panel-head"><span class="hint">Entscheidungen</span><button class="btn-text" data-act="entscheidungen-close">schließen</button></div>
+    ${decisionsListHTML()}
+  </aside>`;
+}
+
+export function entscheidungenView() {
+  return (
+    updateBarHTML() +
+    setupHintHTML() +
+    renderHeader('dashboard') +
+    `<div class="board"><div class="col-list">
+      <div class="fin-h"><h2>Entscheidungen</h2><button class="btn-text" data-act="entscheidungen-close">zurück</button></div>
+      ${decisionsListHTML()}
+    </div></div>` +
+    footHTML()
+  );
 }
 
 function addBoxHTML() {
@@ -503,6 +576,7 @@ export function dashboardView() {
 }
 
 function panelHTML(t) {
+  if (ui.decisionsOpen) return decisionsPanelHTML(); // docs/changes/032: desktop opens the list in the panel
   if (!t) return betweenHTML(); // docs/changes/018 §5: no selection = "Zwischen euch"
   return `<aside class="panel" id="panel" data-id="${t.id}" aria-label="Akte: ${esc(t.title)}">
     ${panelHeadHTML(t)}

@@ -37,6 +37,7 @@ Lies zuerst `BRIEFING.md`. Es enthält Konzept, Datenmodell, technische Entschei
 - Schema-Änderungen als neue Datei in `supabase/migrations/NNN_aXXX_<thema>.sql` (NNN fortlaufend, XXX = Nummer des Änderungsauftrags, z. B. `005_a004_costs.sql`); `schema.sql` bleibt der Gesamtstand für Neueinrichtung. Die Migrationen 001–004 stammen von vor dieser Regel und behalten ihre Namen.
 - Commit-Messages: Präfix `feat:`, `fix:`, `content:`, `chore:`. Kleine Commits.
 - Vor dem Push: `index.html` lokal öffnen (Live-Server) und auf ~380 px prüfen.
+- Vor jedem Commit: `node -e "JSON.parse(require('fs').readFileSync('changelog.json'))"`; der Workflow prüft es ebenfalls. (Festgelegt am 25.09.2026, Auftrag 035.)
 
 ## Design-Regeln
 - Schrift, Gewichte und Größen kommen aus dem Claude-Design-Export des jeweiligen Auftrags, nicht aus dem Bestand. Keine neue Familie, kein neues Gewicht ohne Vorlage. (Festgelegt am 23.09.2026, Auftrag 020b.)
