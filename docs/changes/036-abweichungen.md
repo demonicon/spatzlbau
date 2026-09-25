@@ -29,6 +29,20 @@ Stand: 25.09.2026 · Branch `fix/036` → `preview` · Aufwand S
    zusätzlich Pages' eigene Umgebungssperre (`environment: github-pages`) vor zwei gleichzeitigen
    Deploys unterschiedlicher Läufe.
 
+## Ein echter Fund unterwegs: der Tag-Vergleich lief in der CI in jeden ruhenden Zustand hinein
+
+Der erste echte Lauf auf `preview` (Run #114/#115, siehe Bericht) zeigte `build-main` rot:
+`changelog.json` auf `main` hat die Version `2.2.0`, die schon den Tag `v2.2.0` trägt – korrekt
+erkannt, aber falsch bewertet. `main` **ruht** zwischen zwei Versionssprüngen genau auf der zuletzt
+getaggten Version; das ist der Normalzustand, kein Fund. Mit der ursprünglichen Prüfung wäre
+`main`s Build ab dem ersten sauberen Tag für immer rot geblieben. Zwei Korrekturen:
+- Der Tag-Vergleich läuft nur noch lokal (`!process.env.GITHUB_ACTIONS`) – er ist ein
+  Vor-dem-Commit-Netz („habe ich die Version wirklich erhöht"), keine CI-Dauerprüfung.
+- Unabhängig davon: `git rev-parse v<version>^{commit}` (die ursprüngliche Idee für einen
+  commit-genauen Vergleich) scheiterte lokal unter Windows – `execSync` läuft dort über `cmd.exe`,
+  das `^` schluckt. `git rev-list -n 1` (kein `^{commit}` nötig) ist der portable Ersatz, falls
+  ein commit-genauer Vergleich später gebraucht wird.
+
 ## Tests
 
 Reihenfolge wie im Auftrag; 1 und 2 lokal, 3 und 4 real (Live-Läufe, siehe Bericht für

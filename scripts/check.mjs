@@ -86,12 +86,16 @@ try {
     if (v && !isDateVersion && !isReleaseVersion) {
       fail(`changelog.json: Version '${v}' ist weder dreiteilige Release-Nummer noch Datumsform`);
     }
-    if (v) {
+    // Der Tag-Vergleich ist ein Vor-dem-Commit-Netz ("habe ich die Version wirklich erhöht,
+    // bevor ich einen neuen Eintrag ergänzt habe") - in der CI dagegen ist der oberste Eintrag
+    // fast immer der zuletzt getaggte Stand (main/preview ruhen zwischen zwei Versionssprüngen
+    // genau dort), das waere dort ein staendiger Fehlalarm ohne echten Fund. Nur lokal geprueft.
+    if (v && !process.env.GITHUB_ACTIONS) {
       try {
         const tags = execSync('git tag -l', { cwd: ROOT, encoding: 'utf8' }).split('\n').map((t) => t.trim());
         if (tags.includes('v' + v)) fail(`changelog.json: Version '${v}' hat schon den Tag v${v} - Version nicht erhöht?`);
       } catch {
-        // kein Git-Repo oder kein Tag-Zugriff (z. B. flacher Checkout ohne Tags) - keine Blockade
+        // kein Git-Repo oder kein Tag-Zugriff - keine Blockade
       }
     }
   }

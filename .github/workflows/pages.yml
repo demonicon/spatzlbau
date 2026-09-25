@@ -36,7 +36,7 @@ jobs:
       version: ${{ steps.finish.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, path: site }
+        with: { ref: main, path: site, fetch-depth: 0 } # volle Historie inkl. Tags - check.mjs vergleicht gegen bestehende Tags
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       # docs/changes/036 §4: same script as `npm run check` locally and as the pre-commit hook -
@@ -98,7 +98,7 @@ jobs:
           fi
       - if: steps.exists.outputs.exists == 'true'
         uses: actions/checkout@v4
-        with: { ref: preview, path: site }
+        with: { ref: preview, path: site, fetch-depth: 0 } # volle Historie inkl. Tags - check.mjs vergleicht gegen bestehende Tags
       - if: steps.exists.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with: { node-version: 20 }
