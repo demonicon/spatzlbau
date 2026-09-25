@@ -77,3 +77,4 @@ Befund Sebastian (Screenshot preview 2.2.2, 19:38) + Reviewer-Fund aus 037. Erse
   behebt das für diese und künftige gleich gebaute Zeilen. (d) Die Tabelle hat sechs Spalten
   (fünf plus „Luft"), Datenzeilen hatten aber nur fünf `<td>` – die Hairline/Hover/Auswahlfarbe
   endeten dadurch vor dem rechten Rand; jetzt eine leere sechste Zelle je Zeile.
+- **Reviewer-Runde 3: keine Lücken.**
