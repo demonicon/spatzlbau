@@ -1,0 +1,40 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/stop-check.mjs" }]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/bash-guard.mjs" }]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/migration-guard.mjs" }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/changelog-postcheck.mjs" }]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run check)",
+      "Bash(npm test*)",
+      "Bash(node scripts/*)",
+      "Bash(git *)",
+      "Bash(gh run *)",
+      "Bash(gh pr *)",
+      "Bash(curl https://demonicon.github.io/*)",
+      "Bash(npx.cmd supabase functions deploy ics *)",
+      "Read",
+      "Edit",
+      "Write"
+    ]
+  }
+}

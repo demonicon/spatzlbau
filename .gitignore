@@ -5,7 +5,6 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
-.claude/
 
 # Design-Snapshots: Textdokumente ja, Aufnahmen mit echten Daten nein (öffentliches Repo, Auftrag 011)
 design/handoff/
