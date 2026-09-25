@@ -13,6 +13,8 @@ export const ICON = {
   info: svg('<circle cx="12" cy="12" r="8.6"/><path d="M12 11.2v5"/><path d="M12 7.9h.01"/>'),
   // pencil: the title is text until this is pressed
   pencil: svg('<path d="M4 20h4L18.3 9.7a2.1 2.1 0 0 0-3-3L5 17v3Z"/><path d="M13.8 7.2l3 3"/>'),
+  // a balance: Anfragen - offers weighed against each other (033)
+  scale: svg('<path d="M12 4v16M8 20h8M4 7h16"/><path d="M4 7 1.8 13h4.4Z"/><path d="M20 7l-2.2 6h4.4Z"/>'),
   // diamond: Entscheidungen (032b) - 16 px per Auftrag, smaller on purpose than the other nav icons
   diamond: `<svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.6 14.4 8 8 14.4 1.6 8Z"/></svg>`,
 };

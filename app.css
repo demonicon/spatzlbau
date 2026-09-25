@@ -588,6 +588,54 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
   .dt-table col.c-aktion { width: 12%; }
   .dt-table col.c-luft { width: 10%; }
 }
+/* ---------- Anfragen (docs/changes/033) ----------
+   List rows follow the Entscheidungen cards (032c); the detail reuses .detail/.lbl/.akte-line.
+   The four-rung bar is the "Stand" bar (.steps), four wide instead of three. */
+.steps.four { grid-template-columns: repeat(4, 1fr); }
+.af-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--divider); cursor: pointer; }
+.af-row:hover, .af-row:focus-visible { background: var(--divider); }
+.af-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--paper); padding-left: 8px; margin-left: -8px; }
+.af-row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.af-title { font-size: var(--fs-ui); font-weight: 600; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+.af-row2 { margin-top: 2px; }
+.af-row .steps { margin-top: 8px; }
+.af-new { padding: 10px 0; border-bottom: 1px solid var(--divider); }
+.af-new .hint { margin: 0 0 6px; }
+.af-detail .steps { margin-bottom: 4px; }
+.detail .confirm.block { margin: 12px 0 0; }
+/* the recommendation is Claude speaking - Claude's colour, as the brief and its comments */
+.vg-reco { margin: 14px 0 0; padding: 10px 12px; background: var(--claude-bg); color: var(--claude); font-size: var(--fs-ui); font-weight: 600; line-height: 1.4; }
+.vg-by { display: block; font-size: var(--fs-micro); font-weight: 400; color: var(--ink-3); }
+.vg-plus, .vg-minus { display: block; }
+.vg-chosen-mark { font-size: var(--fs-meta); font-weight: 600; color: var(--ink); }
+.vg-sources { margin: 4px 0 0; padding-left: 18px; font-size: var(--fs-meta); }
+.vg-sources li { overflow-wrap: anywhere; }
+/* links in running text still get the full 44 px as their hit area (tap rule) */
+.vg-sources a, .vg-dl dd a, .vg-table td a, .af-detail .akte-meta .tlink { display: inline-flex; align-items: center; min-height: var(--tap); }
+/* < 900 px: one card per offer, the seven rows as label/value lines */
+.vg-card { padding: 12px 0; border-bottom: 1px solid var(--divider); }
+.vg-card.vg-chosen { box-shadow: inset 3px 0 0 var(--ink); padding-left: 10px; }
+.vg-card-head b { font-size: var(--fs-ui); }
+.vg-dl { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 8px; margin: 8px 0 0; font-size: var(--fs-meta); }
+.vg-dl dt { font-size: var(--fs-micro); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; padding-top: 2px; }
+.vg-dl dd { margin: 0; overflow-wrap: anywhere; }
+.vg-edit { margin-top: 12px; }
+@media (min-width: 900px) {
+  /* 033: list a fixed 320 px, the anfrage takes the rest - the comparison table needs the width */
+  .board.af-board { display: grid; grid-template-columns: 320px minmax(0, 1fr); align-items: start; }
+  .af-board .col-list { min-width: 0; }
+  /* offers as columns, the seven attributes as rows; table-layout fixed shares the width equally,
+     so up to five offers never scroll sideways - long words wrap instead */
+  .vg-table { width: 100%; margin-top: 14px; border-collapse: collapse; table-layout: fixed; font-size: var(--fs-meta); }
+  .vg-table col.c-label { width: 16%; }
+  .vg-table th, .vg-table td { padding: 8px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--divider); overflow-wrap: anywhere; }
+  .vg-table thead th { font-size: var(--fs-ui); font-weight: 600; color: var(--ink); border-bottom: 1px solid var(--ink); }
+  .vg-table tbody th { font-size: var(--fs-micro); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; color: var(--ink-2); }
+  .vg-table .vg-chosen { background: var(--paper); }
+  .vg-table thead th.vg-chosen { box-shadow: inset 0 3px 0 var(--ink); }
+  .vg-table tfoot td { border-bottom: 0; }
+  .vg-table tfoot td .btn-secondary, .vg-table tfoot td .btn-text { display: flex; margin-top: 4px; }
+}
 .brief { background: var(--claude-bg); padding: 14px 14px 12px; margin-top: 6px; }
 .brief label { display: block; font-size: var(--fs-small); color: var(--claude); margin-top: 10px; }
 .brief .turn { font-size: var(--fs-small); color: var(--claude); }

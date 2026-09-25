@@ -15,6 +15,9 @@ export const state = {
   loadedAt: null, // when the data last came from the server (009, offline notice)
   settings: {}, // key -> value (jsonb)
   tasks: [], // non-deleted tasks
+  // docs/changes/033: type 'anfrage' rows live here, never in tasks - so columns, timeline, gate,
+  // counters, print and search stay free of them without a filter at each of their ~20 readers
+  anfragen: [],
   subtasks: [],
   comments: [],
   costs: [], // cost rows per task (docs/changes/007)
@@ -46,6 +49,13 @@ const status = (kind, msg) => statusFn(kind, msg);
 
 /* ---------- lookups ---------- */
 export const byId = (id) => state.tasks.find((t) => t.id === id);
+export const isAnfrage = (t) => t?.type === 'anfrage';
+export const anfrageById = (id) => state.anfragen.find((a) => a.id === id);
+// docs/changes/033: the one place rows are sorted into tasks vs. anfragen (load, snapshot)
+function setTaskRows(rows) {
+  state.tasks = rows.filter((t) => !isAnfrage(t));
+  state.anfragen = rows.filter(isAnfrage);
+}
 export const subsOf = (taskId) =>
   state.subtasks.filter((s) => s.task_id === taskId).sort((a, b) => a.sort - b.sort || a.created_at.localeCompare(b.created_at));
 export const comsOf = (taskId) =>
@@ -95,6 +105,11 @@ export const allDecisions = () => state.comments.filter((c) => c.decision).sort(
 // docs/changes/032b: how many decisions still miss this person's own tick - the nav badge and
 // the "Entscheidungen · n" card share this one number
 export const myOpenDecisionsCount = () => allDecisions().filter((c) => !c.superseded_by && !ackedBy(c, state.person)).length;
+// docs/changes/033: results nobody has chosen from yet - the badge on the Anfragen pill
+export const openAnfragenCount = () => state.anfragen.filter((a) => a.status === 'ergebnis' && !a.brief?.vergleich?.chosen).length;
+// the newest anfrage linked to a task - the "Anfrage" block in that task's Akte
+export const anfrageOfTask = (taskId) =>
+  state.anfragen.filter((a) => a.brief?.anfrage?.task_id === taskId).sort((x, y) => (y.created_at || '').localeCompare(x.created_at || ''))[0] || null;
 export const doneByOther = (t) =>
   !!state.lastVisitAt && t.done && !!t.done_by && t.done_by !== state.person && t.updated_at > state.lastVisitAt;
 
@@ -189,6 +204,7 @@ function saveSnapshot() {
         saved_at: state.loadedAt,
         settings: state.settings,
         tasks: state.tasks,
+        anfragen: state.anfragen,
         subtasks: state.subtasks,
         comments: state.comments,
         costs: state.costs,
@@ -211,7 +227,7 @@ export function loadSnapshot() {
     const d = JSON.parse(localStorage.getItem(SNAP_KEY) || 'null');
     if (!d || !Array.isArray(d.tasks)) return null;
     state.settings = d.settings || {};
-    state.tasks = d.tasks;
+    setTaskRows([...d.tasks, ...(d.anfragen || [])]);
     state.subtasks = d.subtasks || [];
     state.comments = d.comments || [];
     state.costs = d.costs || [];
@@ -239,7 +255,7 @@ export async function loadAll() {
   const err = settings.error || tasks.error || subtasks.error || comments.error || costs.error || recurring.error;
   if (err) throw err;
   state.settings = Object.fromEntries(settings.data.map((r) => [r.key, r.value]));
-  state.tasks = tasks.data;
+  setTaskRows(tasks.data);
   state.subtasks = subtasks.data;
   state.comments = comments.data;
   state.costs = costs.data;
@@ -382,10 +398,12 @@ export function applyRealtimeEvent(table, payload) {
   if (!deleted && !row) throw new Error('event without row');
 
   switch (table) {
-    case 'tasks':
+    case 'tasks': {
       // the app never deletes a task hard; deleted_at arrives as a plain update
-      if (deleted) return dropRow(state.tasks, old?.id);
-      return row.deleted_at ? dropRow(state.tasks, row.id) : upsertRow(state.tasks, row);
+      if (deleted) return dropRow(state.tasks, old?.id) || dropRow(state.anfragen, old?.id);
+      const list = isAnfrage(row) ? state.anfragen : state.tasks;
+      return row.deleted_at ? dropRow(list, row.id) : upsertRow(list, row);
+    }
     case 'subtasks':
       return deleted ? dropRow(state.subtasks, old?.id) : upsertRow(state.subtasks, row);
     case 'comments':
@@ -484,7 +502,7 @@ async function write(label, fn) {
 export const doneBy = (done) => (state.visitReady ? { done_by: done ? state.person : null } : {});
 
 export async function updateTask(id, patch) {
-  const t = byId(id);
+  const t = byId(id) || anfrageById(id);
   if (!t) return;
   Object.assign(t, patch);
   notify();
@@ -505,11 +523,12 @@ export async function insertTask(fields) {
     advice: {},
     sort: 9999,
     ...fields,
-    status: fields.type === 'claude' ? 'briefing' : null,
+    // an anfrage starts as a draft, just like a delegated task (033)
+    status: fields.type === 'claude' || fields.type === 'anfrage' ? 'briefing' : null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  state.tasks.push(task);
+  (isAnfrage(task) ? state.anfragen : state.tasks).push(task);
   notify();
   const { created_at, updated_at, ...row } = task;
   await write('task', () => supabase.from('tasks').insert(row));
@@ -518,6 +537,7 @@ export async function insertTask(fields) {
 
 export async function deleteTask(id) {
   state.tasks = state.tasks.filter((t) => t.id !== id);
+  state.anfragen = state.anfragen.filter((a) => a.id !== id);
   notify();
   return write('task', () => supabase.from('tasks').update({ deleted_at: new Date().toISOString() }).eq('id', id));
 }

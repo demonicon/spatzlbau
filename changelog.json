@@ -1,6 +1,33 @@
 {
   "entries": [
     {
+      "version": "2.2.5",
+      "release": "2.2",
+      "date": "2026-09-25",
+      "title": "Kostenzeilen lassen sich wieder löschen.",
+      "new": [],
+      "improved": [],
+      "fixed": [
+        "„Kostenzeile löschen“ fragt wieder nach und löscht nach „Ja“ – vorher passierte beim Tippen nichts."
+      ]
+    },
+    {
+      "version": "2.2.4",
+      "release": "2.2",
+      "date": "2026-09-25",
+      "title": "Anfragen: Vergleiche zentral bei Claude anfordern – Ergebnis als Tabelle, ein Tipp entscheidet.",
+      "new": [
+        "Neue Seite „Anfragen“: Vergleiche für Umzugsfirma, Internet, Strom und Gas oder Versicherung bei Claude anfordern – mit den Eckdaten, die Claude dafür braucht.",
+        "Das Ergebnis kommt als Übersicht: Angebote nebeneinander, Claudes Empfehlung obenauf, der günstigste Preis fett.",
+        "„Wählen“ hält die Entscheidung an der Aufgabe fest und fragt, ob der Preis in die Kosten übernommen werden soll.",
+        "Eigene Angebote lassen sich dazuschreiben – Claude überschreibt sie nie."
+      ],
+      "improved": [
+        "Die Akte von Umzugsfirma, Internet, Strom und Versicherung zeigt, wie weit die Anfrage dazu ist."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2.2.3",
       "release": "2.2",
       "date": "2026-09-25",
