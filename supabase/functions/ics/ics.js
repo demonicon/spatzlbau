@@ -117,7 +117,8 @@ function gateAlarms(title, on) {
  * plus one gate per phase (the latest deadline in it, marked with a diamond).
  */
 export function events({ tasks, settings, phases, person, appUrl }) {
-  const open = tasks.filter((t) => !t.done && !t.deleted_at);
+  // docs/changes/033: an anfrage is a task row, but never a date in the calendar (nor in a gate)
+  const open = tasks.filter((t) => !t.done && !t.deleted_at && t.type !== 'anfrage');
   const mine = open.filter((t) => t.critical && (t.owner === person || t.owner === 'B'));
   const stages = alarmStagesFor(settings, person);
   const out = [];
