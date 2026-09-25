@@ -105,6 +105,8 @@ SUPABASE_SERVICE_ROLE_KEY=sb_secret_… oder eyJ…
 BACKUP_KEY=<lange Passphrase, siehe Abschnitt 10>
 ```
 
+Optional (Auftrag 037b): vier weitere Zeilen `TEST_EMAIL_S`, `TEST_PW_S`, `TEST_EMAIL_A`, `TEST_PW_A` mit je einem eigenen Test-Login von Sebastian und Anna, damit `/auftrag` Login-Tests real statt nur simuliert laufen lassen kann – ohne sie steht im Bericht „nicht getestet – Testkonten fehlen“.
+
 ---
 
 ## 7. Rückmeldung an Claude Code
