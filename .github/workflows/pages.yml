@@ -2,6 +2,16 @@
 # (no build step). docs/changes/010 point 4: main always serves "/", preview always
 # serves "/preview/" alongside it - each deploy checks out both branches and combines
 # them into one artifact, because a Pages deploy always replaces the whole site.
+#
+# docs/changes/036: main and preview build in two independent jobs. A red build (npm run
+# check fails) no longer blocks the other branch - deploy falls back to that branch's last
+# good build (an actions/cache entry, refreshed on every successful build) and still ships
+# the other branch normally. A "smoke" job checks the live site after every deploy.
+#
+# Rückkanal (036 §2): kein SMTP-Repository-Secret vorhanden (geprüft per `gh secret list`,
+# 25.09.2026) - kein Mail-Schritt hier. GitHub-Benachrichtigung "Failed workflows only" ist
+# aktiv (Sebastians Konto) und reicht als Rückkanal; ein Mail-Schritt (z. B.
+# dawidd6/action-send-mail) lässt sich nachrüsten, sobald ein SMTP-Secret existiert.
 name: Deploy to GitHub Pages
 
 on:
@@ -15,98 +25,139 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-main:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      sha: ${{ steps.finish.outputs.sha }}
+      version: ${{ steps.finish.outputs.version }}
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: main, path: site }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      # docs/changes/036 §4: same script as `npm run check` locally and as the pre-commit hook -
+      # replaces the plain JSON-validate step from 035 (that one only looked at changelog.json).
+      - name: npm run check
+        id: check
+        working-directory: site
+        run: node scripts/check.mjs
+        continue-on-error: true
+      # the fallback pool: whatever the last successful build-main saved here. restore-keys (a
+      # prefix, not an exact key) always resolves to the newest matching cache entry, which is
+      # exactly "the last good build" - across runs, not just within this one.
+      - name: Restore last good build
+        uses: actions/cache/restore@v4
         with:
-          ref: main
-          path: site
-      # docs/changes/035: every *.json in the repo, parsed before anything else touches it - a
-      # single broken file (changelog.json after 034 slipped through unnoticed and broke every
-      # deploy, main and preview alike, until this caught it) now fails loud, with file and line.
-      - name: Validate JSON (main)
-        working-directory: site
+          path: good
+          key: good-main-none
+          restore-keys: good-main-
+      - name: Choose fresh build or fall back, stamp the commit it actually is
+        id: finish
         run: |
-          python3 - <<'PY'
-          import json, sys
-          from pathlib import Path
-          ok = True
-          for path in sorted(Path('.').rglob('*.json')):
-              if '.git' in path.parts:
-                  continue
-              try:
-                  json.loads(path.read_text(encoding='utf-8'))
-              except json.JSONDecodeError as e:
-                  print(f"::error file={path},line={e.lineno},col={e.colno}::{path}: {e.msg} (Zeile {e.lineno}, Spalte {e.colno})")
-                  ok = False
-          sys.exit(0 if ok else 1)
-          PY
-          python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
-      - name: Stamp main build with its own commit SHA
-        working-directory: site
-        run: |
-          SHA=$(git rev-parse HEAD)
-          sed -i "s/__BUILD__/${SHA:0:7}/g" sw.js app/config.js
+          if [ "${{ steps.check.outcome }}" = "success" ]; then
+            SHA=$(git -C site rev-parse --short=7 HEAD)
+            sed -i "s/__BUILD__/${SHA}/g" site/sw.js site/app/config.js
+            rm -rf good && cp -r site good
+          else
+            echo "::warning::build-main: npm run check failed - deploying the last good build instead"
+            if [ ! -d good ]; then echo "::error::no previous good build for main to fall back to"; exit 1; fi
+            rm -rf site && cp -r good site
+          fi
+          echo "sha=$(grep -o "BUILD = '[0-9a-f]*'" site/app/config.js | cut -d"'" -f2)" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -e "console.log(JSON.parse(require('fs').readFileSync('site/changelog.json')).entries[0].version)")" >> "$GITHUB_OUTPUT"
+      - name: Save as the new "last good" build
+        if: steps.check.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: good
+          key: good-main-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/upload-artifact@v4
+        with: { name: site-main, path: site, retention-days: 1 }
+      - name: Fail this job for visibility if check failed
+        if: steps.check.outcome != 'success'
+        run: exit 1
 
+  build-preview:
+    runs-on: ubuntu-latest
+    outputs:
+      exists: ${{ steps.exists.outputs.exists }}
+      sha: ${{ steps.finish.outputs.sha }}
+      version: ${{ steps.finish.outputs.version }}
+    steps:
       - name: Check whether a preview branch exists
-        id: preview
+        id: exists
         run: |
           if git ls-remote --exit-code --heads "https://github.com/${{ github.repository }}" preview > /dev/null; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Checkout preview branch
-        if: steps.preview.outputs.exists == 'true'
+      - if: steps.exists.outputs.exists == 'true'
         uses: actions/checkout@v4
+        with: { ref: preview, path: site }
+      - if: steps.exists.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: npm run check
+        id: check
+        if: steps.exists.outputs.exists == 'true'
+        working-directory: site
+        run: node scripts/check.mjs
+        continue-on-error: true
+      - name: Restore last good build
+        if: steps.exists.outputs.exists == 'true'
+        uses: actions/cache/restore@v4
         with:
-          ref: preview
-          path: site/preview
-      - name: Validate JSON (preview)
-        if: steps.preview.outputs.exists == 'true'
-        working-directory: site/preview
+          path: good
+          key: good-preview-none
+          restore-keys: good-preview-
+      - name: Choose fresh build or fall back, stamp the commit it actually is
+        id: finish
+        if: steps.exists.outputs.exists == 'true'
         run: |
-          python3 - <<'PY'
-          import json, sys
-          from pathlib import Path
-          ok = True
-          for path in sorted(Path('.').rglob('*.json')):
-              if '.git' in path.parts:
-                  continue
-              try:
-                  json.loads(path.read_text(encoding='utf-8'))
-              except json.JSONDecodeError as e:
-                  print(f"::error file={path},line={e.lineno},col={e.colno}::{path}: {e.msg} (Zeile {e.lineno}, Spalte {e.colno})")
-                  ok = False
-          sys.exit(0 if ok else 1)
-          PY
-          python3 -c "import json; d=json.load(open('changelog.json', encoding='utf-8')); e=d['entries'][0]; assert e['version'] and e['title'], 'first entry needs version and title'; print('changelog', e['version'], '-', len(d['entries']), 'entries')"
-      - name: Stamp preview build with its own commit SHA
-        if: steps.preview.outputs.exists == 'true'
-        working-directory: site/preview
-        run: |
-          SHA=$(git rev-parse HEAD)
-          sed -i "s/__BUILD__/${SHA:0:7}/g" sw.js app/config.js
-
-      - name: Remember which build each side should serve
-        id: version
-        run: |
-          echo "main=$(git -C site rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
-          if [ -d site/preview/.git ]; then
-            echo "preview=$(git -C site/preview rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+          if [ "${{ steps.check.outcome }}" = "success" ]; then
+            SHA=$(git -C site rev-parse --short=7 HEAD)
+            sed -i "s/__BUILD__/${SHA}/g" site/sw.js site/app/config.js
+            rm -rf good && cp -r site good
           else
-            echo "preview=" >> "$GITHUB_OUTPUT"
+            echo "::warning::build-preview: npm run check failed - deploying the last good build instead"
+            if [ ! -d good ]; then echo "::error::no previous good build for preview to fall back to"; exit 1; fi
+            rm -rf site && cp -r good site
           fi
+          echo "sha=$(grep -o "BUILD = '[0-9a-f]*'" site/app/config.js | cut -d"'" -f2)" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -e "console.log(JSON.parse(require('fs').readFileSync('site/changelog.json')).entries[0].version)")" >> "$GITHUB_OUTPUT"
+      - name: Save as the new "last good" build
+        if: steps.exists.outputs.exists == 'true' && steps.check.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: good
+          key: good-preview-${{ github.run_id }}-${{ github.run_attempt }}
+      - if: steps.exists.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with: { name: site-preview, path: site, retention-days: 1 }
+      - name: Fail this job for visibility if check failed
+        if: steps.exists.outputs.exists == 'true' && steps.check.outcome != 'success'
+        run: exit 1
 
+  deploy:
+    needs: [build-main, build-preview]
+    if: always() && needs.build-main.outputs.sha != ''
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: site-main, path: site }
+      - if: needs.build-preview.outputs.exists == 'true'
+        uses: actions/download-artifact@v4
+        with: { name: site-preview, path: site/preview }
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -117,38 +168,64 @@ jobs:
         with:
           artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
 
+  smoke:
+    needs: [build-main, build-preview, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
       # Pages deduplicates deployments by pages_build_version = the pushed commit, and that is
       # the wrong key here: the site is main + preview combined. If both branches ever point at
       # the same commit (syncing preview onto main after a promotion, say), the deploy reports
       # success within seconds and keeps serving the previous content - silently. GITHUB_SHA
       # cannot be overridden (the runner protects the default variables), so instead of
-      # preventing that case we make it loud: check what the site actually serves.
-      - name: Check that the site really serves this build
+      # preventing that case we make it loud: check what the site actually serves - both the
+      # build stamp (catches the "same commit, silently skipped" case) and the changelog version
+      # + that index.html itself answers with 200 and still references the service worker
+      # (docs/changes/036 §3).
+      - name: Check what the live site actually serves
         env:
-          BASE: ${{ steps.deployment.outputs.page_url }}
-          WANT_MAIN: ${{ steps.version.outputs.main }}
-          WANT_PREVIEW: ${{ steps.version.outputs.preview }}
+          BASE: ${{ needs.deploy.outputs.page_url }}
+          WANT_MAIN_SHA: ${{ needs.build-main.outputs.sha }}
+          WANT_MAIN_VERSION: ${{ needs.build-main.outputs.version }}
+          WANT_PREVIEW_SHA: ${{ needs.build-preview.outputs.sha }}
+          WANT_PREVIEW_VERSION: ${{ needs.build-preview.outputs.version }}
+          PREVIEW_EXISTS: ${{ needs.build-preview.outputs.exists }}
         run: |
-          check() { # name, url, expected build stamp
+          rc=0
+
+          get_sha() { curl -fsS "$1app/config.js" 2>/dev/null | grep -o "BUILD = '[0-9a-f]*'" | cut -d"'" -f2; }
+          get_version() { curl -fsS "$1changelog.json" 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{process.stdout.write(JSON.parse(s).entries[0].version)}catch(e){}})"; }
+          get_status() { curl -fsS -o /dev/null -w '%{http_code}' "$1" 2>/dev/null; }
+          has_sw_ref() { curl -fsS "$1" 2>/dev/null | grep -q serviceWorker; }
+
+          # name, getter function, url, expected value
+          retry() {
             for _ in 1 2 3 4 5 6 7 8; do
-              got=$(curl -fsS "$2" 2>/dev/null | grep -o "BUILD = '[0-9a-f]*'" | cut -d"'" -f2)
-              if [ "$got" = "$3" ]; then echo "$1: serving $got"; return 0; fi
+              got=$("$2" "$3")
+              if [ "$got" = "$4" ]; then echo "$1: $got"; return 0; fi
               sleep 15
             done
-            echo "$1: expected $3, got '${got:-nothing}' at $2"
+            echo "$1: expected '$4', got '${got:-nothing}'"
             return 1
           }
-          rc=0
-          check main "${BASE}app/config.js" "$WANT_MAIN" || rc=1
-          if [ -n "$WANT_PREVIEW" ]; then
-            check preview "${BASE}preview/app/config.js" "$WANT_PREVIEW" || rc=1
+
+          retry "main build stamp" get_sha "$BASE" "$WANT_MAIN_SHA" || rc=1
+          retry "main changelog version" get_version "$BASE" "$WANT_MAIN_VERSION" || rc=1
+          retry "main index.html status" get_status "$BASE" "200" || rc=1
+          if has_sw_ref "$BASE"; then echo "main index.html: references the service worker"; else echo "main index.html: no service worker reference"; rc=1; fi
+
+          if [ "$PREVIEW_EXISTS" = "true" ]; then
+            retry "preview build stamp" get_sha "${BASE}preview/" "$WANT_PREVIEW_SHA" || rc=1
+            retry "preview changelog version" get_version "${BASE}preview/" "$WANT_PREVIEW_VERSION" || rc=1
+            retry "preview index.html status" get_status "${BASE}preview/" "200" || rc=1
+            if has_sw_ref "${BASE}preview/"; then echo "preview index.html: references the service worker"; else echo "preview index.html: no service worker reference"; rc=1; fi
           else
             echo "preview: no preview branch, skipped"
           fi
+
           if [ "$rc" != 0 ]; then
             echo
-            echo "The deployment reported success but the site serves something else."
-            echo "Most likely this commit was already deployed once under the same SHA and Pages"
-            echo "skipped it. Push a new commit (or change either branch) and deploy again."
+            echo "The deployment reported success but the site serves something else - see docs/changes/036."
           fi
           exit $rc
