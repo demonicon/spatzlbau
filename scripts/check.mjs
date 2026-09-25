@@ -87,13 +87,18 @@ try {
       fail(`changelog.json: Version '${v}' ist weder dreiteilige Release-Nummer noch Datumsform`);
     }
     // Der Tag-Vergleich ist ein Vor-dem-Commit-Netz ("habe ich die Version wirklich erhöht,
-    // bevor ich einen neuen Eintrag ergänzt habe") - in der CI dagegen ist der oberste Eintrag
-    // fast immer der zuletzt getaggte Stand (main/preview ruhen zwischen zwei Versionssprüngen
-    // genau dort), das waere dort ein staendiger Fehlalarm ohne echten Fund. Nur lokal geprueft.
+    // bevor ich einen neuen Eintrag ergänzt habe") - er darf nur greifen, wenn changelog.json
+    // gerade tatsächlich angefasst wurde (uncommitted gegenüber HEAD). Sonst ruht der Ruhezustand
+    // zwischen zwei Versionssprüngen immer auf der zuletzt getaggten Version, und der Check würde
+    // dort ständig Alarm schlagen - genau das hat den Stop-Hook bei diesem Auftrag (037, kein
+    // neuer Changelog-Eintrag geplant) sofort rot laufen lassen, obwohl nichts kaputt war. In der
+    // CI ist der Checkout ohnehin immer sauber (kein Diff gegen HEAD), die GITHUB_ACTIONS-Prüfung
+    // bleibt trotzdem als zweite, robustere Absicherung stehen.
     if (v && !process.env.GITHUB_ACTIONS) {
       try {
-        const tags = execSync('git tag -l', { cwd: ROOT, encoding: 'utf8' }).split('\n').map((t) => t.trim());
-        if (tags.includes('v' + v)) fail(`changelog.json: Version '${v}' hat schon den Tag v${v} - Version nicht erhöht?`);
+        const dirty = execSync('git status --porcelain -- changelog.json', { cwd: ROOT, encoding: 'utf8' }).trim();
+        const tags = dirty ? execSync('git tag -l', { cwd: ROOT, encoding: 'utf8' }).split('\n').map((t) => t.trim()) : [];
+        if (dirty && tags.includes('v' + v)) fail(`changelog.json: Version '${v}' hat schon den Tag v${v} - Version nicht erhöht?`);
       } catch {
         // kein Git-Repo oder kein Tag-Zugriff - keine Blockade
       }
