@@ -4,7 +4,6 @@
 // groups in groups.js (shared with the timeline in 019).
 import { esc } from '../ui/dom.js';
 import { OWN, STEPS } from '../ui/labels.js';
-import { renderHeader, updateBarHTML, footHTML, setupHintHTML } from '../ui/chrome.js';
 import {
   state, ui, byId, phases, einzug, umzugstag, dueInfo, dueShort, freshComments, doneByOther, claudeStep, fmtDay,
   allDecisions, ackedBy, isConfirmedDecision, myOpenDecisionsCount, openDecisionsOf,
@@ -210,13 +209,10 @@ function signalListHTML(key) {
   </div>`;
 }
 
-/** Personen · Phasen · Timeline - the three ways to look at the same tasks (019). */
+/** Personen · Phasen · Timeline - the three ways to look at the same tasks (019). Since 038 the
+    control itself is the shell's second level (Zeile 1/#4); what stays here is which of them is
+    showing. */
 const VIEWS = [['personen', 'Personen'], ['phasen', 'Phasen'], ['timeline', 'Timeline']];
-function viewChipsHTML() {
-  return `<div class="pchips view-chips" role="group" aria-label="Ansicht">${VIEWS.map(
-    ([k, l]) => `<button class="pill" data-act="view-switch" data-to="${k}" aria-pressed="${currentView() === k}">${l}</button>`,
-  ).join('')}</div>`;
-}
 
 export const currentView = () => (VIEWS.some(([k]) => k === ui.view) ? ui.view : 'personen');
 
@@ -433,8 +429,6 @@ function betweenHTML() {
 
 /* ---------- Entscheidungen (docs/changes/032): the list of every decision, newest first ---------- */
 
-const DECISION_FILTERS = [['offen', 'offen'], ['alle', 'alle']];
-
 // docs/changes/032c #3: mein Zug zuerst, dann der der anderen Person, dann bestätigt, dann
 // ersetzt; allDecisions() liefert schon neueste zuerst, ein stabiler Sort genügt
 function decisionTurnRank(c) {
@@ -515,10 +509,7 @@ export function decisionsListHTML(selectedTaskId) {
           <tbody>${rows.map((c) => decisionRowHTML(c, selectedTaskId)).join('')}</tbody>
         </table>`
       : rows.map((c) => decisionRowHTML(c, selectedTaskId)).join('');
-  return `<div class="pchips" role="group" aria-label="Entscheidungen filtern">${DECISION_FILTERS.map(
-    ([k, l]) => `<button class="pill" data-act="decisions-filter" data-to="${k}" aria-pressed="${filter === k}">${l}</button>`,
-  ).join('')}</div>
-    ${body}`;
+  return body;
 }
 
 // docs/changes/032b #3, Tabelle seit 032c: eigene Seite `#entscheidungen` statt eingebettetem
@@ -542,17 +533,13 @@ export function entscheidungenView() {
     </div>`
     : '';
   return (
-    updateBarHTML() +
-    setupHintHTML() +
-    renderHeader('entscheidungen') +
     (wide
       ? `<div class="board mode-panel">${list}${
           panelTask
             ? `<aside class="panel" id="panel" data-id="${panelTask.id}" aria-label="Akte: ${esc(panelTask.title)}">${panelHeadHTML(panelTask)}${detailHTML(panelTask)}</aside>`
             : `<aside class="panel empty" id="panel" aria-label="Akte"><p>Keine Entscheidungen – halte eine im Kommentar einer Aufgabe fest.</p></aside>`
         }</div>`
-      : `<div class="board">${explicitOpen ? akte : list}</div>`) +
-    footHTML()
+      : `<div class="board">${explicitOpen ? akte : list}</div>`)
   );
 }
 
@@ -618,13 +605,9 @@ export function dashboardView() {
   // docs/changes/029c #3: der Kopf sitzt jetzt ueber dem Grid, nicht mehr in der schmaleren
   // col-list - genau wie in Finanzen, auf allen drei Ansichten deckungsgleich
   return (
-    updateBarHTML() +
-    setupHintHTML() +
-    renderHeader('dashboard') +
     `<div class="board mode-${mode}${tl ? ' v-timeline' : ''}${panelEmpty ? ' panel-empty' : ''}"><div class="col-list">` +
     phaseStripHTML() +
     searchHTML() +
-    viewChipsHTML() +
     (tl ? '' : visitHTML() + signalsHTML()) +
     phaseNoteHTML() +
     filterRow +
@@ -641,8 +624,7 @@ export function dashboardView() {
     (mode === 'overlay' ? overlayHTML(open) : '') +
     (ui.gate !== null && ui.gate !== undefined ? gateHTML(ui.gate) : '') +
     (ui.printOpen ? printHTML() : '') +
-    (ui.changelogOpen ? changelogHTML() : '') +
-    footHTML()
+    (ui.changelogOpen ? changelogHTML() : '')
   );
 }
 

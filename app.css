@@ -114,20 +114,72 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 }
 [hidden] { display: none !important; }
 
-/* ---------- shared head, Aufgaben und Finanzen (docs/changes/029b #2) ----------
-   Links Titel + Vorschau-Chip + Countdown, rechts Nav-Pillen und Avatar - eine renderHeader(),
-   damit beide Ansichten dieselbe Kopfzeile zeigen (nur der Titel unterscheidet sich). */
-.apphead2 { display: flex; align-items: center; flex-wrap: wrap; gap: var(--gap); padding: 14px var(--gutter) 0; }
-.apphead2-left { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 10px; min-width: 0; }
-.apphead2-title { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
-.apphead2-count { font-size: var(--fs-small); color: var(--ink-2); white-space: nowrap; }
-.apphead2-count .cd-n { font-weight: 600; color: var(--ink); }
-.apphead2-count .cd-date { color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
-.apphead2-count .cd-date:hover { color: var(--ink); }
+/* ---------- the shell (docs/changes/038, Abweichungsliste Zeile 1 und 2) ----------
+   One head for every route, rendered once by app/shell.js. Phone (< 900): title, Vorschau-Chip
+   and avatar in one 40er row, the countdown under it - 90 high instead of the ~150 the icon row
+   used to cost (Zeile 2). Desktop (>= 900): one 64er row, title left, underline tabs right.
+   The head is sticky and grows a soft edge as soon as the page is scrolled. */
+.shell-head { position: sticky; top: 0; z-index: 20; background: var(--paper); border-bottom: 1px solid var(--line); }
+.shell-head.scrolled { box-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 4px 8px rgba(0, 0, 0, .03); }
+.shell-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px var(--gutter) 8px; }
+.shell-title { font-size: var(--fs-title); font-weight: 600; letter-spacing: var(--ls-title); margin: 0; line-height: 40px; }
+.shell-meta { display: contents; }
+/* the countdown takes the whole second line on a phone, next to the title on a desktop */
+.shell-count { flex: 1 0 100%; order: 3; font-size: var(--fs-meta); color: var(--ink-2); }
+.shell-count .cd-n { font-weight: 600; color: var(--ink); }
+.shell-count .cd-date { color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.shell-count .cd-date:hover { color: var(--ink); }
+.shell-row .spacer { flex: 1; }
+.shell-avatar { flex: none; margin-left: auto; }
 /* 029b #3: ein leiser Chip statt der losen Textzeile - kein gefuelltes Badge */
 .preview-chip { display: inline-flex; align-items: center; min-height: 20px; line-height: 18px; padding: 0 7px; border: 1px solid var(--ink-3); border-radius: var(--r-tag); font-size: var(--fs-nano); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
-.apphead2 .mainnav { margin-left: auto; }
-.apphead2 .avatar-wrap { flex: none; }
+
+/* Unterstrich-Tabs (Zeile 1): no shell around the target - the active one is ink 600 with a 3 px
+   bar on the head's own bottom edge, the resting ones --ink-2. Phone: the tab bar below has the
+   same four targets, so the head nav steps aside. */
+.shell-nav { display: none; }
+@media (min-width: 900px) {
+  .shell-nav { display: flex; align-self: stretch; gap: 4px; }
+  .navtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); }
+  .navtab .ic { width: 16px; height: 16px; }
+  .navtab.on { color: var(--ink); font-weight: 600; }
+  .navtab.on::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 3px; border-radius: 2px 2px 0 0; background: var(--ink); }
+  .nav-badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-pill); background: var(--ink); color: #fff; font-size: var(--fs-nano); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+}
+
+/* Tab-Leiste (Zeile 2): 56 plus the safe area, four equal targets in the thumb's reach, the
+   avatar stays in the head (no fifth tab). */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+.tabbtn { position: relative; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--ink-2); font-size: var(--fs-micro); font-weight: 400; }
+.tabbtn.on { color: var(--ink); font-weight: 600; }
+.tabbtn.on::before { content: ""; position: absolute; top: 0; left: 50%; width: 32px; height: 3px; border-radius: 0 0 2px 2px; transform: translateX(-50%); background: var(--ink); }
+.tab-ico { position: relative; display: flex; }
+.tab-ico .ic { width: 22px; height: 22px; }
+.tab-badge { position: absolute; top: -4px; right: -11px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--r-pill); background: var(--ink); color: #fff; font-size: var(--fs-nano); font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--card); }
+/* the fixed bar must not sit on the last row of the page */
+@media (max-width: 899px) { body { padding-bottom: calc(56px + env(safe-area-inset-bottom)); } }
+@media (min-width: 900px) { .tabbar { display: none; } }
+
+/* Zweite Ebene (#4, #18): one connected control for every page that has one, directly under the
+   head - not three loose pills under the search. E3: 40 visible on a phone, 44 of tap area. */
+.shell-sub:empty { display: none; }
+.shell-sub { padding: 10px var(--gutter) 0; }
+.subseg { display: flex; padding: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-tag); }
+/* E3: 44 of tap area, 40 visible - the white surface of the chosen segment is a layer inside
+   the 44er button, so the finger gets its 44 without the control growing. */
+.subseg-i { position: relative; isolation: isolate; flex: 1; min-height: 44px; display: flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 3px; font-size: var(--fs-ui); font-weight: 400; color: var(--ink-2); }
+.subseg-i[aria-pressed="true"] { color: var(--ink); font-weight: 600; }
+.subseg-i[aria-pressed="true"]::before { content: ""; position: absolute; inset: 2px 0; z-index: -1; border-radius: 3px; background: var(--card); box-shadow: var(--sh-card); }
+@media (min-width: 900px) {
+  .shell-sub { padding: 12px var(--gutter) 0; }
+  .subseg { display: inline-flex; }
+  .subseg-i { flex: none; min-height: 28px; font-size: var(--fs-meta); }
+  .subseg-i[aria-pressed="true"]::before { inset: 0; }
+  /* Zeile 1: one 64er row on a desktop - title, chip, countdown, tabs and avatar side by side */
+  .shell-row { flex-wrap: nowrap; min-height: 64px; padding: 0 24px; gap: 12px; }
+  .shell-count { flex: 0 1 auto; order: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .shell-avatar { margin-left: 0; }
+}
 
 /* 029 Regel 6: ein Fokusring überall, in Tinte statt in einer Personenfarbe */
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-tag); }
@@ -188,12 +240,6 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .avatar { width: 36px; height: 36px; flex: none; border-radius: var(--r-pill); background: var(--who-fg); color: #fff; font-size: var(--fs-ui); font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .avatar.S { --who-fg: var(--seb); --who-bg: var(--seb-bg); }
 .avatar.A { --who-fg: var(--anna); --who-bg: var(--anna-bg); }
-.mainnav { display: flex; gap: 4px; }
-.navbtn { position: relative; min-width: var(--tap); padding: 0 10px; }
-.navbtn .nl { display: none; font-size: var(--fs-small); font-weight: 600; }
-/* 032b #2: Zähler-Badge an der Entscheidungen-Pille - Ink statt Rot, zählt nur die eigene
-   fehlende Entscheidung, kein Rot (Rot bleibt überfällig/unwiderruflich vorbehalten) */
-.pill-badge { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: var(--r-pill); background: var(--ink); color: var(--paper); font-size: var(--fs-nano); font-weight: 700; line-height: 16px; text-align: center; }
 /* docs/changes/013 A1: the countdown is one line, not a poster */
 .countdown { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; margin-top: 4px; }
 .countdown .n { font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
@@ -1069,8 +1115,6 @@ button.cost-amount:hover { background: var(--line); }
 
 @media (min-width: 900px) {
   .wrap { max-width: 1280px; }
-  /* docs/changes/013 A6: the two places carry their name here */
-  .navbtn .nl { display: inline; }
   /* docs/changes/013 A2/A3: the side panel only from 1180 px - below that the list uses the
      full width and the Akte is an overlay, so no empty panel stands around */
   .board.mode-panel { display: grid; grid-template-columns: minmax(0, 1fr) clamp(420px, 30vw, 600px); align-items: start; }

@@ -54,6 +54,7 @@ import { searching } from './search.js';
 import { parseAmount, bufferPct, bufferFixed, costsOf, num, eurShort } from './costs.js';
 import { OWN } from './ui/labels.js';
 import { icsToken, icsUrl, alarmStagesOf } from './views/finanzen.js';
+import { updateShell, shellVisible } from './shell.js';
 
 const UI_KEY = 'spatzlbau-ui';
 const PERSON_KEY = 'spatzlbau-person';
@@ -183,6 +184,8 @@ function isTyping() {
   const a = document.activeElement;
   return a && $('#view').contains(a) && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type === 'text'));
 }
+/** The route the shell marks as active - ui.screen, with the task list as the default. */
+const route = () => (['finanzen', 'entscheidungen', 'anfragen'].includes(ui.screen) ? ui.screen : 'dashboard');
 function ensurePhase() {
   const list = phases();
   // null = chip "alle"; anything else has to exist
@@ -201,6 +204,11 @@ function render() {
   // docs/changes/026: the eight-step start takes the whole screen, like the Finanzen wizard it
   // reuses parts of - first run (not skipped), or one step reopened from the avatar menu
   const showSetup = (!state.settings.setup_done && !ui.setupSkip) || ui.setupReopen || ui.setupPicker;
+  // docs/changes/038: the shell is rendered once and only updated - the router writes the route
+  // into #view and never touches the head. The eight-step start owns the whole screen, so the
+  // shell steps aside for it instead of framing it.
+  shellVisible(!showSetup);
+  if (!showSetup) updateShell(route());
   $('#view').innerHTML = showSetup
     ? startSetupHTML()
     : ui.screen === 'finanzen'

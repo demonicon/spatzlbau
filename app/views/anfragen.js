@@ -4,7 +4,6 @@
 // list comes first and a tap opens the anfrage as its own page - the pattern of Entscheidungen.
 import { esc, fmtTime } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
-import { renderHeader, updateBarHTML, footHTML, setupHintHTML } from '../ui/chrome.js';
 import { state, ui, byId, anfrageById, fmtDay } from '../state.js';
 import { commentsHTML, nextRunText, anfrageStepsHTML } from '../ui/detail.js';
 import {
@@ -292,5 +291,5 @@ export function anfragenView() {
   } else {
     main = `<div class="board"><div class="col-list">${listHTML(null)}</div></div>`;
   }
-  return updateBarHTML() + setupHintHTML() + renderHeader('anfragen') + main + footHTML();
+  return main;
 }

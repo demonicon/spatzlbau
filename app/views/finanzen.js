@@ -5,7 +5,6 @@ import { esc } from '../ui/dom.js';
 import { OWN, PAID_BY } from '../ui/labels.js';
 import { state, ui, byId, einzug, umzugstag } from '../state.js';
 import { costHTML, costNewHTML, ladderHTML } from '../ui/detail.js';
-import { updateBarHTML, footHTML, setupHintHTML, renderHeader } from '../ui/chrome.js';
 import { SUPABASE_URL } from '../config.js';
 import {
   summary, balance, balanceParts, cashflow, peakMonth, moveOutMissing, bufferInfo, bufferPct, bufferFixed,
@@ -713,20 +712,18 @@ function rahmenHTML() {
   </section>`;
 }
 
-/* docs/changes/029b #2: die Kopfzeile kommt jetzt aus chrome.js (renderHeader), geteilt mit Aufgaben */
+/* docs/changes/038 Zeile 1: Kopfzeile, Fusszeile und Update-Leiste kommen aus app/shell.js -
+   diese Ansicht liefert nur noch ihren Inhalt. */
 
 export function finanzenView() {
   // docs/changes/016b: without settings.fin_setup_done, Finanzen opens to the four questions
   // instead of an empty view - "Später" leaves it empty with a way back in
-  if (!state.settings.fin_setup_done && !ui.finSetupSkip) return updateBarHTML() + setupHTML();
+  if (!state.settings.fin_setup_done && !ui.finSetupSkip) return setupHTML();
   const setupHint = !state.settings.fin_setup_done
     ? `<p class="fin-setup-hint"><button class="btn-text" data-act="fin-setup-resume">Einrichtung abschließen ›</button></p>`
     : '';
   return (
-    updateBarHTML() +
-    setupHintHTML() +
     `<div class="fin">` +
-    renderHeader('finanzen') +
     setupHint +
     `<div class="fin-grid">` +
     answerHTML() +
@@ -739,7 +736,6 @@ export function finanzenView() {
     `<section class="fin-block fin-mon">${monthsHTML()}</section>` +
     `<section class="fin-block fin-postsec">${postsHTML()}</section>` +
     `</div>` +
-    footHTML({ status: true }) +
     `</div>`
   );
 }
