@@ -47,13 +47,15 @@ export function listPanelHTML(cfg) {
   return `<div class="${cls}"><div class="col-list">${list}</div>${aside}</div>${after}`;
 }
 
-/** The filter pills of a list (#5, #11): one row, a pill only while it counts something (030). */
+/** The filter pills of a list (#5, #11): one row, a pill only while it counts something (030).
+    docs/changes/038c: a pill may carry its own `act` (e.g. the phone's person-switch row plus
+    the "neu" pill after it, two different actions in one row) - falls back to the group's `act`. */
 export function filterPillsHTML(pills, { act = 'filter-pill', label = 'Filter' } = {}) {
   const shown = pills.filter((p) => p.always || p.n > 0);
   if (shown.length < 2) return '';
   return `<div class="fpills" role="group" aria-label="${esc(label)}">${shown
     .map(
-      (p) => `<button class="fpill" data-act="${act}" data-to="${esc(p.key)}" aria-pressed="${!!p.on}">${esc(p.label)}${
+      (p) => `<button class="fpill" data-act="${p.act || act}" data-to="${esc(p.key)}" aria-pressed="${!!p.on}">${esc(p.label)}${
         p.n === undefined ? '' : `<span class="fpill-n">${p.n}</span>`
       }</button>`,
     )
