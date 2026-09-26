@@ -55,7 +55,9 @@ export function sectionHTML({ key, title, count = '', note = '', progress = null
     <span class="spacer"></span>
     ${
       add
-        ? `<button class="${add.primary ? 'btn-primary' : 'btn-secondary'} sect-add-btn" data-act="${add.act}" aria-label="${esc(add.label)}"><span class="sect-add-l">${esc(add.label)}</span><span class="sect-add-s" aria-hidden="true">+</span></button>`
+        ? `<button class="${add.primary ? 'btn-primary' : 'btn-secondary'} sect-add-btn" data-act="${add.act}" aria-label="${esc(add.label)}"${
+            add.expanded === undefined ? '' : ` aria-expanded="${!!add.expanded}"`
+          }><span class="sect-add-l">${esc(add.label)}</span><span class="sect-add-s" aria-hidden="true">+</span></button>`
         : ''
     }
     ${/* aria-controls nur, solange es den Rumpf wirklich gibt - eingeklappt zeigte es sonst auf

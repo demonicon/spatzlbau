@@ -239,9 +239,11 @@ export function timelineHTML() {
       ${filterPillsHTML(
         [
           { key: 'all', label: 'alle', on: ui.tlOwner === 'all', always: true },
-          { key: 'me', label: OWN[state.person], n: ownerCount('me'), on: ui.tlOwner === 'me' },
-          { key: 'B', label: 'Gemeinsam', n: ownerCount('B'), on: ui.tlOwner === 'B' },
-          { key: 'you', label: OWN[state.person === 'S' ? 'A' : 'S'], n: ownerCount('you'), on: ui.tlOwner === 'you' },
+          // alle vier bleiben stehen, sonst liesse sich ein gesetzter Filter nicht mehr loesen,
+          // sobald seine Zahl auf 0 faellt (derselbe Fall wie bei den Personen-Pillen)
+          { key: 'me', label: OWN[state.person], n: ownerCount('me'), on: ui.tlOwner === 'me', always: true },
+          { key: 'B', label: 'Gemeinsam', n: ownerCount('B'), on: ui.tlOwner === 'B', always: true },
+          { key: 'you', label: OWN[state.person === 'S' ? 'A' : 'S'], n: ownerCount('you'), on: ui.tlOwner === 'you', always: true },
         ],
         { act: 'tl-owner', label: 'Wessen Aufgaben' },
       )}

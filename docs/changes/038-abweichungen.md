@@ -80,6 +80,11 @@ verletzten. Die folgenden Punkte bleiben als bewusste Abweichung stehen:
   beides ist mit #5 und #7 weg. **Das ist die zweite sichtbare Wegnahme** neben „Zwischen euch"
   selbst (die frühere Fassung dieser Datei behauptete, alle drei Zähler stünden in den Pillen –
   das stimmte nicht, nur „wartet auf dich" steht dort).
+- **Das Zahldatum in der Akte verliert die Jahreszahl.** `detail.js` hatte drei eigene
+  Datumsformatierer, einer davon mit Jahr („bezahlt 23.09.25"). #3 lässt nur drei Formate zu
+  (Kurzform in Listen, laufender Text in Kopf und Panel, Monat für Monat); die vierte Form fällt
+  damit weg, die Zeile liest sich jetzt „bezahlt 23.09.". Betroffen: bezahlt/erhalten/fällig in
+  der Kostenzeile der Akte.
 - **„Hinzufügen" ist jetzt sekundär.** Die neue Regel („der Primär lebt im Panel, nie in der
   Liste") lässt für einen gefüllten Knopf in der Aufgabenliste keinen Platz. Die Ausnahme aus
   032b #1 (Hinzufügen wird sekundär, sobald die Akte einen Primär zeigt) ist damit hinfällig.
@@ -106,6 +111,12 @@ Signal-Kacheln, die Personen-Umschaltung, das `fin-grid` und die Aufschlüsselun
 
 ## Offen für Sebastian
 
+- **Test 8 wörtlich gelesen schlägt fehl.** Das Kriterium sagt „Liste+Panel-Seiten genau einen
+  (im Panel)". Mit „Hinzufügen" als Sekundär zeigen Aufgaben und Entscheidungen im Normalfall
+  **keinen** Primär – einen gibt es erst, wenn die Akte einen anbietet („Einverstanden",
+  „Fertig", „An Claude senden"). Das folgt der Regel aus #13, nicht dem Wortlaut des Kriteriums.
+  Entweder das Kriterium liest sich künftig „höchstens einen, und nur im Panel", oder
+  „Hinzufügen" bleibt doch der Primär der Aufgabenliste – deine Entscheidung.
 - **`BRIEFING.md` ist an vier Stellen überholt** (Zeilen 88, 92, 96, 108: Nav-Pillen, Akte inline
   am Handy, die Breiten-Tabelle, das Anfragen-Layout). Die „Definition of Done" verlangt das
   Nachziehen, `CLAUDE.md` verlangt für `BRIEFING.md` eine ausdrückliche Bestätigung. Deshalb hier

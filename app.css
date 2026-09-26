@@ -198,9 +198,11 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 
 .db-card { margin: 12px var(--gutter) 0; padding: 16px; }
 .db-empty { padding: 28px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
-/* in einer Sektion sagt der Sektionskopf den Namen - der eigene Kopf des Bausteins (den die
-   Karte in der rechten Leiste braucht) waere dort der zweite (Reviewer-Fund 9) */
-.db-sect .fin-h { display: none; }
+/* in einer Sektion sagt der Sektionskopf den Namen - die eigene Ueberschrift des Bausteins (die
+   die Karte in der rechten Leiste braucht) waere dort die zweite. Die Zeile selbst bleibt: in
+   ihr steht "Bearbeiten" (Reviewer-Fund 9 und die Regression daraus). */
+.db-sect .fin-h > h2 { display: none; }
+.db-sect .fin-h { border: 0; padding-top: 0; justify-content: flex-end; }
 .fin-months tr.now { background: var(--bg); font-weight: 600; }
 .fin-months td.back { color: var(--ok); }
 @media (min-width: 900px) {
@@ -329,7 +331,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 /* Zweite Ebene (#4, #18): one connected control for every page that has one, directly under the
    head - not three loose pills under the search. E3: 40 visible on a phone, 44 of tap area. */
 .shell-sub:empty { display: none; }
-.shell-sub { padding: 10px var(--gutter) 0; }
+.shell-sub { padding: 10px var(--gutter) 0; display: flex; flex-direction: column; gap: 10px; }
+.shell-sub .search-row { margin: 0; }
 .subseg { display: flex; padding: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-tag); }
 /* E3: 44 of tap area, 40 visible - the white surface of the chosen segment is a layer inside
    the 44er button, so the finger gets its 44 without the control growing. */
@@ -338,8 +341,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 .subseg-i[aria-pressed="true"]::before { content: ""; position: absolute; inset: 2px 0; z-index: -1; border-radius: 3px; background: var(--card); box-shadow: var(--sh-card); }
 @media (min-width: 900px) {
   /* #4: Segment und Suche in einer Zeile, direkt unter dem Kopf */
-  .shell-sub { padding: 12px var(--gutter) 0; display: flex; align-items: center; gap: 12px; }
-  .shell-sub .search-row { flex: 1; margin: 0; }
+  .shell-sub { padding: 12px var(--gutter) 0; flex-direction: row; align-items: center; gap: 12px; }
+  .shell-sub .search-row { flex: 1; }
   .subseg { display: inline-flex; flex: none; }
   .subseg-i { flex: none; min-height: 28px; font-size: var(--fs-meta); }
   .subseg-i[aria-pressed="true"]::before { inset: 0; }

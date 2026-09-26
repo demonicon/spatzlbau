@@ -89,7 +89,7 @@ function listHTML(selectedId) {
     count: all.length,
     note: results ? `· ${results} ${results === 1 ? 'Ergebnis' : 'Ergebnisse'}` : '',
     // #24: die Anlegen-Aktion bleibt oben rechts an der Liste und bleibt sekundär
-    add: { label: '+ Anfrage', act: 'anfrage-new', primary: false },
+    add: { label: '+ Anfrage', act: 'anfrage-new', primary: false, expanded: !!ui.anfrageNew },
     open,
     body: newFormHTML() + body,
   });

@@ -12,7 +12,10 @@ import { $ } from './dom.js';
 /** Bring `cur` to look like `next`, touching as few nodes as possible. Returns how many it had
     to touch (the Realtime test in 038 counts exactly this). */
 export function patchNode(cur, next) {
-  if (cur.isEqualNode(next)) return 0;
+  // Gleiches Markup heisst nicht gleicher Zustand: ein <input> traegt seinen Wert als Property,
+  // die isEqualNode nicht sieht. Der Teilbaum wird deshalb nicht uebersprungen, ohne dass seine
+  // Formularfelder abgeglichen wurden (zweiter Reviewer-Durchlauf zu 038).
+  if (cur.isEqualNode(next)) return cur.nodeType === Node.ELEMENT_NODE ? syncFields(cur, next) : 0;
   if (cur.nodeType !== next.nodeType || cur.nodeName !== next.nodeName) {
     cur.replaceWith(next.cloneNode(true));
     return 1;
@@ -54,6 +57,17 @@ export function patchNode(cur, next) {
    row it belongs to. So the value is written across explicitly - except into the control the
    person is currently in, which would move their cursor. (Reviewer-Fund 3 zu 038.) */
 const FIELD = { INPUT: 1, TEXTAREA: 1, SELECT: 1 };
+
+/** Every field of a subtree whose markup did not change. The two trees are equal node for node,
+    so the two lists line up one to one. */
+function syncFields(cur, next) {
+  let n = syncField(cur, next);
+  const a = cur.querySelectorAll('input, textarea, select');
+  if (!a.length) return n;
+  const b = next.querySelectorAll('input, textarea, select');
+  for (let i = 0; i < a.length && i < b.length; i++) n += syncField(a[i], b[i]);
+  return n;
+}
 function syncField(cur, next) {
   if (!FIELD[cur.nodeName] || cur === document.activeElement) return 0;
   if (cur.type === 'checkbox' || cur.type === 'radio') {
