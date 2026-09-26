@@ -5,6 +5,7 @@
 // they do not change the task. Everything else lives behind "Bearbeiten": a mode of its own with
 // form fields and a clear end. Fertig writes every changed field in one go, Abbrechen discards.
 import { esc, fmtTime } from './dom.js';
+import { ladderHTML as ladder } from './ladder.js';
 import { OWN, STEPS, STEP_OWNER, ADV, PAID_BY } from './labels.js';
 import {
   state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, umzugstag, dueInfo, anchorDate, freshComments, canEditComment, fmtDay as fmtRunningDay,
@@ -205,9 +206,9 @@ function standHTML(t) {
 /** docs/changes/033: the four rungs of an anfrage - the same .steps bar as "Stand", four wide. */
 export function anfrageStepsHTML(a) {
   const idx = stepIndex(a);
-  return `<ol class="steps four" aria-label="Stand der Anfrage">${AF_STEPS.map(
-    ([, l], i) => `<li class="${i === idx ? 'cur' : i < idx ? 'past' : ''}" ${i === idx ? 'aria-current="step"' : ''}><i></i><span>${l}</span></li>`,
-  ).join('')}</ol>`;
+  // docs/changes/038 E5/#22: dieselbe Leiter wie bei Posten - Segmente, keine Farbe, die Stufe
+  // als Wort daneben (loest die vierstufige .steps-Leiste aus 033 ab)
+  return ladder(idx + 1, AF_STEPS.length, AF_STEPS[idx][1], 'Stand der Anfrage: ' + AF_STEPS[idx][1]);
 }
 
 /** docs/changes/033: the anfrage linked to this task - or, on the four category tasks, a way to
@@ -457,10 +458,10 @@ export function ladderHTML(c) {
   const at = steps.indexOf(cur);
   // docs/changes/029b #14: the tier decides the colour, not the kind - "erhalten" reads as
   // "bezahlt" (paid), "ausstehend" as the lowest rung (geschaetzt)
-  const tier = cur === 'bezahlt' || cur === 'erhalten' ? 'paid' : cur === 'fest' ? 'mid' : 'low';
-  // docs/changes/029c #8: das Wort steckt in einer eigenen Spanne, damit die Postentabelle es
-  // zwischen 900 und 1099 px ausblenden kann (title traegt es dann als Tooltip)
-  return `<span class="ladder ladder-${tier}" title="${esc(label[cur])}"><span class="dots" aria-hidden="true">${steps.map((_, i) => `<i class="${i <= at ? 'on' : ''}"></i>`).join('')}</span><span class="word">${esc(label[cur])}</span></span>`;
+  // docs/changes/038 E5: Segmente statt Glyphen und **keine Farbe** - das nimmt 029b P14
+  // (grau -> Tinte -> Gruen) zurueck. Die Stufe steht als Wort daneben, das traegt die
+  // Information jetzt allein.
+  return ladder(at + 1, steps.length, label[cur], label[cur]);
 }
 
 /** Amount, tappable in place unless a form already has this row open (016b). */

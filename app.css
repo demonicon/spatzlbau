@@ -790,17 +790,14 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* ---------- Anfragen (docs/changes/033) ----------
    List rows follow the Entscheidungen cards (032c); the detail reuses .detail/.lbl/.akte-line.
    The four-rung bar is the "Stand" bar (.steps), four wide instead of three. */
-.steps.four { grid-template-columns: repeat(4, 1fr); }
 .af-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--divider); cursor: pointer; }
 .af-row:hover, .af-row:focus-visible { background: var(--divider); }
 .af-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--bg); padding-left: 8px; margin-left: -8px; }
 .af-row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .af-title { font-size: var(--fs-ui); font-weight: 600; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
 .af-row2 { margin-top: 2px; }
-.af-row .steps { margin-top: 8px; }
 .af-new { padding: 10px 0; border-bottom: 1px solid var(--divider); }
 .af-new .hint { margin: 0 0 6px; }
-.af-detail .steps { margin-bottom: 4px; }
 .detail .confirm.block { margin: 12px 0 0; }
 /* the recommendation is Claude speaking - Claude's colour, as the brief and its comments */
 .vg-reco { margin: 14px 0 0; padding: 10px 12px; background: var(--claude-bg); color: var(--claude); font-size: var(--fs-ui); font-weight: 600; line-height: 1.4; }
@@ -873,19 +870,8 @@ button.cost-amount:hover { background: var(--line); }
 .cost.open { background: var(--card); margin: 0 -8px; padding: 10px 8px; }
 .cost-actions { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; margin-top: 8px; }
 .cost-quick { min-height: var(--tap); min-width: 100px; max-width: 100%; padding: 4px 8px; border: 1.5px solid var(--ink); background: var(--card); font-size: var(--fs-ui); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
-/* the ladder itself: dots filled up to the current rung, then the word - nothing to learn */
-.ladder { display: inline-flex; align-items: center; gap: 6px; }
-.ladder .dots { display: inline-flex; gap: 3px; }
-/* 029c #7: hohle Kreise mit 1-px-Rand statt der fast unsichtbaren gefuellten Punkte */
-.ladder .dots i { width: 6px; height: 6px; border-radius: var(--r-pill); background: transparent; border: 1px solid var(--ink-3); box-sizing: border-box; display: block; }
-/* 029b #14: die Stufe traegt ihre eigene Farbe - geschaetzt ink-3, fest ink, bezahlt gruen
-   (--ok, dieselbe wie erledigte Aufgaben; #2f6f4e auf #fff/--paper ≈ 6:1, 008b-Check gruen) */
-.ladder.ladder-low { color: var(--ink-3); }
-.ladder.ladder-low .dots i.on { background: var(--ink-3); border-color: var(--ink-3); }
-.ladder.ladder-mid { color: var(--ink); }
-.ladder.ladder-mid .dots i.on { background: var(--ink); border-color: var(--ink); }
-.ladder.ladder-paid { color: var(--ok); }
-.ladder.ladder-paid .dots i.on { background: var(--ok); border-color: var(--ok); }
+/* docs/changes/038 E5: die Punkte-Leiter (029c #7) und ihre drei Farben (029b P14) sind durch
+   die Segment-Leiter .ldr weiter oben ersetzt - Tinte und --line, die Stufe als Wort. */
 .cost-form { padding: 8px 0 10px; }
 .cost-form .row { margin-top: 8px; align-items: flex-end; }
 .cost-form .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); flex: 1 1 140px; min-width: 0; }
@@ -1031,7 +1017,6 @@ button.cost-amount:hover { background: var(--line); }
 .fp-l1 { display: flex; justify-content: space-between; align-items: baseline; gap: var(--gap); }
 .fp-l2 { display: flex; justify-content: space-between; align-items: center; gap: var(--gap); margin-top: 4px; min-height: 32px; }
 .fp-meta { font-size: var(--fs-micro); color: var(--ink-3); min-width: 0; }
-.fp-meta .ladder { /* 029b #14: Farbe kommt von der Stufe, nicht mehr pauschal ink-2 */ }
 .fp-amt { font-size: var(--fs-ui); font-weight: 600; white-space: nowrap; }
 /* 030 #5: der Betrag ist die Aktion einer geschaetzten Zeile - Unterstrich erst bei Hover, wie ein Link */
 .fp-amt-btn { font: inherit; color: inherit; text-decoration: none; }
@@ -1080,16 +1065,17 @@ button.cost-amount:hover { background: var(--line); }
   /* 029c #8 (Fassung 24.09. 11:07): feste Prozentbreiten ueber <colgroup> - das vorherige
      "width: 1%"-Rezept liess die schmalen Spalten kollabieren. Aktionsspalte bleibt immer da,
      damit die Spalten beim Filterwechsel nicht springen. */
-  .fin-posts-table col.c-posten { width: 35%; }
-  .fin-posts-table col.c-stand { width: 10%; }
-  .fin-posts-table col.c-faellig { width: 10%; }
-  .fin-posts-table col.c-zahlt { width: 15%; }
-  .fin-posts-table col.c-betrag { width: 15%; }
-  .fin-posts-table col.c-aktion { width: 15%; }
+  /* docs/changes/038 E6: Textspalte flexibel, Datenspalten fest in Pixeln (ersetzt die
+     Prozentwerte aus 029c P8); table-layout: fixed bleibt */
+  .fin-posts-table col.c-stand { width: 128px; }
+  .fin-posts-table col.c-faellig { width: 64px; }
+  .fin-posts-table col.c-zahlt { width: 112px; }
+  .fin-posts-table col.c-betrag { width: 100px; }
+  .fin-posts-table col.c-aktion { width: 100px; }
   @media (max-width: 1099px) {
-    /* 029c #8: 10 % reicht fuer "Stand" nur ohne Wort - die drei Kreise bleiben, das Wort */
-    /* steht als title-Tooltip (siehe ladderHTML) statt gedruckt in der Zelle */
-    .fin-posts-table .ladder .word { display: none; }
+    /* 029c #8, seit 038 E5 an der Segment-Leiter: schmal reicht es nur ohne Wort - das steht
+       dann als title-Tooltip an der Leiter (siehe ladderHTML) */
+    .fin-posts-table .ldr-w { display: none; }
   }
   .fin-posts-table .r, .fin-posts-table .fp-amt, .fin-posts-table .fp-act { text-align: right; }
   .fin-posts-table .fp-amt { font-variant-numeric: tabular-nums; }
@@ -1108,7 +1094,6 @@ button.cost-amount:hover { background: var(--line); }
   .fin-posts-table .fin-post.paid th, .fin-posts-table .fin-post.paid td, .fin-posts-table .fin-post.paid .fp-title, .fin-posts-table .fin-post.paid .fin-link { color: var(--ink-3); }
   .fin-posts-table .fin-post.late .fp-due { color: var(--danger); }
   .fin-posts-table .fin-post-open td { height: auto; padding: 8px 0; white-space: normal; overflow: visible; }
-  .fin-posts-table .ladder { font-size: var(--fs-micro); /* 029b #14: Farbe kommt von der Stufe */ }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .foot.fin-foot { padding: 4px 20px; }
 }
