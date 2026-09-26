@@ -42,11 +42,9 @@ const SHELL = [
   './app/views/start.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  // docs/changes/020b: self-hosted, so they have to be in the shell to survive offline too
-  './fonts/instrument-sans-400-normal.woff2',
-  './fonts/instrument-sans-400-italic.woff2',
-  './fonts/instrument-sans-600-normal.woff2',
-  './fonts/instrument-sans-700-normal.woff2',
+  // docs/changes/020b: self-hosted, so it has to be in the shell to survive offline too.
+  // 038: one variable file (400-700) replaces the four Instrument-Sans cuts.
+  './fonts/geist-400-700-normal.woff2',
 ];
 
 self.addEventListener('install', (e) => {

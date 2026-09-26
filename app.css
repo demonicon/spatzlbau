@@ -1,38 +1,20 @@
-/* Design tokens from design/handoff/2026-09-13 (Claude Design). Mobile-first, 380–440 px column.
-   Font: Instrument Sans (SIL Open Font License, fonts/LICENSE.txt), self-hosted since
-   docs/changes/020b - no request to fonts.googleapis.com/gstatic.com, so CSP stays
-   font-src 'self' and the font survives offline (service worker precache). */
+/* Design tokens from design/handoff/2026-09-13 (Claude Design). Mobile-first, 380-440 px column.
+   Font: Geist (SIL Open Font License, fonts/LICENSE.txt), self-hosted since docs/changes/038
+   (Abweichungsliste Zeile 0, loest Instrument Sans aus 020b ab) - no request to
+   fonts.googleapis.com/gstatic.com, so CSP stays font-src 'self' and the font survives offline
+   (service worker precache).
+   One variable file instead of three static cuts: Google serves Geist only as a variable font,
+   the same URL for 400, 600 and 700. 29 kB for the whole range is less than the three static
+   cuts the order budgeted (3 x 30-60 kB) and costs one request instead of three - see
+   docs/changes/038-abweichungen.md. No italic: Geist has none, and the one italic rule in the
+   app (.brief-read p.none) drops it (decision Sebastian 26.09.). */
 @font-face {
-  font-family: "Instrument Sans";
-  src: url("fonts/instrument-sans-400-normal.woff2") format("woff2");
-  font-weight: 400;
+  font-family: "Geist";
+  src: url("fonts/geist-400-700-normal.woff2") format("woff2");
+  font-weight: 400 700;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Instrument Sans";
-  src: url("fonts/instrument-sans-400-italic.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Instrument Sans";
-  src: url("fonts/instrument-sans-600-normal.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Instrument Sans";
-  src: url("fonts/instrument-sans-700-normal.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 :root {
   /* surfaces & ink */
@@ -53,16 +35,24 @@
   --link: #2e5a9c; /* 016c: links in the Finanzen export - 6.6:1 on paper */
   /* 029c #1: --mark-deep auf 5,18:1 (paper) gedunkelt - die einzige Stelle, die durchfiel (docs/changes/029c-kontrast.md) */
   --mark: #f7de4a; --mark-deep: #7a6600; --danger: #b33a2e; --danger-bg: #f8e3e0; --ok: #2f6f4e;
-  /* type scale */
-  --fs-hero: 60px; --fs-kpi: 28px; --fs-tile: 24px; --fs-title: 22px; --fs-body: 16px; --fs-ui: 15px;
-  --fs-meta: 14px; --fs-small: 13px; --fs-micro: 12px; --fs-nano: 11px;
+  /* type scale (docs/changes/038 E10, Export "Seitensystem" Blatt T). Every size in the app comes
+     from one of these - the letter spacing belongs to the size, so it sits in the token pair.
+     --fs-section (18/600) is the one role the export leaves without a token name; E10 asks for
+     no naked font-size in the new files, so it gets one here. */
+  --fs-hero: 60px; --ls-hero: -.03em;
+  --fs-kpi: 28px; --ls-kpi: -.01em;
+  --fs-tile: 24px; --ls-tile: -.01em;
+  --fs-title: 22px; --ls-title: -.01em;
+  --fs-section: 18px;
+  --fs-body: 16px; --fs-ui: 15px;
+  --fs-meta: 14px; --fs-small: 13px; --fs-micro: 12px; --ls-micro: .06em; --fs-nano: 11px;
   /* spacing & shape */
   --gutter: 16px; --gap: 8px; --tap: 44px;
   /* button system (docs/changes/020): one height everywhere, four kinds, nothing ad hoc */
   --btn-h: 40px; --btn-h-desktop: 32px;
   --r-tag: 4px; --r-pill: 999px;
   --col-max: 440px;
-  --font: "Instrument Sans", "Avenir Next", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font: "Geist", "Avenir Next", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 * { box-sizing: border-box; }
 /* docs/changes/020b: every number in the app (amounts, dates, counters, the countdown) gets
@@ -245,7 +235,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
    Karten mit Luft dazwischen, kein Rahmen-Trick mehr */
 .kpis { margin: 10px var(--gutter) 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 /* 030 #3: alle drei Kennzahlen 0 - eine leise Zeile an derselben Stelle wie die Kachelreihe */
-.kpis-empty { margin: 10px var(--gutter) 0; font-size: 14px; color: var(--ink-3); }
+.kpis-empty { margin: 10px var(--gutter) 0; font-size: var(--fs-meta); color: var(--ink-3); }
 .kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tile { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); min-height: 58px; padding: 8px 8px 7px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; text-align: left; }
@@ -459,7 +449,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .brief-read:first-child { margin-top: 0; }
 .brief-read b { display: block; font-size: var(--fs-small); color: var(--claude); }
 .brief-read p { margin: 2px 0 0; font-size: var(--fs-ui); line-height: 1.5; white-space: pre-wrap; }
-.brief-read p.none { color: var(--ink-3); font-style: italic; }
+.brief-read p.none { color: var(--ink-3); }
 /* 029b #9: Beratung als Akkordeon statt Pillenreihe - eine Zeile je Thema, ein Hairline je Zeile */
 .adv-acc { margin-top: 4px; border-top: 1px solid var(--divider); }
 .adv-row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: var(--tap); padding: 10px 2px; border-bottom: 1px solid var(--divider); font-size: var(--fs-ui); font-weight: 600; color: var(--ink); text-align: left; }
@@ -567,7 +557,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .decision-row.replaced .dt-text { color: var(--ink-3); text-decoration: line-through; }
 .dr-meta2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .dr-task { font-size: var(--fs-meta); color: var(--ink-2); }
-.decision-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--paper); padding-left: 8px; margin-left: -8px; }
+.decision-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--bg); padding-left: 8px; margin-left: -8px; }
 /* docs/changes/032c: ab 900 px eine echte Tabelle statt der Karten - feste Prozentbreiten wie
    .fin-posts-table (029c #8: kein "width: 1%", sonst kollabieren die schmalen Spalten). */
 @media (min-width: 900px) {
@@ -576,7 +566,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
   .dt-table td { padding: 8px; border-bottom: 1px solid var(--divider); vertical-align: top; }
   .dt-table tbody tr { cursor: pointer; }
   .dt-table tbody tr:hover, .dt-table tbody tr:focus-visible { background: var(--divider); }
-  .dt-table tr.selected { background: var(--paper); }
+  .dt-table tr.selected { background: var(--bg); }
   .dt-table tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--ink); }
   .dt-table .dt-text { -webkit-line-clamp: 2; }
   .dt-table tr.replaced .dt-text { color: var(--ink-3); text-decoration: line-through; }
@@ -594,7 +584,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .steps.four { grid-template-columns: repeat(4, 1fr); }
 .af-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--divider); cursor: pointer; }
 .af-row:hover, .af-row:focus-visible { background: var(--divider); }
-.af-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--paper); padding-left: 8px; margin-left: -8px; }
+.af-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--bg); padding-left: 8px; margin-left: -8px; }
 .af-row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .af-title { font-size: var(--fs-ui); font-weight: 600; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
 .af-row2 { margin-top: 2px; }
@@ -785,11 +775,11 @@ button.cost-amount:hover { background: var(--line); }
 .st-chip.ausstehend { background: var(--ink); color: #fff; }
 .st-chip.late { background: var(--danger-bg); color: var(--danger); }
 /* titles and links that are smaller than a finger: the hit area grows, the line does not */
-.fin-task-title, .fp-title, .fin-link { position: relative; min-height: 0; padding: 0; font-size: 15px; line-height: 20px; text-align: left; overflow-wrap: anywhere; }
+.fin-task-title, .fp-title, .fin-link { position: relative; min-height: 0; padding: 0; font-size: var(--fs-ui); line-height: 20px; text-align: left; overflow-wrap: anywhere; }
 /* 029b #12: Zeile 2 der Posten-Zelle - der Aufgabentitel, leise, Unterstrich erst bei Hover */
-.fp-task-link { display: block; margin-top: 2px; font-size: 13px; line-height: 16px; color: var(--ink-3); text-decoration: none; }
+.fp-task-link { display: block; margin-top: 2px; font-size: var(--fs-small); line-height: 16px; color: var(--ink-3); text-decoration: none; }
 .fp-task-link:hover { text-decoration: underline; text-underline-offset: 2px; }
-.fp-no-task { display: block; margin-top: 2px; font-size: 13px; line-height: 16px; color: var(--ink-3); }
+.fp-no-task { display: block; margin-top: 2px; font-size: var(--fs-small); line-height: 16px; color: var(--ink-3); }
 /* 029b #13: "zahlt" ist eine Personen-Chip-Spalte, keine Textspalte - schmal, zentriert */
 .fp-who .own, .fin-pay-meta .own { min-width: 0; }
 .fin-task-title::before, .fp-title::before, .fin-link::before { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -12px; }
@@ -851,7 +841,7 @@ button.cost-amount:hover { background: var(--line); }
 .fp-l2 { display: flex; justify-content: space-between; align-items: center; gap: var(--gap); margin-top: 4px; min-height: 32px; }
 .fp-meta { font-size: var(--fs-micro); color: var(--ink-3); min-width: 0; }
 .fp-meta .ladder { /* 029b #14: Farbe kommt von der Stufe, nicht mehr pauschal ink-2 */ }
-.fp-amt { font-size: 15px; font-weight: 600; white-space: nowrap; }
+.fp-amt { font-size: var(--fs-ui); font-weight: 600; white-space: nowrap; }
 /* 030 #5: der Betrag ist die Aktion einer geschaetzten Zeile - Unterstrich erst bei Hover, wie ein Link */
 .fp-amt-btn { font: inherit; color: inherit; text-decoration: none; }
 .fp-amt-btn:hover { text-decoration: underline; text-underline-offset: 2px; }
@@ -992,7 +982,7 @@ button.cost-amount:hover { background: var(--line); }
 .fin-setup { position: fixed; inset: 0; z-index: 60; background: var(--paper); display: flex; align-items: center; justify-content: center; padding: var(--gutter); overflow-y: auto; }
 .fs-card { width: 100%; max-width: 480px; }
 .fs-eyebrow { margin: 0; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
-.fs-card h2 { margin: 6px 0 18px; font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
+.fs-card h2 { margin: 6px 0 18px; font-size: var(--fs-kpi); font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
 .fs-card .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); margin-top: 12px; }
 .fs-card .lbl > input, .fs-card .lbl > select { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
 .fs-card .row { display: flex; gap: var(--gap); margin-top: 12px; }
@@ -1038,7 +1028,7 @@ button.cost-amount:hover { background: var(--line); }
 /* ---------- "Was ist neu?" panel ---------- */
 .changelog { margin: 8px var(--gutter) 16px; background: var(--card); border: 1px solid var(--line); padding: 12px 14px 4px; }
 .changelog-head { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; }
-.changelog h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.changelog h2 { margin: 0; font-size: var(--fs-section); font-weight: 600; }
 .release { border-top: 1px solid var(--line); margin-top: 12px; padding: 12px 0 8px; }
 .release h3 { margin: 0; font-size: var(--fs-ui); font-weight: 600; line-height: 1.35; }
 .release h3 .v { display: block; font-size: var(--fs-micro); font-weight: 600; color: var(--ink-3); letter-spacing: 0.04em; margin-bottom: 2px; }
@@ -1153,8 +1143,8 @@ button.cost-amount:hover { background: var(--line); }
 
 .printsheet { margin: 8px var(--gutter) 16px; background: var(--card); border: 1px solid var(--line); padding: 12px 14px 16px; }
 .print-head { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-.print-head h2 { margin: 0; font-size: 18px; font-weight: 600; }
-.sheet h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 14px 0 0; }
+.print-head h2 { margin: 0; font-size: var(--fs-section); font-weight: 600; }
+.sheet h1 { font-size: var(--fs-kpi); font-weight: 600; letter-spacing: -0.02em; margin: 14px 0 0; }
 .sheet .psub-head { margin: 2px 0 0; font-size: var(--fs-meta); color: var(--ink-2); }
 .pgroup { margin-top: 18px; page-break-inside: avoid; break-inside: avoid; }
 .pgroup h3 { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; margin: 0 0 6px; padding-bottom: 5px; border-bottom: 1px solid var(--ink); color: var(--ink-2); }
@@ -1316,7 +1306,7 @@ button.cost-amount:hover { background: var(--line); }
 .gm-gate { margin: 10px 0 0; font-size: var(--fs-ui); line-height: 1.5; color: var(--ink-2); }
 .gm-numbers { display: flex; gap: 1px; background: var(--line); border: 1px solid var(--line); margin: 18px 0 0; }
 .gm-numbers > div { flex: 1 1 0; background: var(--card); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
-.gm-numbers b { font-size: 24px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+.gm-numbers b { font-size: var(--fs-tile); font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
 .gm-numbers span { font-size: var(--fs-micro); color: var(--ink-2); }
 .gm-next { margin: 18px 0 0; font-size: var(--fs-ui); line-height: 1.45; }
 .gm-next .l { display: block; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
