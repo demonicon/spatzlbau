@@ -166,10 +166,15 @@ function taskFiltersHTML() {
   if (!ui.wide) {
     const cur = currentCol();
     return filterPillsHTML(
-      // alle drei bleiben stehen: sie sind die Umschaltung, nicht nur eine Auswahl - ohne sie
-      // käme man an eine leere Spalte (und ihre erledigten Aufgaben) nicht mehr heran (Fund 7)
-      allColsForSwitch().map((c) => ({ key: c.key, label: shortName(c), n: c.open.length + c.blocked.length, on: cur === c.key, always: true })),
-      { act: 'col-person', label: 'Wessen Aufgaben' },
+      [
+        // alle drei bleiben stehen: sie sind die Umschaltung, nicht nur eine Auswahl - ohne sie
+        // käme man an eine leere Spalte (und ihre erledigten Aufgaben) nicht mehr heran (Fund 7)
+        ...allColsForSwitch().map((c) => ({ key: c.key, label: shortName(c), n: c.open.length + c.blocked.length, on: cur === c.key, always: true, act: 'col-person' })),
+        // docs/changes/038c #1: dieselbe Pille wie am Desktop, nur in derselben Reihe wie der
+        // Personen-Umschalter (der Desktop-Reihe mit "wartet auf dich" gibt es hier nicht)
+        { key: 'news', label: 'neu', n: count('news'), on: ui.filter === 'news', act: 'task-filter' },
+      ],
+      { label: 'Wessen Aufgaben' },
     );
   }
   const f = ui.filter;
@@ -179,6 +184,9 @@ function taskFiltersHTML() {
       { key: 'late', label: 'überfällig', n: count('late'), on: f === 'late' },
       { key: 'critical', label: 'fristkritisch', n: count('critical'), on: f === 'critical' },
       { key: 'waitme', label: 'wartet auf dich', n: count('waitme'), on: f === 'waitme' },
+      // docs/changes/038c #1: der Weg zum Ersatz von "Zwischen euch" - dieselbe Zahl wie der Badge
+      // am Tab, hier je Aufgabe statt je Kommentar gezählt (count() zählt Aufgaben, nicht Kommentare)
+      { key: 'news', label: 'neu', n: count('news'), on: f === 'news' },
     ],
     { act: 'task-filter', label: 'Aufgaben filtern' },
   );

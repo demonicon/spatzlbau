@@ -1,6 +1,19 @@
 {
   "entries": [
     {
+      "version": "2.3.1",
+      "release": "2.3",
+      "date": "2026-09-26",
+      "title": "Neue Kommentare seit deinem Besuch als Badge und Filter; Vergleich zeigt Einmalkosten.",
+      "new": [
+        "Der Tab „Aufgaben“ zeigt eine Zahl, wenn seit deinem letzten Besuch ein Kommentar von jemand anderem dazugekommen ist, den du noch nicht gelesen hast – verschwindet, sobald du die Aufgabe öffnest.",
+        "Ein neuer Filter „neu“ zeigt dir genau diese Aufgaben.",
+        "Beim Anbieter-Vergleich einer Anfrage steht jetzt auch eine einmalige Gebühr in der Tabelle, wenn ein Angebot sie nennt – beim Wählen fragt die App, ob sie dafür einen Posten anlegt oder einen bestehenden ändert."
+      ],
+      "improved": [],
+      "fixed": []
+    },
+    {
       "version": "2.3.0",
       "release": "2.3",
       "date": "2026-09-26",

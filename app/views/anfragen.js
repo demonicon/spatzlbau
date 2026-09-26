@@ -162,6 +162,8 @@ const ROWS = [
   ['price_kind', 'Art'],
   ['service', 'Leistung'],
   ['term', 'Termin'],
+  // docs/changes/038c #2: vierte Detailzeile auf der Karte (ROWS ohne 'price')
+  ['setup_fee', 'Einmalig'],
   ['valid_until', 'Gültig bis'],
   ['plusminus', 'Plus / Minus'],
   ['url', 'Quelle'],
@@ -178,6 +180,8 @@ function cellHTML(o, key, cheap) {
       return o.id === cheap ? `<b>${esc(fmtPrice(o))}</b>` : esc(fmtPrice(o));
     case 'price_kind':
       return esc(PRICE_KIND[o.price_kind] || '–');
+    case 'setup_fee':
+      return esc(fmtPrice({ price: o.setup_fee }));
     case 'valid_until':
       if (!o.valid_until) return '–';
       return isExpired(o, today()) ? `<span class="tag replaced">abgelaufen · ${esc(day(o.valid_until))}</span>` : esc(day(o.valid_until));
@@ -259,6 +263,7 @@ function offerEditHTML(a) {
         .map(([k, l]) => `<option value="${k}" ${(o.price_kind || 'fest') === k ? 'selected' : ''}>${l}</option>`)
         .join('')}</select></label>
     </div>
+    ${txt('setup_fee', 'Einmalig in € (optional)', 'inputmode="decimal"')}
     ${txt('service', 'Leistung')}
     <div class="row">${txt('term', 'Termin')}<label class="lbl"><span class="lbl-h">Gültig bis</span><input type="date" data-input="of-valid_until" value="${esc(o.valid_until || '')}"></label></div>
     ${txt('plus', 'Plus')}${txt('minus', 'Minus')}${txt('url', 'Link (optional)', 'inputmode="url"')}
@@ -269,7 +274,9 @@ function offerEditHTML(a) {
 function moneyHTML(a) {
   const m = ui.anfrageMoney;
   if (!m || m.id !== a.id) return '';
-  if (m.money.kind === 'none') return m.money.note ? `<p class="stand-line quiet">${esc(m.money.note)}</p>` : '';
+  // docs/changes/038c #2: 'none' mit `extra` fragt trotzdem - der Posten aus setup_fee, auch ohne
+  // eine Laufend-Zeile für die Kategorie
+  if (m.money.kind === 'none' && !m.money.question) return m.money.note ? `<p class="stand-line quiet">${esc(m.money.note)}</p>` : '';
   return `<p class="confirm block af-money">${esc(m.money.question)} <button class="btn-secondary" data-act="money-yes">Ja</button><button class="btn-text" data-act="money-no">Nein</button></p>`;
 }
 
