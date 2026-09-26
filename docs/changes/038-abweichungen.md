@@ -50,6 +50,8 @@ Vier Fragen aus der Erkundung, von Sebastian im Plan-Stopp beantwortet:
    Lokal (`localhost`) ist `ui.preview` falsch, dort würden `last_seen_version`, `last_visit_at`
    und `seen_comments` echt geschrieben. Deshalb: alles ohne Login lokal mit simuliertem Zustand,
    die acht Tests des Auftrags nach dem Merge auf dem Vorschau-Pfad.
+9. **`--fs-hero-s` (44 px) ergänzt** für die Antwortzahl am Handy – der Export zeigt dort 44
+   statt 60, und E10 verlangt Tokens statt nackter Werte in den neuen Bauteilen.
 
 ## Ansage Schreib-/Login-Test (`rules/tests.md`)
 
@@ -58,6 +60,49 @@ Vor Block 2 angesagt: Anmeldung mit den Testkonten aus `.env` (`TEST_EMAIL_S`/`T
 Dort schreibt die App den Lesestand nicht (`ui.preview`-Guards in `app/state.js`). Alles vorher
 lief ohne Login gegen einen lokalen Server mit simuliertem Zustand (nur `state`/`ui` gesetzt,
 keine Supabase-Schreiboperation).
+
+## Nach dem Review nachgetragen (26.09.)
+
+Der Reviewer hat 22 Lücken gemeldet; behoben sind alle, die eine Funktion oder eine Regel
+verletzten. Die folgenden Punkte bleiben als bewusste Abweichung stehen:
+
+- **#23, Zeilen des Vergleichs.** Export-Soll nennt „Preis · Laufzeit · Leistung · Einmalig".
+  Die Tabelle zeigt weiter sieben Zeilen (zusätzlich Art, Gültig bis, Plus/Minus, Quelle). Grund:
+  „Einmalig" gibt es im Datenmodell nicht, und die vier zusätzlichen Zeilen tragen echte Daten,
+  die Claude schreibt – sie wegzulassen hieße, sie unsichtbar zu machen. Das Datenmodell darf
+  dieser Auftrag nicht ändern. **Entscheidung für Sebastian:** so lassen oder in 038b nachziehen.
+- **E9 unter 900 px.** Rechenweg und Mini-Balken fehlen am Handy – genau so zeigt es der Export
+  in „Dashboard 380" (Antwortzahl 44, danach direkt die Kacheln). Keine Abweichung vom Export,
+  nur von seinem Text, der beides ohne Breitenangabe nennt.
+- **„news" und „du wartest" sind aus der Oberfläche verschwunden.** #5 nennt für die Pillen
+  genau vier Werte (alle · überfällig · fristkritisch · wartet auf dich). Die beiden anderen
+  Signale aus 018 §3 hatten ihren einzigen Einstieg über die Kacheln und über „Zwischen euch" –
+  beides ist mit #5 und #7 weg. **Das ist die zweite sichtbare Wegnahme** neben „Zwischen euch"
+  selbst (die frühere Fassung dieser Datei behauptete, alle drei Zähler stünden in den Pillen –
+  das stimmte nicht, nur „wartet auf dich" steht dort).
+- **„Hinzufügen" ist jetzt sekundär.** Die neue Regel („der Primär lebt im Panel, nie in der
+  Liste") lässt für einen gefüllten Knopf in der Aufgabenliste keinen Platz. Die Ausnahme aus
+  032b #1 (Hinzufügen wird sekundär, sobald die Akte einen Primär zeigt) ist damit hinfällig.
+
+## Messungen (Klärung 1)
+
+| Messwert | vorher (`preview`) | nachher (`feat/038`) |
+|---|---|---|
+| `app/**/*.js` gesamt | 7.040 Zeilen | 7.568 Zeilen (+528) |
+| `app.css` | 1.325 Zeilen | 1.453 Zeilen (+128) |
+| Render-Funktionen je Seitentyp | 4 eigene Ansichten mit eigenem Kopf, Panel und Rückweg | 2 Seitentypen (`pages/listPanel.js`, `pages/dashboard.js`) für 6 Ansichten |
+| `renderHeader()`-Aufrufer | 4 | 0 (die Shell rendert den Kopf einmal) |
+| `innerHTML =` je Routenwechsel | 1× die **ganze** Seite inklusive Kopf | 1× nur der Inhaltscontainer; im laufenden Betrieb 0 (der Diff patcht Knoten) |
+| Mutationen bei einem fremden Kommentar | ganze Seite ersetzt | **2** (die betroffene Zeile, die „Seit du zuletzt da warst"-Zahl); Kopf: 0 |
+| Zeilenhöhe in den Spalten (#6) | 56–91 px | 63–78 px |
+| Konsole auf sechs Routen | – | leer (in einem frischen Tab geprüft) |
+
+**Die Zeilenzahl ist gestiegen, nicht gefallen** (Klärung 1 wollte „nicht größer als heute";
+Sebastian hat das im Plan-Stopp zum Messwert erklärt). Grund: 038 darf die Duplikate nicht
+entfernen, die 038b entfernt – die neun Tabellen, dreizehn Leertexte und zwei Editor-Hüllen
+stehen unverändert da, und die zwei Seitentypen, die Shell, der Zeichen-Diff, die Leiter und die
+Mini-Balken kommen dazu. Abgezogen wurden immerhin `renderHeader`, „Zwischen euch", die
+Signal-Kacheln, die Personen-Umschaltung, das `fin-grid` und die Aufschlüsselungs-Zeilen.
 
 ## Offen für Sebastian
 

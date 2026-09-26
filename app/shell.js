@@ -10,6 +10,7 @@
 import { $, esc } from './ui/dom.js';
 import { ICON } from './ui/icons.js';
 import { avatarHTML, countdownHTML, footHTML, updateBarHTML, setupHintHTML } from './ui/chrome.js';
+import { searchHTML } from './views/dashboard.js';
 import { ui, einzug, myOpenDecisionsCount, openAnfragenCount } from './state.js';
 
 /** The four routes, in the order the export fixes: Aufgaben · Finanzen · Entscheidungen ·
@@ -26,7 +27,8 @@ const TITLE = Object.fromEntries(ROUTES.map((r) => [r.key, r.label]));
 /** The second level, one segment element for every page that has one (Zeile 1/#4/#18).
     Finanzen and Anfragen have none - the content starts right under the head. */
 const SEGMENTS = {
-  dashboard: { label: 'Ansicht', act: 'view-switch', current: () => ui.view, items: [['personen', 'Personen'], ['phasen', 'Phasen'], ['timeline', 'Timeline']] },
+  // #4: auf Aufgaben steht die Suche daneben, in derselben Zeile
+  dashboard: { label: 'Ansicht', act: 'view-switch', current: () => ui.view, items: [['personen', 'Personen'], ['phasen', 'Phasen'], ['timeline', 'Timeline']], extra: searchHTML },
   entscheidungen: { label: 'Entscheidungen filtern', act: 'decisions-filter', current: () => (['alle', 'offen'].includes(ui.decisionsFilter) ? ui.decisionsFilter : 'offen'), items: [['offen', 'offen'], ['alle', 'alle']] },
 };
 
@@ -71,11 +73,8 @@ function segmentHTML(active) {
   const cur = seg.current();
   return `<div class="subseg" role="group" aria-label="${esc(seg.label)}">${seg.items
     .map(([k, l]) => `<button class="subseg-i" data-act="${seg.act}" data-to="${k}" aria-pressed="${cur === k}">${esc(l)}</button>`)
-    .join('')}</div>`;
+    .join('')}</div>${seg.extra ? seg.extra() : ''}`;
 }
-
-/** True while this route shows a second level - the content gets its top padding from it. */
-export const hasSegment = (active) => !!SEGMENTS[active];
 
 /** docs/changes/038 #8: on a phone the detail is a page of its own. It replaces the head with
     "‹ <Liste>" (the page type draws that bar), so head and second level step aside; the tab bar

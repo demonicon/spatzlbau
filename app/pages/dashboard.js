@@ -41,10 +41,11 @@ export function tilesHTML(tiles, { act = 'db-tile', label = 'Kennzahlen' } = {})
 /** Ein Sektionskopf mit seinem Inhalt (#13): Name · Zahl · Fortschritt · aktiver Filter ·
     Anlegen · Chevron. Ein eingeklappter Abschnitt zeigt seinen Kopf weiter - die Zahl ist die
     Information, auch ohne die Liste darunter. */
-export function sectionHTML({ key, title, count = '', progress = null, filter = null, add = null, open = true, body = '' }) {
+export function sectionHTML({ key, title, count = '', note = '', progress = null, filter = null, add = null, open = true, body = '', act = 'db-section' }) {
   const head = `<div class="sect-h">
     <h2 class="sect-t">${esc(title)}</h2>
     ${count === '' ? '' : `<span class="sect-n">${esc(String(count))}</span>`}
+    ${note ? `<span class="sect-note">${esc(note)}</span>` : ''}
     ${
       progress
         ? `<span class="sect-bar"><span class="bar"><i data-pct="${progress.pct}"></i></span><span class="sect-prog">${esc(progress.text)}</span></span>`
@@ -57,7 +58,9 @@ export function sectionHTML({ key, title, count = '', progress = null, filter = 
         ? `<button class="${add.primary ? 'btn-primary' : 'btn-secondary'} sect-add-btn" data-act="${add.act}" aria-label="${esc(add.label)}"><span class="sect-add-l">${esc(add.label)}</span><span class="sect-add-s" aria-hidden="true">+</span></button>`
         : ''
     }
-    <button class="ico sect-chev${open ? ' up' : ''}" data-act="db-section" data-to="${esc(key)}" aria-expanded="${open}" aria-controls="sect-${esc(key)}" aria-label="${open ? 'Einklappen' : 'Ausklappen'}: ${esc(title)}">${CHEV}</button>
+    ${/* aria-controls nur, solange es den Rumpf wirklich gibt - eingeklappt zeigte es sonst auf
+          eine ID, die im DOM fehlt (Reviewer-Fund 21) */ ''}
+    <button class="ico sect-chev${open ? ' up' : ''}" data-act="${act}" data-to="${esc(key)}" aria-expanded="${open}"${open ? ` aria-controls="sect-${esc(key)}"` : ''} aria-label="${open ? 'Einklappen' : 'Ausklappen'}: ${esc(title)}">${CHEV}</button>
   </div>`;
   return `<section class="sect db-sect" data-sect="${esc(key)}">${head}${open ? `<div id="sect-${esc(key)}">${body}</div>` : ''}</section>`;
 }

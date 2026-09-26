@@ -198,7 +198,7 @@ function miniBarsHTML() {
       </span>`;
     })
     .join('');
-  return `<button class="db-mini" data-act="db-section" data-to="monate" aria-label="Monat für Monat öffnen">
+  return `<button class="db-mini" data-act="db-section" data-to="monate" data-open="1" aria-label="Monat für Monat öffnen">
     <span class="db-mini-h"><span class="db-a-label">Monat für Monat</span><span class="db-mini-max">${peak ? `max ${esc(eurShort(peak.total))} · ${esc(MONTHS[Number(peak.key.split('-')[1]) - 1])}` : ''}</span></span>
     <span class="db-mini-b">${bars}</span>
     <span class="db-mini-l"><span><i class="k-paid"></i>bezahlt</span><span><i class="k-plan"></i>geplant</span><span><i class="k-back"></i>Rückfluss</span></span>
@@ -214,7 +214,8 @@ function finTilesHTML() {
       key: r.key,
       label: r.label + (r.sub ? ' · ' + r.sub : ''),
       value: r.value === null || r.value === undefined ? '–' : signed(r.value, r.key === 'double'),
-      note: countOf(r.key),
+      // E8: der Zusatz sagt die Anzahl - oder, wenn diese Kachel gerade filtert, was sie tut
+      note: ui.finFilter === r.key ? '✓ filtert Posten' : countOf(r.key),
       tone: r.key === 'refunds' ? 'ok' : '',
       on: ui.finFilter === r.key,
     })),
@@ -227,7 +228,7 @@ function countOf(key) {
   const test = { planned: (c) => c.kind !== 'rueckfluss' && c.status !== 'bezahlt', paid: (c) => c.status === 'bezahlt', refunds: (c) => c.kind === 'rueckfluss' }[key];
   if (!test) return '';
   const n = state.costs.filter((c) => c.kind !== 'ausgleich' && test(c)).length;
-  return n ? `${n} ${n === 1 ? 'Posten' : 'Posten'}` : '';
+  return n ? `${n} Posten` : '';
 }
 
 /* ---------- 2. who owes whom, with one action behind it (F3) ---------- */
@@ -777,7 +778,13 @@ export function finanzenView() {
   const all = postRows();
   const paidCount = all.filter((c) => c.status === 'bezahlt').length;
   const active = activePostFilter();
-  const filterLabel = ui.finFilter ? breakdown().find((r) => r.key === ui.finFilter)?.label : '';
+  // die Pille im Sektionskopf zeigt jeden gesetzten Filter - auch den, den "N offene Posten
+  // zeigen" am Handy setzt; sonst gäbe es keinen Weg zurück auf alle (Reviewer-Fund 6)
+  const filterLabel = ui.finFilter
+    ? breakdown().find((r) => r.key === ui.finFilter)?.label
+    : active !== 'alle'
+      ? POST_FILTERS[active].label
+      : '';
   const open = (key, dflt) => (ui.finSections[key] === undefined ? dflt : ui.finSections[key]);
   // #13: "+ Posten" ist der Primär dieser Sektion - und auf Finanzen der einzige der Seite,
   // solange die Verträge-Sektion (031) noch nicht da ist (Test 8).

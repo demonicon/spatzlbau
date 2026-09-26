@@ -39,7 +39,7 @@
      from one of these - the letter spacing belongs to the size, so it sits in the token pair.
      --fs-section (18/600) is the one role the export leaves without a token name; E10 asks for
      no naked font-size in the new files, so it gets one here. */
-  --fs-hero: 60px; --ls-hero: -.03em;
+  --fs-hero: 60px; --fs-hero-s: 44px; --ls-hero: -.03em;
   --fs-kpi: 28px; --ls-kpi: -.01em;
   --fs-tile: 24px; --ls-tile: -.01em;
   --fs-title: 22px; --ls-title: -.01em;
@@ -120,7 +120,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 @media (min-width: 900px) {
   /* #16: die rechte Leiste ist 400 breit - dieselbe Breite wie das Panel des anderen Seitentyps */
   .board.db-wide { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; padding: 0 var(--gutter); }
-  .db-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 72px; }
+  .db-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 80px; }
   .db-wide .sect { margin-left: 0; margin-right: 0; }
 }
 
@@ -133,7 +133,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 .db-a-calc { font-size: var(--fs-meta); color: var(--ink-2); }
 @media (max-width: 899px) {
   /* 380: die Zahl bleibt die Zahl, aber 60 sprengt die Spalte - der Export zeigt hier 44 */
-  .db-a-value .n { font-size: 44px; line-height: 1.05; }
+  .db-a-value .n { font-size: var(--fs-hero-s); line-height: 1.05; }
   .db-a-calc { display: none; }
 }
 @media (min-width: 900px) {
@@ -150,7 +150,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
   .db-mini-b { display: flex; gap: 6px; width: 100%; }
   .mb-c { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: stretch; }
   .mb-up { height: 60px; display: flex; align-items: flex-end; border-bottom: 1px solid var(--ink); }
-  .mb-plan { width: 100%; background: var(--line-dash); border-radius: 2px 2px 0 0; display: flex; align-items: flex-end; }
+  .mb-plan { width: 100%; background: var(--line); border-radius: 2px 2px 0 0; display: flex; align-items: flex-end; }
   .mb-paid { width: 100%; background: var(--ink); border-radius: 2px 2px 0 0; }
   .mb-dn { height: 44px; display: flex; align-items: flex-start; }
   .mb-back { width: 100%; background: var(--ok); border-radius: 0 0 2px 2px; }
@@ -160,7 +160,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
   .db-mini-l span { display: flex; align-items: center; gap: 4px; }
   .db-mini-l i { width: 8px; height: 8px; border-radius: 1px; }
   .db-mini-l .k-paid { background: var(--ink); }
-  .db-mini-l .k-plan { background: var(--line-dash); }
+  .db-mini-l .k-plan { background: var(--line); }
   .db-mini-l .k-back { background: var(--ok); }
 }
 
@@ -198,6 +198,9 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 
 .db-card { margin: 12px var(--gutter) 0; padding: 16px; }
 .db-empty { padding: 28px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+/* in einer Sektion sagt der Sektionskopf den Namen - der eigene Kopf des Bausteins (den die
+   Karte in der rechten Leiste braucht) waere dort der zweite (Reviewer-Fund 9) */
+.db-sect .fin-h { display: none; }
 .fin-months tr.now { background: var(--bg); font-weight: 600; }
 .fin-months td.back { color: var(--ok); }
 @media (min-width: 900px) {
@@ -257,18 +260,24 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 .page-back { display: flex; align-items: center; gap: 4px; min-height: 48px; padding: 0 8px; border-bottom: 1px solid var(--line); }
 .back-btn { min-height: var(--tap); display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; font-size: var(--fs-ui); font-weight: 600; }
 .page-back .spacer { flex: 1; }
-@media (min-width: 900px) { .page-back { display: none; } }
+/* die Leiste steht nur auf einer Detailseite - und die gibt es auf Entscheidungen auch
+   zwischen 900 und 1179 px, wo das Panel noch nicht danebenpasst (Reviewer-Fund 1) */
 
 /* Filter-Pillen (#5, #11): one row, horizontally scrolling on a phone, a pill is 40 visible in
    44 of tap area. A pressed pill is an outline in ink - filled stays the primary's (029b). */
 .fpills { display: flex; gap: 8px; overflow-x: auto; padding: 10px var(--gutter) 2px; scrollbar-width: none; }
 .fpills::-webkit-scrollbar { display: none; }
-.fpill { flex: none; min-height: var(--tap); display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border-radius: var(--r-pill); background: var(--card); border: 1px solid var(--line); font-size: var(--fs-ui); font-weight: 400; color: var(--ink); }
-.fpill[aria-pressed="true"] { border: 1.5px solid var(--ink); font-weight: 600; }
+/* E3: 44 Tap-Fläche, 40 sichtbar - wie beim Segment liegt die sichtbare Pille als Schicht im
+   44er Knopf, statt das Ziel auf 40 zu verkleinern */
+.fpill { position: relative; isolation: isolate; flex: none; min-height: var(--tap); display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; font-size: var(--fs-ui); font-weight: 400; color: var(--ink); }
+.fpill::before { content: ""; position: absolute; inset: 2px 0; z-index: -1; border-radius: var(--r-pill); background: var(--card); border: 1px solid var(--line); }
+.fpill[aria-pressed="true"] { font-weight: 600; }
+.fpill[aria-pressed="true"]::before { border: 1.5px solid var(--ink); }
 .fpill-n { color: var(--ink-2); font-weight: 400; }
 @media (min-width: 900px) {
   .fpills { padding: 12px var(--gutter) 0; overflow-x: visible; flex-wrap: wrap; }
   .fpill { min-height: 32px; padding: 0 12px; font-size: var(--fs-meta); }
+  .fpill::before { inset: 0; }
 }
 
 /* ---------- the shell (docs/changes/038, Abweichungsliste Zeile 1 und 2) ----------
@@ -328,8 +337,10 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 .subseg-i[aria-pressed="true"] { color: var(--ink); font-weight: 600; }
 .subseg-i[aria-pressed="true"]::before { content: ""; position: absolute; inset: 2px 0; z-index: -1; border-radius: 3px; background: var(--card); box-shadow: var(--sh-card); }
 @media (min-width: 900px) {
-  .shell-sub { padding: 12px var(--gutter) 0; }
-  .subseg { display: inline-flex; }
+  /* #4: Segment und Suche in einer Zeile, direkt unter dem Kopf */
+  .shell-sub { padding: 12px var(--gutter) 0; display: flex; align-items: center; gap: 12px; }
+  .shell-sub .search-row { flex: 1; margin: 0; }
+  .subseg { display: inline-flex; flex: none; }
   .subseg-i { flex: none; min-height: 28px; font-size: var(--fs-meta); }
   .subseg-i[aria-pressed="true"]::before { inset: 0; }
   /* Zeile 1: one 64er row on a desktop - title, chip, countdown, tabs and avatar side by side */
@@ -436,25 +447,12 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* ---------- the three signals (docs/changes/018 §3) ---------- */
 /* 029 Regel 1: die Kacheln waren eine Linien-Grafik (1 px Spalt auf Linienfarbe) - jetzt eigene
    Karten mit Luft dazwischen, kein Rahmen-Trick mehr */
-.kpis { margin: 10px var(--gutter) 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+/* docs/changes/038 #5: .kpis, .tile, .quiet-counts und .pswitch sind mit den Filter-Pillen
+   verschwunden - ihre Regeln auch. */
 /* 030 #3: alle drei Kennzahlen 0 - eine leise Zeile an derselben Stelle wie die Kachelreihe */
-.kpis-empty { margin: 10px var(--gutter) 0; font-size: var(--fs-meta); color: var(--ink-3); }
-.kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.tile { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); min-height: 58px; padding: 8px 8px 7px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; text-align: left; }
-.tile[aria-pressed=true] { border-bottom-color: var(--ink); }
-.tile .n { font-size: 21px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
-.tile .n span { padding: 0 4px; margin-left: -4px; }
-.tile .l { font-size: var(--fs-micro); color: var(--ink-2); margin-top: 4px; line-height: 1.2; hyphens: auto; overflow-wrap: anywhere; }
-.tile.zero .n { color: var(--ink-3); }
 /* "wartet auf dich" is urgent, not wrong: weight and an outline, never red (Rot-Regel aus 015) */
-.sig-tile:not(.zero) .l { color: var(--ink); font-weight: 600; }
-.kpis.three .sig-tile:first-child:not(.zero) { box-shadow: inset 3px 0 0 var(--ink); }
 
 /* the four counts from 009 stay reachable, one quiet line below the signals */
-.quiet-counts { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px var(--gutter) 0; }
-.quiet-count { color: var(--ink-2); }
-.quiet-count[aria-pressed=true] { font-weight: 600; }
 
 /* the flat list behind a pressed signal: over all people, with the quote and one action */
 .siglist { margin: 10px var(--gutter) 0; }
@@ -466,11 +464,6 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .sigrow-quote .who { color: var(--ink-3); }
 
 /* ---------- the person switch (docs/changes/018 §1): one column at a time on a phone ---------- */
-.pswitch { display: flex; gap: 6px; margin: 16px var(--gutter) 0; }
-.pseg { flex: 1 1 0; min-width: 0; min-height: 52px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 6px 10px; border-radius: var(--r-tag); }
-.pseg b { font-size: var(--fs-meta); font-weight: 600; }
-.pseg .s { font-size: var(--fs-micro); font-weight: 400; color: var(--ink-3); }
-.pseg[aria-pressed=true] .s { color: rgba(255, 255, 255, 0.72); }
 
 /* ---------- time groups inside a column (docs/changes/018 §2) ---------- */
 .tgroup-head { display: flex; align-items: baseline; gap: 8px; padding: 12px 0 4px; }
@@ -1203,13 +1196,11 @@ button.cost-amount:hover { background: var(--line); }
   .countdown .btn-text .short { display: none; }
   .countdown .n { font-size: 34px; }
   /* room for the labels on the tiles (issues.md #3: never show less on the bigger screen) */
-  .tile { padding: 10px 12px 8px; min-height: 64px; }
   /* all phases fit without scrolling; the label keeps to the first row when they wrap */
   .pchips { flex-wrap: wrap; overflow-x: visible; }
   .chips-row { align-items: flex-start; }
   .chips-label { padding-top: 15px; }
   /* docs/changes/018: more room for the three names from here on */
-  .pseg { min-height: 56px; padding: 8px 14px; }
 }
 
 @media (min-width: 900px) {
@@ -1250,7 +1241,9 @@ button.cost-amount:hover { background: var(--line); }
   .cols .task .quiet { line-height: 18px; padding-bottom: 0; }
   .cols .task .quiet .sig-chip { line-height: 16px; }
   /* the Akte as a sticky side panel that scrolls on its own */
-  .panel { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; min-width: 0; border-left: 1px solid var(--line); background: var(--paper); padding: 0 var(--gutter) 24px; }
+  /* 038: der Kopf ist sticky und 64 hoch - das Panel beginnt darunter, sonst laegen seine
+     oberen Zeilen beim Scrollen hinter ihm (Reviewer-Fund 8) */
+  .panel { position: sticky; top: 64px; align-self: start; max-height: calc(100vh - 64px); overflow-y: auto; min-width: 0; border-left: 1px solid var(--line); background: var(--paper); padding: 0 var(--gutter) 24px; }
   .panel.empty { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
   .panel.empty p { margin: 0; color: var(--ink-3); font-size: var(--fs-ui); }
   .panel-head { display: flex; align-items: center; gap: 6px; padding: 8px 0 0; min-height: 52px; }
@@ -1322,6 +1315,8 @@ button.cost-amount:hover { background: var(--line); }
   .toast { display: none !important; }
   /* only while the sheet is open – printing the dashboard itself keeps working */
   body.printing .top, body.printing #view > .board, body.printing .foot, body.printing .changelog { display: none !important; }
+  /* 038: Kopf, zweite Ebene, Fusszeile und Tab-Leiste liegen jetzt ausserhalb von #view */
+  body.printing .shell-head, body.printing .shell-sub, body.printing #shell-date, body.printing #shell-hint, body.printing #shell-update, body.printing #shell-foot, body.printing .tabbar { display: none !important; }
   body.printing .printsheet { margin: 0; padding: 0; border: 0; }
   .noprint { display: none !important; }
   .onlyprint { display: block; white-space: pre-wrap; font-size: var(--fs-ui); }
@@ -1334,7 +1329,6 @@ button.cost-amount:hover { background: var(--line); }
    Every entry is one row of the same grid - date 60 px, rails 67 px (7 px gap + five lanes of
    12 px), content - so the rails run through months, today, Einzug and gates without a gap. The
    rails are borders and pseudo elements, never an inline style (CSP, 008). */
-.view-chips { margin: 14px var(--gutter) 0; }
 .timeline { margin: 10px 0 0; --tl-off: color-mix(in srgb, var(--line) 70%, var(--paper)); }
 .tl-filters { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); margin: 0 var(--gutter); }
 .tl-filters .pchips { flex-wrap: nowrap; overflow: visible; }

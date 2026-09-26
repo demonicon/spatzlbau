@@ -439,7 +439,7 @@ async function finSetupSaveCost(seedKey, label, amountRaw, extra) {
 
 /* ---------- keyboard (docs/changes/006 step 3): the view is re-rendered on every change,
    so remember which control had focus and give it back afterwards ---------- */
-const FOCUS_ATTRS = ['data-act', 'data-filter', 'data-phase', 'data-field', 'data-input', 'data-brief', 'data-adv', 'data-ref', 'data-anfrage-field', 'data-anfrage-task', 'role'];
+const FOCUS_ATTRS = ['data-act', 'data-phase', 'data-field', 'data-input', 'data-brief', 'data-adv', 'data-ref', 'data-anfrage-field', 'data-anfrage-task', 'role'];
 function keyOf(el) {
   if (!el || el === document.body || !$('#app')?.contains(el)) return null;
   // typing in a field triggers renders (the search does it on every character), so the cursor
@@ -593,7 +593,10 @@ function setExpanded(id) {
   }
   // docs/changes/038 #8: the phone leaves the list for a detail page, so opening is a history
   // step and the list gets its scroll position back when the person comes back
-  const leavingList = !ui.wide && id && !prev;
+  // nur die Aufgabenliste: dort ist der leere Hash das Ziel, auf das Browser-Zurueck faellt.
+  // Auf #entscheidungen wuerde ein #task=... dagegen die Route wechseln, und Zurueck landete
+  // wieder auf derselben Detailseite (Reviewer-Fund 2).
+  const leavingList = !ui.wide && id && !prev && ui.screen === 'dashboard';
   if (leavingList) ui.listScroll = window.scrollY;
   ui.expanded = id;
   ui.confirm = null;
@@ -705,7 +708,7 @@ const OFFLINE_OK = new Set([
   'print', 'print-close', 'print-now',
   'screen', 'fin-open', 'fin-filter', 'fin-filter-clear', 'fin-settings',
   'fin-recurring', 'q-clear', 'home', 'overlay-close', 'title-edit', 'title-done',
-  'bal-how', 'post-filter', 'post-open', 'rec-edit', 'rec-done',
+  'bal-how', 'post-open', 'rec-edit', 'rec-done',
   'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
   'entscheidungen-open', 'entscheidungen-close', 'decisions-filter', 'decisions-row-open',
   'anfrage-new', 'anfrage-open', 'anfrage-close', 'offer-edit', 'offer-cancel', 'money-no', 'anfrage-copy',
@@ -795,9 +798,16 @@ function wireEvents() {
     }
     ui.screen = 'dashboard';
     const id = hashTaskId();
+    const wasOpen = ui.expanded;
     if (id && byId(id)) openTaskFromHash();
     else if (!id) ui.expanded = null;
     render();
+    // docs/changes/038 #8: Browser-Zurueck aus der Detailseite laesst die Liste dort stehen, wo
+    // sie verlassen wurde - der Weg ueber hashchange ist der haeufigere von beiden
+    if (!id && wasOpen && !ui.wide) {
+      window.scrollTo({ top: ui.listScroll || 0 });
+      ui.listScroll = 0;
+    }
   });
   // no connection: show the cached state read-only; back online: reload, no page reload needed (009)
   window.addEventListener('offline', () => {
@@ -990,16 +1000,6 @@ function wireEvents() {
   view.addEventListener('click', async (e) => {
     // tap outside the open panel closes it (and marks it read); the tap itself still does what it does
     if (ui.changelogOpen && !e.target.closest('#changelog') && !e.target.closest('[data-act="changelog"]')) closeChangelog();
-    // KPI tiles: exactly one active filter, tapping again clears it
-    const tile = e.target.closest('[data-filter]');
-    if (tile) {
-      const key = tile.dataset.filter;
-      ui.qPrev = null; // chosen by hand while searching: there is nothing to put back afterwards
-      ui.filter = ui.filter === key ? null : FILTERS[key] ? key : null;
-      if (!ui.wide) setExpanded(null); // inline Akte closes with the list change; the side panel stays open
-      else render();
-      return;
-    }
     // gate bar and phase chips select the phase; the filter stays
     const ph = e.target.closest('[data-phase]');
     if (ph) {
@@ -1193,8 +1193,11 @@ function wireEvents() {
         case 'db-section': {
           const k = b.dataset.to;
           const dflt = k === 'posten';
-          ui.finSections[k] = ui.finSections[k] === undefined ? !dflt : !ui.finSections[k];
+          // data-open="1" heisst oeffnen statt umschalten - die Mini-Balken sagen "oeffnen"
+          // und sollen dann auch oeffnen, wenn der Abschnitt schon offen ist (Reviewer-Fund 16)
+          ui.finSections[k] = b.dataset.open ? true : ui.finSections[k] === undefined ? !dflt : !ui.finSections[k];
           render();
+          if (b.dataset.open) $(`[data-sect="${CSS.escape(k)}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
           return;
         }
         case 'panel-close':
@@ -1626,12 +1629,6 @@ function wireEvents() {
           ui.recAdd = false;
           render();
           return;
-        case 'post-filter':
-          ui.postFilter = b.dataset.to;
-          ui.finFilter = null;
-          ui.postOpen = true;
-          render();
-          return;
         case 'post-open':
           ui.postOpen = true;
           if (b.dataset.to) ui.postFilter = b.dataset.to; // "5 offene Posten zeigen" shows those five (016c)
@@ -1642,7 +1639,11 @@ function wireEvents() {
           render();
           return;
         case 'fin-filter-clear':
+          // docs/changes/038 #12: es gibt nur noch einen sichtbaren Filter - die Pille im
+          // Sektionskopf raeumt deshalb beide Quellen weg, sonst bliebe die Handy-Auswahl
+          // "offene Posten" ohne Weg zurueck stehen (Reviewer-Fund 6)
           ui.finFilter = null;
+          ui.postFilter = 'alle';
           render();
           return;
         case 'rec-add':

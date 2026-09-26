@@ -8,7 +8,7 @@ import { state, ui, byId, anfrageById, fmtDay } from '../state.js';
 import { commentsHTML, nextRunText, anfrageStepsHTML } from '../ui/detail.js';
 import { ladderHTML } from '../ui/ladder.js';
 import { listPanelHTML } from '../pages/listPanel.js';
-import { CHEV } from '../ui/icons.js';
+import { sectionHTML } from '../pages/dashboard.js';
 import {
   CATEGORIES, FIELDS, categoryOf, offersOf, shownOffers, cheapestId, isExpired, fmtPrice, PRICE_KIND,
   STEPS as AF_STEPS, stepIndex,
@@ -82,17 +82,17 @@ function listHTML(selectedId) {
   const body = all.length
     ? all.map((a) => rowHTML(a, selectedId)).join('')
     : '<p class="empty">Noch keine Anfrage. „+ Anfrage“ stellt Claude einen Vergleich zusammen.</p>';
-  return `<section class="sect">
-    <div class="sect-h">
-      <h2 class="sect-t">Anfragen</h2>
-      <span class="sect-n">${all.length}</span>
-      ${results ? `<span class="sect-note">· ${results} ${results === 1 ? 'Ergebnis' : 'Ergebnisse'}</span>` : ''}
-      <span class="spacer"></span>
-      <button class="ico sect-add" data-act="anfrage-new" aria-expanded="${!!ui.anfrageNew}" aria-label="Anfrage anlegen" title="Anfrage anlegen">+</button>
-      <button class="ico sect-chev${open ? ' up' : ''}" data-act="anfragen-list" aria-expanded="${open}" aria-label="${open ? 'Liste einklappen' : 'Liste ausklappen'}">${CHEV}</button>
-    </div>
-    ${open ? newFormHTML() + body : ''}
-  </section>`;
+  return sectionHTML({
+    key: 'anfragen',
+    act: 'anfragen-list',
+    title: 'Anfragen',
+    count: all.length,
+    note: results ? `· ${results} ${results === 1 ? 'Ergebnis' : 'Ergebnisse'}` : '',
+    // #24: die Anlegen-Aktion bleibt oben rechts an der Liste und bleibt sekundär
+    add: { label: '+ Anfrage', act: 'anfrage-new', primary: false },
+    open,
+    body: newFormHTML() + body,
+  });
 }
 
 /* ---------- detail: draft ---------- */

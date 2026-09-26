@@ -8,7 +8,7 @@ import { esc, fmtTime } from './dom.js';
 import { ladderHTML as ladder } from './ladder.js';
 import { OWN, STEPS, STEP_OWNER, ADV, PAID_BY } from './labels.js';
 import {
-  state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, umzugstag, dueInfo, anchorDate, freshComments, canEditComment, fmtDay as fmtRunningDay,
+  state, ui, byId, subsOf, comsOf, dueLabel, offsetLabel, claudeStep, umzugstag, dueInfo, anchorDate, freshComments, canEditComment, fmtDay as fmtRunningDay, fmtShort,
   openDecisionsOf, ackedBy, isConfirmedDecision, anfrageOfTask,
 } from '../state.js';
 import { isLate, isCritical } from '../filters.js';
@@ -144,10 +144,11 @@ export function commentsHTML(t, { decisions = true, placeholder = null } = {}) {
 
 /* ---------- Ansehen ---------- */
 
-// 014b: the payment date on a paid row, "23.09."
-const fmtDM = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-const fmtDay = (iso) => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '');
-const fmtShortDay = (iso) => (iso ? new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '');
+// docs/changes/038 #3: eine Kurzform fuer Listen und Tabellen (fmtShort aus state.js), eine
+// fuer laufenden Text (fmtRunningDay) - die drei eigenen Formatierer, die hier standen, sind
+// weg; der Jahreszusatz der alten `fmtDay` entfaellt mit ihnen (Reviewer-Fund 18).
+const fmtDM = (iso) => (iso ? fmtShort(new Date(iso + 'T00:00:00')) : '');
+const fmtDay = fmtDM;
 // docs/changes/034 (Fund aus 014e): local-calendar string, not toISOString() (UTC, a day early
 // east of UTC near Mitternacht)
 const today = () => {

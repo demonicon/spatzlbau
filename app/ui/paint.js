@@ -44,7 +44,35 @@ export function patchNode(cur, next) {
     }
   }
   for (let i = 0; i < cur.childNodes.length; i++) n += patchNode(cur.childNodes[i], next.childNodes[i]);
+  n += syncField(cur, next);
   return n;
+}
+
+/* A form control carries its value as a property, not as an attribute - the diff above would
+   never see it. Before 038 the full innerHTML reset those properties on every render, and the
+   app relies on it: after "Hinzufügen" the title field is empty again, a checkbox follows the
+   row it belongs to. So the value is written across explicitly - except into the control the
+   person is currently in, which would move their cursor. (Reviewer-Fund 3 zu 038.) */
+const FIELD = { INPUT: 1, TEXTAREA: 1, SELECT: 1 };
+function syncField(cur, next) {
+  if (!FIELD[cur.nodeName] || cur === document.activeElement) return 0;
+  if (cur.type === 'checkbox' || cur.type === 'radio') {
+    const want = next.hasAttribute('checked');
+    if (cur.checked === want) return 0;
+    cur.checked = want;
+    return 1;
+  }
+  if (cur.nodeName === 'SELECT') {
+    const opt = next.querySelector('option[selected]') || next.querySelector('option');
+    const want = opt ? (opt.hasAttribute('value') ? opt.getAttribute('value') : opt.textContent) : '';
+    if (cur.value === want) return 0;
+    cur.value = want;
+    return 1;
+  }
+  const want = cur.nodeName === 'TEXTAREA' ? next.textContent : (next.getAttribute('value') ?? '');
+  if (cur.value === want) return 0;
+  cur.value = want;
+  return 1;
 }
 
 export function paint(html) {

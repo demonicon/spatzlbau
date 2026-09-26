@@ -6,10 +6,10 @@ import { esc } from '../ui/dom.js';
 import { OWN, STEPS } from '../ui/labels.js';
 import {
   state, ui, byId, phases, einzug, umzugstag, dueInfo, dueShort, doneByOther, claudeStep, fmtDay,
-  allDecisions, ackedBy, isConfirmedDecision, openDecisionsOf,
+  allDecisions, ackedBy, isConfirmedDecision,
 } from '../state.js';
 import { FILTERS, matches, count, isBlocked, isLate, isCritical, other } from '../filters.js';
-import { timeGroups, gate } from '../groups.js';
+import { timeGroups } from '../groups.js';
 import { taskHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
 import { compareVersions } from '../changelog.js';
@@ -57,7 +57,7 @@ function phaseStripHTML() {
 /* ---------- search (docs/changes/012) ----------
    Always visible, never folded away behind an icon: the field is the fastest way into a task
    that is neither in "Ich" nor in the open phase. */
-function searchHTML() {
+export function searchHTML() {
   const q = ui.q || '';
   // docs/changes/029b #7: die Lupe als Inline-SVG, 16 px, links im Feld
   return `<div class="search-row">
@@ -166,7 +166,9 @@ function taskFiltersHTML() {
   if (!ui.wide) {
     const cur = currentCol();
     return filterPillsHTML(
-      allColsForSwitch().map((c) => ({ key: c.key, label: shortName(c), n: c.open.length + c.blocked.length, on: cur === c.key, always: c.key === cur })),
+      // alle drei bleiben stehen: sie sind die Umschaltung, nicht nur eine Auswahl - ohne sie
+      // käme man an eine leere Spalte (und ihre erledigten Aufgaben) nicht mehr heran (Fund 7)
+      allColsForSwitch().map((c) => ({ key: c.key, label: shortName(c), n: c.open.length + c.blocked.length, on: cur === c.key, always: true })),
       { act: 'col-person', label: 'Wessen Aufgaben' },
     );
   }
@@ -480,7 +482,9 @@ export function entscheidungenView() {
       ${decisionsListHTML(panelTask?.id)}`;
   return listPanelHTML({
     key: 'entscheidungen',
-    wide: ui.wide,
+    // 032b: unterhalb der Panelbreite ersetzt die Akte die Liste als eigene Seite - deshalb
+    // hier ui.mode === 'panel' und nicht ui.wide (Reviewer-Fund 1)
+    wide,
     panelMode: wide,
     list,
     panel: panelTask ? panelHeadHTML(panelTask) + detailHTML(panelTask) : '',
@@ -493,7 +497,7 @@ export function entscheidungenView() {
   });
 }
 
-function addBoxHTML(disablePrimary) {
+function addBoxHTML() {
   const claude = ui.filter === 'claude';
   const list = phases();
   const sel = ui.phase || (list[0] ? list[0].id : 1);
@@ -505,7 +509,9 @@ function addBoxHTML(disablePrimary) {
       <select data-input="new-type" aria-label="Typ"><option value="self">nur ihr</option><option value="assist">Claude hilft mit</option><option value="claude" ${claude ? 'selected' : ''}>an Claude delegiert</option></select>
       <span class="row nowrap"><input type="number" inputmode="numeric" data-input="new-w" value="2" min="0" class="num" aria-label="Wochen"><select data-input="new-dir" aria-label="Richtung"><option value="-1">Wochen vorher</option><option value="1">Wochen danach</option></select></span>
       <label class="check-label"><input type="checkbox" data-input="new-c"> kritisch</label>
-      <button class="${ui.akteEdit || ui.printOpen || disablePrimary ? 'btn-secondary' : 'btn-primary'}" data-act="add">Hinzufügen</button>
+      ${/* docs/changes/038 #13, Regel in rules/design.md: auf Liste+Panel lebt der Primär im
+            Panel - die Liste bekommt keinen, auch "Hinzufügen" nicht (Reviewer-Fund 4) */ ''}
+      <button class="btn-secondary" data-act="add">Hinzufügen</button>
     </div></div>`;
 }
 
@@ -539,14 +545,10 @@ export function dashboardView() {
     return first ? first.t : defaultTask();
   };
   const panelTask = mode === 'panel' ? open || defaultShown() : null;
-  // docs/changes/037 Reviewer-Fund, behoben in 032b #1: "Hinzufügen" wird sekundär, sobald die
-  // gezeigte Akte selbst eine offene, auf mich wartende Entscheidung mit primärem "Einverstanden"
-  // zeigt - sonst stünden zwei gefüllte Buttons gleichzeitig auf dem Schirm (Regel: einer je Ansicht)
-  const akteTask = mode === 'panel' ? panelTask : open;
-  const hasPrimaryDecision = !!akteTask && openDecisionsOf(akteTask).some((c) => !isConfirmedDecision(c) && !ackedBy(c, state.person));
+  // docs/changes/038 #13: "Hinzufügen" ist seit dieser Regel immer sekundär - der Primär einer
+  // Liste+Panel-Seite lebt im Panel. Damit erübrigt sich auch die Ausnahme aus 032b #1.
   const list =
     phaseStripHTML() +
-    searchHTML() +
     (tl ? '' : visitHTML()) +
     taskFiltersHTML() +
     phaseNoteHTML() +
@@ -558,7 +560,7 @@ export function dashboardView() {
       : q && !cols.length
         ? `<p class="empty no-hits">Kein Treffer für „${esc(q)}“ – auch nicht in den Teilschritten.</p>`
         : `<div class="cols${currentView() === 'phasen' ? ' cols-phasen' : ''}">${cols.map(columnHTML).join('')}</div>`) +
-    addBoxHTML(hasPrimaryDecision);
+    addBoxHTML();
   return listPanelHTML({
     key: 'aufgaben',
     wide: ui.wide,
