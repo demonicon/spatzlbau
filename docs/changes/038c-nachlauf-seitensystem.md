@@ -1,6 +1,6 @@
 # 038c – Nachlauf Seitensystem: „neu seit deinem Besuch", Einmalkosten im Vergleich
 
-**Status: umgesetzt – Login-Tests offen** (Testkonten vorhanden, aber die Session-Sicherheitssperre verweigerte den echten Browser-Login; siehe `docs/changes/038c-abweichungen.md`)
+**Status: umgesetzt – ein offener Punkt** (Login-Tests am 26.09. real nachgeholt, Test 4 hat eine ungelöste Nebenwirkung in echten Finanzdaten; siehe Nachtrag in `docs/changes/038c-abweichungen.md`)
 
 Stand: 26.09.2026 · Meilenstein 2.3 · Branch: `feat/038c` von `preview` · Modell: Sonnet · Aufwand: S · Art: Feature · Klärung: Chat, 26.09.
 Anlass: Abweichungen aus 038 (Zwischen euch entfallen; Vergleichstabelle ohne „Einmalig"). **Startklar** (Sebastian 26.09. 11:30: ohne Anna-Teil); Annas Befund vom Wochencheck wird ein eigener Auftrag 038d.
@@ -28,7 +28,7 @@ Anlass: Abweichungen aus 038 (Zwischen euch entfallen; Vergleichstabelle ohne �
 
 ## Akzeptanzkriterien
 
-- [ ] Tests grün mit beiden Testkonten – **offen:** Login nicht möglich (Sicherheitssperre), alle vier Tests stattdessen simuliert (Node-Harness + synthetischer Browser-Zustand ohne Login/Schreibzugriff, Details in den Abweichungen). Reviewer nach drei Runden ohne Lücken.
+- [ ] Tests grün mit beiden Testkonten – am 26.09. real nachgeholt, Tests 1–3 grün, Test 4 funktional bestätigt aber mit offener Nebenwirkung im echten `recurring`-Wert „Internet" (Details in den Abweichungen). Reviewer nach drei Runden ohne Lücken.
 - [x] 033 Nachtrag `setup_fee` committet – Claude-Lauf-Prompt-Anpassung ist Sache von Claude im Chat (Klärung 2), hier nicht enthalten
 - [x] Merge preview; Changelog 2.3.1: „Neue Kommentare seit deinem Besuch als Badge und Filter; Vergleich zeigt Einmalkosten." – `/release 2.3.1` bleibt Sebastians Schritt
 - [x] Bericht mit Run-Nummer, Live-Version beider Pfade, Ist-Laufzeit

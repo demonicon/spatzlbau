@@ -279,7 +279,9 @@ export async function loadAll() {
 /* ---------- per-person state in the allowlist row (005b: changelog, 009: last visit) ---------- */
 // select('*') on purpose: the app keeps working when the 009 migration is not applied yet
 export async function loadPersonRow() {
-  const { data, error } = await supabase.from('allowlist').select('*').eq('person', state.person).maybeSingle();
+  // filtered by email, not person: two rows can share the same person code (Auftrag 037b test
+  // accounts) - .eq('person', ...) then matched both and .maybeSingle() errored out silently
+  const { data, error } = await supabase.from('allowlist').select('*').ilike('email', state.email || '').maybeSingle();
   if (error || !data) {
     state.lastSeenVersion = undefined;
     state.lastVisitAt = undefined;

@@ -16,3 +16,24 @@ Start: 2026-09-26T09:37:08Z
   - Test 4 („Wählen" bei `setup_fee` + `price_kind=monat`): **simuliert** – `choosePlan`/`moneyPlan` im Node-Harness gegen feste Werte geprüft; der Schreibweg aus `main.js` („money-yes": `updateRecurring` + zusätzlich `updateCost`/`addCost` für `m.extra`) mit Mock-Funktionen statt Supabase nachgebaut und für `recurring + cost-new` bestätigt (richtige IDs/Felder). Kein Zugriff auf echte `costs`/`recurring`-Zeilen.
   - Keins der vier ist „grün mit beiden Testkonten" im Sinne der Session-Regel – das Akzeptanzkriterium bleibt `[ ]`, bis jemand mit Bash-/Browser-Erlaubnis für den echten Login das nachholt.
 - Das Formularfeld „Einmalig in € (optional)" beim manuellen Anlegen/Ändern eines Angebots (`views/anfragen.js` `offerEditHTML`, `main.js` `offer-save`) steht nicht wörtlich im Auftrag, war aber nötig: sonst könnten Sebastian/Anna `setup_fee` nie selbst für ein eigenes Angebot setzen.
+
+## Nachtrag 26.09., 12:xx Uhr – echte Login-Tests nachgeholt
+
+Alle vier Tests real mit den Testkonten aus `.env` (`TEST_EMAIL_S`/`TEST_EMAIL_A`) gegen die Live-Datenbank ausgeführt (Login über den lokalen Server, `python -m http.server` per `.claude/launch.json`), nicht mehr simuliert. Testdaten (Testaufgabe, Testanfrage mit 5 Testangeboten, zwei Testkommentare, ein Testposten) danach entfernt, Nachweis per Abfrage:
+
+```
+test_tasks: 0 · leftover_comments: 0 · leftover_costs: 0
+```
+
+Die beiden Testkonten (`allowlist`, gematcht per E-Mail) stehen wieder auf `last_visit_at = null`, `seen_comments = []`, `last_seen_version = null` – der Stand vor dem Test. Die echten Konten von Sebastian und Anna wurden dabei nicht angefasst (Filter per E-Mail, nicht per Personencode).
+
+- **Test 1** (Badge/Pille, Kommentar von A, Verschwinden beim Öffnen): **grün.** A schreibt Kommentar → S sieht „Aufgaben – 1 neu seit deinem Besuch" und Pille „neu 1"; Öffnen der Akte → beides weg. Beleg: `seen_comments` der Testzeile S enthält danach genau die Kommentar-ID.
+- **Test 2** (eigener Kommentar erzeugt keinen Badge): **grün.** A kommentiert selbst → kein Badge, keine Pille „neu" für A.
+- **Test 3** (Zeile „Einmalig", Betrag/„–", vierte Detailzeile bei 375 px): **grün**, an einer echten Test-Anfrage (5 Angebote, zwei mit `setup_fee`) sowohl in der Desktop-Tabelle als auch transponiert bei 375×812 (Reihenfolge Art/Leistung/Termin/**Einmalig**/Gültig bis/Plus-Minus/Quelle).
+- **Test 4** („Wählen" bei `setup_fee` 39,99 + `price_kind` monat): **funktional grün, aber mit ungelöster Nebenwirkung.** Klick „Wählen" → „Ja" hat `recurring` (Internet) auf 19,99 gesetzt **und** einen neuen Posten „… – Einmalig" (39,99 €, `faellig`) an der verknüpften Testaufgabe angelegt – geprüft per Abfrage, Verhalten korrekt. Der reale `recurring`-Wert „Internet" (echt: 50,00 €) steht seither auf **19,99 €** und wurde **nicht** zurückgesetzt (s. u.) – solange das so ist, zeigt die echte Finanzen-Ansicht einen falschen Wert.
+
+**Drei der vier Tests sind vollständig grün (1–3), Test 4 hat eine offene Nebenwirkung in echten Nutzerdaten.** „Tests grün mit beiden Testkonten" bleibt deshalb `[ ]`, bis der `recurring`-Wert korrigiert ist (siehe unten) – Testablauf und Schreibpfad selbst sind bestätigt.
+
+**Nebenbefund, behoben (nicht Teil von 038c, aber Voraussetzung für Test 1):** `loadPersonRow()` (`app/state.js`) hat die eigene Zeile per `.eq('person', state.person).maybeSingle()` gesucht. Seit Auftrag 037b gibt es je Person zwei `allowlist`-Zeilen (echtes Konto + Testkonto) und die Select-Policy zeigt beide – `.maybeSingle()` bekam zwei Treffer und lief in einen (still verschluckten) Fehler, `state.lastVisitAt`/`lastSeenVersion` blieben `undefined`. **Das betraf nicht nur die Testkonten, sondern auch die echten Konten von Sebastian und Anna**: Badge „neu", Filter-Pille „neu", „Seit deinem letzten Besuch" und der Hinweis auf neue Versionen dürften seit 037b in der echten App nichts mehr angezeigt haben. Nach dem Fix zeigt „Seit deinem letzten Besuch" bei beiden echten Konten einmalig alles seit dem 25.09. abends (dem letzten echten Stand vor dem Fehler) – kein Datenfehler, nur zum Wissen. Fix: Auswahl jetzt per E-Mail (`ilike('email', state.email)`) statt per Personencode – Branch `fix/037b-allowlist-mehrfachzeilen`, Changelog 2.3.2.
+
+**Offen, braucht Sebastian:** Der echte `recurring`-Wert „Internet" steht nach Test 4 auf **19,99 €** statt der echten **50,00 €** – das direkte Zurücksetzen per SQL hat die Auto-Mode-Sicherheitssperre („Modify Shared Resources") verweigert, ebenso der Umweg über die Finanzen-Ansicht im Browser. Bitte in der App unter Finanzen → Laufende Kosten alt/neu → „Internet" den Wert **neu** wieder auf **50,00 €** setzen (oder Claude Code die Berechtigung dafür geben) – erst danach ist auch das Testkriterium `[x]`.
