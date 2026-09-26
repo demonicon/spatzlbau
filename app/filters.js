@@ -1,6 +1,6 @@
 // Dashboard filters and the person grouping (docs/changes/002, reduced in 009).
 // Pure functions on top of state.js – no writes, no DOM.
-import { state, blockers, dueInfo, einzug, freshComments, doneByOther, claudeStep, openDecisionsOf, ackedBy } from './state.js';
+import { state, blockers, dueInfo, einzug, freshComments, unseenComments, doneByOther, claudeStep, openDecisionsOf, ackedBy } from './state.js';
 
 export const isOpen = (t) => !t.done;
 export const isBlocked = (t) => !t.done && blockers(t).length > 0;
@@ -21,8 +21,9 @@ export const waitsOnMe = (t, me) =>
   !t.done && (t.wait_on === me || (t.type === 'claude' && claudeStep(t) === 'ergebnis') || openDecisionsOf(t).some((c) => !ackedBy(c, me)));
 // docs/changes/018 §3: the other direction - I am waiting for the other person or for Claude
 export const waitsOnYou = (t, me) => !t.done && !!t.wait_on && t.wait_on !== me;
-// a comment the other person (or Claude) wrote since the last visit and this person has not opened
-export const hasNews = (t) => freshComments(t).some((c) => c.author !== state.person);
+// docs/changes/038c #1: not "since the last visit" (that would outlive opening the task within
+// the same session) but "still unopened" - the same measure as the row's dot and the tab badge
+export const hasNews = (t) => unseenComments(t).length > 0;
 
 // docs/changes/009: the ten tiles became four – the three owner counts are the column heads now,
 // "Offen" is the count in every column head, and "Diese Woche" is what the "Ich" column shows.
@@ -35,7 +36,7 @@ export const FILTERS = {
   wait: { label: 'Wartet auf jemanden', test: isWaiting },
   waitme: { label: 'Wartet auf dich', test: (t) => waitsOnMe(t, state.person) },
   // docs/changes/018 §3: the three signals of the dashboard, counted over both people
-  news: { label: 'Neue Kommentare', test: hasNews },
+  news: { label: 'Neu', test: hasNews },
   waityou: { label: 'Du wartest', test: (t) => waitsOnYou(t, state.person) },
   // done: the filter shows tasks that are already ticked off – the columns have to unfold them
   donenew: { label: 'Seit deinem Besuch erledigt', test: doneByOther, done: true },

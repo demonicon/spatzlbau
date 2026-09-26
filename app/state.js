@@ -107,6 +107,9 @@ export const allDecisions = () => state.comments.filter((c) => c.decision).sort(
 export const myOpenDecisionsCount = () => allDecisions().filter((c) => !c.superseded_by && !ackedBy(c, state.person)).length;
 // docs/changes/033: results nobody has chosen from yet - the badge on the Anfragen pill
 export const openAnfragenCount = () => state.anfragen.filter((a) => a.status === 'ergebnis' && !a.brief?.vergleich?.chosen).length;
+// docs/changes/038c #1: how many comments from someone else are still unopened, across every
+// task - the badge on the Aufgaben tab; drops per comment exactly like the row's dot (unseenComments)
+export const newCommentsCount = () => state.tasks.reduce((n, t) => n + unseenComments(t).length, 0);
 // the newest anfrage linked to a task - the "Anfrage" block in that task's Akte
 export const anfrageOfTask = (taskId) =>
   state.anfragen.filter((a) => a.brief?.anfrage?.task_id === taskId).sort((x, y) => (y.created_at || '').localeCompare(x.created_at || ''))[0] || null;

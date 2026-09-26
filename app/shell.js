@@ -11,7 +11,7 @@ import { $, esc } from './ui/dom.js';
 import { ICON } from './ui/icons.js';
 import { avatarHTML, countdownHTML, footHTML, updateBarHTML, setupHintHTML } from './ui/chrome.js';
 import { searchHTML } from './views/dashboard.js';
-import { ui, einzug, myOpenDecisionsCount, openAnfragenCount } from './state.js';
+import { ui, einzug, myOpenDecisionsCount, openAnfragenCount, newCommentsCount } from './state.js';
 
 /** The four routes, in the order the export fixes: Aufgaben · Finanzen · Entscheidungen ·
     Anfragen (Zeile 1 - today Anfragen still stands before Entscheidungen). */
@@ -36,9 +36,12 @@ const SEGMENTS = {
 function badgeOf(key) {
   if (key === 'entscheidungen') return myOpenDecisionsCount();
   if (key === 'anfragen') return openAnfragenCount();
+  // docs/changes/038c #1: comments from the other person since the last visit, still unopened -
+  // the replacement for the "Zwischen euch" block (038), gone with the tile row
+  if (key === 'dashboard') return newCommentsCount();
   return 0;
 }
-const badgeText = (key) => (key === 'anfragen' ? 'Ergebnisse da' : 'wartet auf dich');
+const badgeText = (key) => (key === 'anfragen' ? 'Ergebnisse da' : key === 'dashboard' ? 'neu seit deinem Besuch' : 'wartet auf dich');
 
 /* ---------- the slots ---------- */
 

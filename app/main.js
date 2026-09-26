@@ -1380,7 +1380,11 @@ function wireEvents() {
           if (m?.kind === 'cost-update') await updateCost(m.id, m.patch);
           else if (m?.kind === 'cost-new') await addCost(m.taskId, m.fields);
           else if (m?.kind === 'recurring') await updateRecurring(m.id, m.patch);
-          if (m && m.kind !== 'none') toast('Übernommen');
+          // docs/changes/038c #2: a monthly offer with a setup_fee writes both - the recurring
+          // value above and this one-time posten
+          if (m?.extra?.kind === 'cost-update') await updateCost(m.extra.id, m.extra.patch);
+          else if (m?.extra?.kind === 'cost-new') await addCost(m.extra.taskId, m.extra.fields);
+          if ((m && m.kind !== 'none') || m?.extra) toast('Übernommen');
           render();
           return;
         }
@@ -1415,6 +1419,9 @@ function wireEvents() {
           const raw = val('price');
           const price = raw === '' ? null : parseAmount(raw);
           if (raw !== '' && price === null) return toast('Preis nicht lesbar – z. B. 1740 oder 29,99');
+          const feeRaw = val('setup_fee');
+          const setup_fee = feeRaw === '' ? null : parseAmount(feeRaw);
+          if (feeRaw !== '' && setup_fee === null) return toast('Einmalig nicht lesbar – z. B. 39,99');
           const offers = offersOf(t);
           const prev = e.offerId === 'new' ? null : offers.find((o) => o.id === e.offerId);
           // added or changed by a person: Claude's run never overwrites it again (standing rule)
@@ -1424,6 +1431,7 @@ function wireEvents() {
             name,
             price,
             price_kind: val('price_kind') || 'fest',
+            setup_fee,
             service: val('service'),
             term: val('term'),
             valid_until: val('valid_until') || null,

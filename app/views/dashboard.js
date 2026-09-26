@@ -179,6 +179,9 @@ function taskFiltersHTML() {
       { key: 'late', label: 'überfällig', n: count('late'), on: f === 'late' },
       { key: 'critical', label: 'fristkritisch', n: count('critical'), on: f === 'critical' },
       { key: 'waitme', label: 'wartet auf dich', n: count('waitme'), on: f === 'waitme' },
+      // docs/changes/038c #1: der Weg zum Ersatz von "Zwischen euch" - dieselbe Zahl wie der Badge
+      // am Tab, hier je Aufgabe statt je Kommentar gezählt (count() zählt Aufgaben, nicht Kommentare)
+      { key: 'news', label: 'neu', n: count('news'), on: f === 'news' },
     ],
     { act: 'task-filter', label: 'Aufgaben filtern' },
   );

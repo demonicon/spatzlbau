@@ -137,14 +137,32 @@ export function choosePlan({ anfrage, offer, person, now, costs = [], recurring 
   return { patch, comment, money: moneyPlan({ cat, taskId, offer, costs, recurring }) };
 }
 
+// docs/changes/038c #2: the one-time part of a monthly offer (Anschlussgebühr o. ä.) - same
+// target-posten search as the "fest"-branch below, so a second run does not double the posten up
+function onceFromFee({ cat, taskId, offer, costs }) {
+  if (!taskId || !hasPrice({ price: offer.setup_fee })) return null;
+  const fee = price(offer.setup_fee);
+  const open = costs.filter((c) => c.task_id === taskId && (c.kind || 'einmalig') === 'einmalig' && c.status !== 'bezahlt');
+  const target = open.find((c) => (c.seed_key || '').endsWith('-schaetzung')) || (open.length === 1 ? open[0] : null);
+  const note = `${offer.name} – Einmalig`;
+  if (target) return { kind: 'cost-update', id: target.id, patch: { amount: fee, status: 'faellig', note } };
+  return { kind: 'cost-new', taskId, fields: { label: `${CATEGORIES[cat].label}: ${offer.name} – Einmalig`, amount: fee, status: 'faellig', note } };
+}
+
 function moneyPlan({ cat, taskId, offer, costs, recurring }) {
   if (!hasPrice(offer)) return { kind: 'none' };
   const amount = price(offer.price);
   if (offer.price_kind === 'monat') {
     const key = CATEGORIES[cat].recurring;
     const row = key ? recurring.find((r) => r.seed_key === key) : null;
-    if (!row) return { kind: 'none', note: 'Laufende Kosten dafür kommen mit den Verträgen.' };
-    return { kind: 'recurring', id: row.id, patch: { amount_n: amount }, question: `${fmtPrice(offer)} als neuen Wert in „Laufend“ übernehmen?` };
+    const extra = onceFromFee({ cat, taskId, offer, costs });
+    const feeText = extra ? ` (zusätzlich ${fmtPrice({ price: offer.setup_fee })} einmalig als Posten)` : '';
+    if (!row) {
+      return extra
+        ? { kind: 'none', extra, question: `${fmtPrice({ price: offer.setup_fee })} einmalig als neuen Posten übernehmen? (${offer.name})` }
+        : { kind: 'none', note: 'Laufende Kosten dafür kommen mit den Verträgen.' };
+    }
+    return { kind: 'recurring', id: row.id, patch: { amount_n: amount }, extra, question: `${fmtPrice(offer)} als neuen Wert in „Laufend“ übernehmen?${feeText}` };
   }
   if (!taskId) return { kind: 'none' };
   // "fest" is the UI word, the database value is faellig (costs.js); a price "ab" stays an estimate
