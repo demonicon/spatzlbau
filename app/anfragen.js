@@ -163,7 +163,11 @@ function moneyPlan({ cat, taskId, offer, costs, recurring }) {
     const row = key ? recurring.find((r) => r.seed_key === key) : null;
     const extra = onceFromFee({ cat, taskId, offer, costs });
     if (!row) {
-      return extra ? { kind: 'none', extra, question: `${feeSentence(extra)} (${offer.name})` } : { kind: 'none', note: 'Laufende Kosten dafür kommen mit den Verträgen.' };
+      // docs/changes/038c #2, Reviewer-Fund: der Hinweis zum fehlenden Laufend-Schritt darf mit
+      // einer Gebühr nicht verschwinden - sonst wirkt "Ja" wie eine vollständige Übernahme
+      return extra
+        ? { kind: 'none', extra, question: `Laufende Kosten dafür kommen mit den Verträgen. ${feeSentence(extra)} (${offer.name})` }
+        : { kind: 'none', note: 'Laufende Kosten dafür kommen mit den Verträgen.' };
     }
     const feeClause = extra ? ` Zusätzlich: ${feeSentence(extra)}` : '';
     return { kind: 'recurring', id: row.id, patch: { amount_n: amount }, extra, question: `${fmtPrice(offer)} als neuen Wert in „Laufend“ übernehmen?${feeClause}` };
