@@ -1,6 +1,25 @@
 {
   "entries": [
     {
+      "version": "2.3.0",
+      "release": "2.3",
+      "date": "2026-09-26",
+      "title": "Eine Navigation, zwei Seitentypen – alle Ansichten folgen demselben Aufbau; am Handy Tab-Leiste unten.",
+      "new": [
+        "Am Handy liegen Aufgaben, Finanzen, Entscheidungen und Anfragen unten in einer Leiste – immer im Daumenbereich, mit den Zahlen daneben.",
+        "Eine Aufgabe öffnet sich am Handy als eigene Seite. Der Zurück-Knopf des Telefons bringt dich an die Stelle der Liste zurück, an der du warst.",
+        "Finanzen zeigt neben der großen Zahl kleine Balken für die nächsten Monate – ein Tipp öffnet die Monatsübersicht."
+      ],
+      "improved": [
+        "Die Kopfzeile bleibt beim Wechseln der Ansicht stehen, statt jedes Mal neu aufgebaut zu werden – der Wechsel wirkt ruhiger.",
+        "Schreibt Anna einen Kommentar, ändert sich nur die betroffene Zeile. Die Liste flackert nicht mehr.",
+        "Aufgaben, Entscheidungen und Anfragen sehen jetzt gleich aus: links die Liste, rechts die Akte – und ohne eigene Auswahl steht dort schon die erste Zeile.",
+        "In Finanzen filtern die vier Kacheln die Postenliste, und die Abschnitte lassen sich zuklappen. „Monat für Monat“ startet eingeklappt.",
+        "Neue Schrift in der ganzen App – etwas klarer im Kleingedruckten, gleiche Größen."
+      ],
+      "fixed": []
+    },
+    {
       "version": "2.2.5",
       "release": "2.2",
       "date": "2026-09-25",
@@ -369,6 +388,7 @@
     "0.4": "Sicherer und mit täglicher Sicherung",
     "0.3": "Am Computer nebeneinander",
     "0.2": "Updates und „Was ist neu?\"",
-    "0.1": "Die App gibt es: Login, Dashboard, gemeinsame Liste"
+    "0.1": "Die App gibt es: Login, Dashboard, gemeinsame Liste",
+    "2.3": "Seitensystem"
   }
 }
