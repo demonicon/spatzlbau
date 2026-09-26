@@ -8,8 +8,9 @@
 // all of them without a gap, and a phase's line ends in the diamond of its gate row.
 import { esc } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
-import { state, ui, phases, einzug, umzugstag, dueInfo, anchorDate, blockers, subProgress, comsOf, openDecisionsOf, ackedBy } from '../state.js';
+import { state, ui, phases, einzug, umzugstag, dueInfo, anchorDate, blockers, subProgress, comsOf, openDecisionsOf, ackedBy, fmtShort } from '../state.js';
 import { isLate, isCritical } from '../filters.js';
+import { filterPillsHTML } from '../pages/listPanel.js';
 import { detailHTML } from '../ui/detail.js';
 import { isHit, term } from '../search.js';
 import { taskAmount, eurShort } from '../costs.js';
@@ -21,7 +22,6 @@ const dayStart = (d = new Date()) => {
   x.setHours(0, 0, 0, 0);
   return x;
 };
-const fmtDay = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 const fmtWd = (d) => d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
 const fmtMonth = (d) => d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
 const fmtFull = (d) => d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/^(\w+)\./, '$1');
@@ -109,7 +109,7 @@ function metaHTML(t) {
 function whenHTML(at, { weekday = true, moved = false, date = true } = {}) {
   const tt = tOffset(at) || '';
   const sub = [weekday ? fmtWd(at) : '', moved ? 'Umzug' : '', tt].filter(Boolean).join(' · ');
-  return `<div class="tl-when">${date ? `<b>${esc(fmtDay(at))}</b>` : ''}<span>${esc(sub)}</span></div>`;
+  return `<div class="tl-when">${date ? `<b>${esc(fmtShort(at))}</b>` : ''}<span>${esc(sub)}</span></div>`;
 }
 
 function rowHTML({ t, at }, rl) {
@@ -171,6 +171,14 @@ function einzugHTML(day, rl) {
   </div>`;
 }
 
+/** How many open tasks one of the four pills stands for (030: a pill without a count stays away). */
+function ownerCount(key) {
+  const me = state.person;
+  const you = me === 'S' ? 'A' : 'S';
+  const want = key === 'me' ? me : key === 'you' ? you : 'B';
+  return state.tasks.filter((t) => !t.done && anchorDate(t) && t.owner === want).length;
+}
+
 export function timelineHTML() {
   const list = rows();
   const rl = rails(list);
@@ -178,7 +186,6 @@ export function timelineHTML() {
   const moveIn = einzug() ? dayStart(new Date(einzug() + 'T00:00:00')) : null;
   const doneCount = state.tasks.filter((t) => t.done).length;
   const ps = phases();
-  const chip = (val, label, on, act) => `<button class="pill" data-act="${act}" data-to="${val}" aria-pressed="${on}">${esc(label)}</button>`;
 
   let out = '';
   let month = '';
@@ -223,16 +230,23 @@ export function timelineHTML() {
   if (!einzugDrawn) out += einzugHTML(moveIn, rl);
 
   const note = einzug()
-    ? `Tag 0 ist der Einzug am ${esc(fmtDay(new Date(einzug() + 'T00:00:00')))}${umzugstag() && umzugstag() !== einzug() ? ` · Umzug am ${esc(fmtDay(new Date(umzugstag() + 'T00:00:00')))}` : ''}`
+    ? `Tag 0 ist der Einzug am ${esc(fmtShort(new Date(einzug() + 'T00:00:00')))}${umzugstag() && umzugstag() !== einzug() ? ` · Umzug am ${esc(fmtShort(new Date(umzugstag() + 'T00:00:00')))}` : ''}`
     : '';
   return `<section class="timeline" aria-label="Timeline">
     <div class="tl-filters">
-      <div class="pchips" role="group" aria-label="Wessen Aufgaben">
-        ${chip('all', 'alle', ui.tlOwner === 'all', 'tl-owner')}
-        ${chip('me', 'Du', ui.tlOwner === 'me', 'tl-owner')}
-        ${chip('B', 'Gemeinsam', ui.tlOwner === 'B', 'tl-owner')}
-        ${chip('you', OWN[state.person === 'S' ? 'A' : 'S'], ui.tlOwner === 'you', 'tl-owner')}
-      </div>
+      ${/* docs/changes/038 #11: the same filter pill as every other list, with the names
+            instead of "Du" (029b) - the rail and the Heute divider stay as they are */ ''}
+      ${filterPillsHTML(
+        [
+          { key: 'all', label: 'alle', on: ui.tlOwner === 'all', always: true },
+          // alle vier bleiben stehen, sonst liesse sich ein gesetzter Filter nicht mehr loesen,
+          // sobald seine Zahl auf 0 faellt (derselbe Fall wie bei den Personen-Pillen)
+          { key: 'me', label: OWN[state.person], n: ownerCount('me'), on: ui.tlOwner === 'me', always: true },
+          { key: 'B', label: 'Gemeinsam', n: ownerCount('B'), on: ui.tlOwner === 'B', always: true },
+          { key: 'you', label: OWN[state.person === 'S' ? 'A' : 'S'], n: ownerCount('you'), on: ui.tlOwner === 'you', always: true },
+        ],
+        { act: 'tl-owner', label: 'Wessen Aufgaben' },
+      )}
       <button class="btn-text tl-jump" data-act="tl-today">↓ Heute</button>
     </div>
     ${note ? `<p class="tl-note">${note}</p>` : ''}
@@ -243,7 +257,7 @@ export function timelineHTML() {
           ? `<div class="tl-done">${state.tasks
               .filter((t) => t.done && anchorDate(t))
               .sort((a, b) => dueInfo(a).sort - dueInfo(b).sort)
-              .map((t) => `<div class="tl-row done" data-id="${t.id}"><div class="tl-when"><b>${esc(fmtDay(new Date(dueInfo(t).sort)))}</b></div><div class="tl-rails" aria-hidden="true"></div><div class="tl-c"><div class="tl-top"><button class="t" data-act="open">${esc(t.title)}</button><input type="checkbox" class="check" checked ${ui.offline ? 'disabled' : ''} data-act="done" aria-label="Erledigt"></div></div></div>`)
+              .map((t) => `<div class="tl-row done" data-id="${t.id}"><div class="tl-when"><b>${esc(fmtShort(new Date(dueInfo(t).sort)))}</b></div><div class="tl-rails" aria-hidden="true"></div><div class="tl-c"><div class="tl-top"><button class="t" data-act="open">${esc(t.title)}</button><input type="checkbox" class="check" checked ${ui.offline ? 'disabled' : ''} data-act="done" aria-label="Erledigt"></div></div></div>`)
               .join('')}
             <button class="btn-text row" data-act="tl-done">erledigte ausblenden</button></div>`
           : `<button class="btn-text row" data-act="tl-done">${doneCount} erledigte zeigen</button>`

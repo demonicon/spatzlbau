@@ -7,7 +7,6 @@ import { state, ui, blockers, subProgress, comsOf, unseenComments, dueShort, cla
 import { isBlocked, isLate, isCritical } from '../filters.js';
 import { taskAmount, eurShort } from '../costs.js';
 import { term, mark, hitSubs } from '../search.js';
-import { detailHTML, titleHTML } from './detail.js';
 
 /** At most one signal per row: overdue beats waiting for me, waiting beats blocked (020). */
 export function signalHTML(t) {
@@ -73,26 +72,17 @@ export function taskHTML(t) {
       : '';
   // docs/changes/012: while searching, the hit is bold and a matching subtask becomes a second line
   const subHits = q ? hitSubs(t, q) : [];
-  // docs/changes/013 A4: open and inline, this row is the head of the Akte - so the title
-  // turns into the heading and carries the pencil; the Akte below has no head of its own
-  const inlineHead = open && !ui.wide;
   // docs/changes/020: a blocked task cannot be ticked off - the box is dashed and inert
   const box = `<input type="checkbox" class="check" ${t.done ? 'checked' : ''} ${ui.offline || blocked ? 'disabled' : ''} ${blocked ? 'aria-disabled="true"' : ''} data-act="done" aria-label="${blocked ? 'Erledigt – wartet noch auf eine andere Aufgabe' : 'Erledigt'}">`;
   return `<div class="${cls}" data-id="${t.id}">
     ${box}
     <div class="body">
-      ${
-        inlineHead
-          ? `<div class="task-head">${titleHTML(t, 'akte-title-text t-head')}<button class="ico" data-act="open" aria-label="Akte schließen" aria-expanded="true">×</button></div>`
-          : `<div class="t-row"><button class="t" data-act="open" aria-expanded="false">${q ? mark(t.title, q) : esc(t.title)}</button><span class="due ${dueCls}">${esc(dueShort(t))}</span></div>`
-      }
+      ${/* docs/changes/038 #8: a phone does not open the Akte inline any more - the row leads to
+            the detail page, so a row looks the same wherever it is tapped */ ''}
+      <div class="t-row"><button class="t" data-act="open" aria-expanded="false">${q ? mark(t.title, q) : esc(t.title)}</button><span class="due ${dueCls}">${esc(dueShort(t))}</span></div>
       ${subHits.length ? `<div class="sub-hit">${subHits.map((s) => `<span><span class="arr" aria-hidden="true">↳</span> ${mark(s.title, q)}</span>`).join('')}</div>` : ''}
-      ${/* docs/changes/017: open and inline, the Akte below says all of this in full - the row
-            keeps only the title, so nothing is read twice */ ''}
-      ${sig && !inlineHead ? `<div class="sig">${sig}</div>` : ''}
-      ${quiet && !inlineHead ? `<div class="quiet">${quiet}</div>` : ''}
-      ${!inlineHead ? waitList : ''}
+      ${sig || quiet ? `<div class="quiet">${sig}${sig && quiet ? ' ' : ''}${quiet}</div>` : ''}
+      ${waitList}
     </div>
-    ${inlineHead ? detailHTML(t, false) : ''}
   </div>`;
 }

@@ -18,3 +18,6 @@ export const ICON = {
   // diamond: Entscheidungen (032b) - 16 px per Auftrag, smaller on purpose than the other nav icons
   diamond: `<svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.6 14.4 8 8 14.4 1.6 8Z"/></svg>`,
 };
+
+// docs/changes/038: the chevron of a section head - 16 px, it turns instead of swapping glyph
+export const CHEV = `<svg class="ic chev-ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4"/></svg>`;

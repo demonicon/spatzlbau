@@ -1,38 +1,20 @@
-/* Design tokens from design/handoff/2026-09-13 (Claude Design). Mobile-first, 380–440 px column.
-   Font: Instrument Sans (SIL Open Font License, fonts/LICENSE.txt), self-hosted since
-   docs/changes/020b - no request to fonts.googleapis.com/gstatic.com, so CSP stays
-   font-src 'self' and the font survives offline (service worker precache). */
+/* Design tokens from design/handoff/2026-09-13 (Claude Design). Mobile-first, 380-440 px column.
+   Font: Geist (SIL Open Font License, fonts/LICENSE.txt), self-hosted since docs/changes/038
+   (Abweichungsliste Zeile 0, loest Instrument Sans aus 020b ab) - no request to
+   fonts.googleapis.com/gstatic.com, so CSP stays font-src 'self' and the font survives offline
+   (service worker precache).
+   One variable file instead of three static cuts: Google serves Geist only as a variable font,
+   the same URL for 400, 600 and 700. 29 kB for the whole range is less than the three static
+   cuts the order budgeted (3 x 30-60 kB) and costs one request instead of three - see
+   docs/changes/038-abweichungen.md. No italic: Geist has none, and the one italic rule in the
+   app (.brief-read p.none) drops it (decision Sebastian 26.09.). */
 @font-face {
-  font-family: "Instrument Sans";
-  src: url("fonts/instrument-sans-400-normal.woff2") format("woff2");
-  font-weight: 400;
+  font-family: "Geist";
+  src: url("fonts/geist-400-700-normal.woff2") format("woff2");
+  font-weight: 400 700;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Instrument Sans";
-  src: url("fonts/instrument-sans-400-italic.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Instrument Sans";
-  src: url("fonts/instrument-sans-600-normal.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Instrument Sans";
-  src: url("fonts/instrument-sans-700-normal.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 :root {
   /* surfaces & ink */
@@ -53,16 +35,24 @@
   --link: #2e5a9c; /* 016c: links in the Finanzen export - 6.6:1 on paper */
   /* 029c #1: --mark-deep auf 5,18:1 (paper) gedunkelt - die einzige Stelle, die durchfiel (docs/changes/029c-kontrast.md) */
   --mark: #f7de4a; --mark-deep: #7a6600; --danger: #b33a2e; --danger-bg: #f8e3e0; --ok: #2f6f4e;
-  /* type scale */
-  --fs-hero: 60px; --fs-kpi: 28px; --fs-tile: 24px; --fs-title: 22px; --fs-body: 16px; --fs-ui: 15px;
-  --fs-meta: 14px; --fs-small: 13px; --fs-micro: 12px; --fs-nano: 11px;
+  /* type scale (docs/changes/038 E10, Export "Seitensystem" Blatt T). Every size in the app comes
+     from one of these - the letter spacing belongs to the size, so it sits in the token pair.
+     --fs-section (18/600) is the one role the export leaves without a token name; E10 asks for
+     no naked font-size in the new files, so it gets one here. */
+  --fs-hero: 60px; --fs-hero-s: 44px; --ls-hero: -.03em;
+  --fs-kpi: 28px; --ls-kpi: -.01em;
+  --fs-tile: 24px; --ls-tile: -.01em;
+  --fs-title: 22px; --ls-title: -.01em;
+  --fs-section: 18px;
+  --fs-body: 16px; --fs-ui: 15px;
+  --fs-meta: 14px; --fs-small: 13px; --fs-micro: 12px; --ls-micro: .06em; --fs-nano: 11px;
   /* spacing & shape */
   --gutter: 16px; --gap: 8px; --tap: 44px;
   /* button system (docs/changes/020): one height everywhere, four kinds, nothing ad hoc */
   --btn-h: 40px; --btn-h-desktop: 32px;
   --r-tag: 4px; --r-pill: 999px;
   --col-max: 440px;
-  --font: "Instrument Sans", "Avenir Next", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font: "Geist", "Avenir Next", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 * { box-sizing: border-box; }
 /* docs/changes/020b: every number in the app (amounts, dates, counters, the countdown) gets
@@ -124,20 +114,243 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
 }
 [hidden] { display: none !important; }
 
-/* ---------- shared head, Aufgaben und Finanzen (docs/changes/029b #2) ----------
-   Links Titel + Vorschau-Chip + Countdown, rechts Nav-Pillen und Avatar - eine renderHeader(),
-   damit beide Ansichten dieselbe Kopfzeile zeigen (nur der Titel unterscheidet sich). */
-.apphead2 { display: flex; align-items: center; flex-wrap: wrap; gap: var(--gap); padding: 14px var(--gutter) 0; }
-.apphead2-left { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 10px; min-width: 0; }
-.apphead2-title { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
-.apphead2-count { font-size: var(--fs-small); color: var(--ink-2); white-space: nowrap; }
-.apphead2-count .cd-n { font-weight: 600; color: var(--ink); }
-.apphead2-count .cd-date { color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
-.apphead2-count .cd-date:hover { color: var(--ink); }
+/* ---------- Seitentyp Dashboard (docs/changes/038 #12 bis #17, E8, E9, E11) ---------- */
+.db { display: flex; flex-direction: column; }
+.db-main { display: flex; flex-direction: column; min-width: 0; }
+@media (min-width: 900px) {
+  /* #16: die rechte Leiste ist 400 breit - dieselbe Breite wie das Panel des anderen Seitentyps */
+  .board.db-wide { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; padding: 0 var(--gutter); }
+  .db-side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 80px; }
+  .db-wide .sect { margin-left: 0; margin-right: 0; }
+}
+
+/* Antwortzahl (E9): Label 12 caps, Zahl 60/600 mit -3 %, Rechenweg 14 darunter */
+.db-answer { display: grid; gap: 12px; padding: 14px var(--gutter) 0; }
+.db-a-label { font-size: var(--fs-micro); font-weight: 600; letter-spacing: var(--ls-micro); text-transform: uppercase; color: var(--ink-2); }
+.db-a-value { display: flex; align-items: baseline; gap: 8px; }
+.db-a-value .n { font-size: var(--fs-hero); font-weight: 600; letter-spacing: var(--ls-hero); line-height: 1; }
+.db-a-value .u { font-size: var(--fs-ui); color: var(--ink-2); }
+.db-a-calc { font-size: var(--fs-meta); color: var(--ink-2); }
+@media (max-width: 899px) {
+  /* 380: die Zahl bleibt die Zahl, aber 60 sprengt die Spalte - der Export zeigt hier 44 */
+  .db-a-value .n { font-size: var(--fs-hero-s); line-height: 1.05; }
+  .db-a-calc { display: none; }
+}
+@media (min-width: 900px) {
+  .db-answer { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; padding: 16px 0 0; }
+}
+
+/* Mini-Balken (E9): acht Monate als eigene Karte, ein Tipp oeffnet "Monat fuer Monat" */
+.db-mini { display: none; }
+@media (min-width: 900px) {
+  .db-mini { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); }
+  .db-mini:hover { box-shadow: 0 0 2px rgba(0, 0, 0, .12), 0 4px 8px rgba(0, 0, 0, .16); }
+  .db-mini-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .db-mini-max { font-size: var(--fs-micro); color: var(--ink-2); }
+  .db-mini-b { display: flex; gap: 6px; width: 100%; }
+  .mb-c { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: stretch; }
+  .mb-up { height: 60px; display: flex; align-items: flex-end; border-bottom: 1px solid var(--ink); }
+  .mb-plan { width: 100%; background: var(--line); border-radius: 2px 2px 0 0; display: flex; align-items: flex-end; }
+  .mb-paid { width: 100%; background: var(--ink); border-radius: 2px 2px 0 0; }
+  .mb-dn { height: 44px; display: flex; align-items: flex-start; }
+  .mb-back { width: 100%; background: var(--ok); border-radius: 0 0 2px 2px; }
+  .mb-m { font-size: var(--fs-nano); text-align: center; color: var(--ink-3); }
+  .mb-m.peak { color: var(--ink); font-weight: 600; }
+  .db-mini-l { display: flex; gap: 12px; font-size: var(--fs-micro); color: var(--ink-3); }
+  .db-mini-l span { display: flex; align-items: center; gap: 4px; }
+  .db-mini-l i { width: 8px; height: 8px; border-radius: 1px; }
+  .db-mini-l .k-paid { background: var(--ink); }
+  .db-mini-l .k-plan { background: var(--line); }
+  .db-mini-l .k-back { background: var(--ok); }
+}
+
+/* Kachel v2 (E8): min 88, Label 13 oben, Wert 24/600, Zusatz 12. Gruen nur fuer Gutschriften. */
+.db-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px var(--gutter) 0; }
+.db-tile { min-height: 64px; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); outline: 1.5px solid transparent; outline-offset: -1.5px; }
+.db-tile[aria-pressed="true"] { outline-color: var(--ink); }
+.db-t-l { font-size: var(--fs-small); color: var(--ink-2); }
+.db-t-v { font-size: var(--fs-tile); font-weight: 600; letter-spacing: var(--ls-tile); line-height: 1.15; white-space: nowrap; }
+.db-tile.t-ok .db-t-v { color: var(--ok); }
+.db-t-n { font-size: var(--fs-micro); color: var(--ink-3); }
+.db-t-n:empty { display: none; }
+@media (min-width: 900px) {
+  .db-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 14px 0 0; }
+  .db-tile { min-height: 88px; padding: 12px 14px; }
+}
+
+/* Sektionen des Dashboards: derselbe Kopf wie ueberall, plus Fortschritt und Filter-Pille */
+.sect-bar { display: flex; align-items: center; gap: 8px; }
+.sect-bar .bar { width: 96px; height: 8px; border-radius: 2px; background: var(--card); overflow: hidden; display: flex; }
+.sect-bar .bar i { background: var(--ink); }
+.sect-prog { font-size: var(--fs-small); color: var(--ink-2); }
+.sect-filter { min-height: 28px; padding: 0 10px; font-size: var(--fs-small); }
+.sect-h-plain { border-bottom: 1px solid var(--line); background: var(--bg); gap: 8px; }
+.sect-add-s { display: none; }
+/* Maße 380: Kopf bleibt 56, "Anlegen" wird ein "+" von 44, der Fortschritt rutscht in eine
+   zweite Zeile - sonst steht der Primär halb außerhalb des Schirms */
+@media (max-width: 899px) {
+  .sect-h { flex-wrap: wrap; gap: 8px; padding: 4px 4px 4px 16px; }
+  .sect-bar { flex: 1 0 100%; order: 5; margin-top: -4px; padding-bottom: 6px; }
+  .sect-add-btn { min-width: var(--tap); min-height: var(--tap); padding: 0; justify-content: center; }
+  .sect-add-l { display: none; }
+  .sect-add-s { display: inline; font-size: var(--fs-section); line-height: 1; }
+}
+
+.db-card { margin: 12px var(--gutter) 0; padding: 16px; }
+.db-empty { padding: 28px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+/* in einer Sektion sagt der Sektionskopf den Namen - die eigene Ueberschrift des Bausteins (die
+   die Karte in der rechten Leiste braucht) waere dort die zweite. Die Zeile selbst bleibt: in
+   ihr steht "Bearbeiten" (Reviewer-Fund 9 und die Regression daraus). */
+.db-sect .fin-h > h2 { display: none; }
+.db-sect .fin-h { border: 0; min-height: 0; padding: 0; justify-content: flex-end; }
+.fin-months tr.now { background: var(--bg); font-weight: 600; }
+.fin-months td.back { color: var(--ok); }
+@media (min-width: 900px) {
+  .sect-bar .bar { width: 160px; }
+  .db-card { margin: 0; }
+}
+
+/* ---------- Sektionskopf (docs/changes/038 #13, #21) ----------
+   One head for every collapsible section: name, count, progress, the filter that is on, the
+   anlegen action and the chevron. Fläche --bg (E7), 56 hoch, Titel 18/600. */
+.sect { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); overflow: hidden; margin: 12px var(--gutter) 0; }
+.sect-h { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0 8px 0 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.sect-t { margin: 0; font-size: var(--fs-section); font-weight: 600; }
+.sect-n { font-size: var(--fs-meta); color: var(--ink-2); }
+.sect-note { font-size: var(--fs-small); color: var(--ink-2); white-space: nowrap; }
+.sect-h .spacer { flex: 1; }
+.sect-h .ico { min-width: var(--tap); min-height: var(--tap); color: var(--ink); }
+.sect-chev .chev-ic { transition: transform 0.15s; }
+.sect-chev.up .chev-ic { transform: rotate(180deg); }
+@media (min-width: 900px) {
+  .sect { margin: 12px 0 0; }
+  .sect-h .ico { min-width: 32px; min-height: 32px; }
+  .sect-add { border: 1px solid var(--line-dash); border-radius: var(--r-tag); background: var(--card); }
+}
+
+/* ---------- Die Leiter als Segmente (docs/changes/038 E5) ----------
+   14 x 4, Abstand 2, r 1 - erreicht in Tinte, offen --line. Keine Farbe: das nimmt 029b P14
+   zurueck. Die Stufe steht als Wort daneben (13, --ink-3). */
+.ldr { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
+.ldr-b { display: inline-flex; gap: 2px; }
+.ldr-s { width: 14px; height: 4px; border-radius: 1px; background: var(--line); }
+.ldr-s.on { background: var(--ink); }
+.ldr-w { font-size: var(--fs-small); color: var(--ink-3); }
+/* text only a screen reader needs - the segments themselves say nothing out loud */
+.vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+/* ---------- Anfragen: Zeilen und Vergleich (docs/changes/038 #22, #23) ---------- */
+.af-row2 { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--fs-small); color: var(--ink-3); }
+.af-row2 .dr-task { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the recommended column carries the sand of Claude, as its source line does */
+.vg-table th.vg-reco-col { background: var(--claude-bg); color: var(--claude); }
+/* #23: die erste Spalte traegt die Zeilenlabel, 104 fest */
+.vg-table col.c-label { width: 104px; }
+/* phone: the comparison transposed - one row per offer, the open one unfolds (#23) */
+.vg-rows { display: flex; flex-direction: column; }
+.vg-row { border-bottom: 1px solid var(--divider); padding: 4px 0; }
+.vg-row-h { display: grid; grid-template-columns: minmax(0, 1fr) auto 14px; gap: 8px; align-items: center; width: 100%; min-height: 48px; }
+.vg-row-n { min-width: 0; display: flex; flex-direction: column; }
+.vg-row-n b { font-size: var(--fs-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vg-row-p { font-size: var(--fs-ui); white-space: nowrap; }
+.vg-row-c { color: var(--ink-3); font-size: var(--fs-micro); }
+.vg-row-a .btn-primary, .vg-row-a .btn-secondary { min-height: 40px; }
+
+/* ---------- Seitentyp Liste + Panel (docs/changes/038) ---------- */
+/* Phone: the detail is a page, and "‹ <Liste>" is what the head becomes (Maße 380: 48 hoch,
+   44 Tap). The tab bar stays where it is. */
+.page-back { display: flex; align-items: center; gap: 4px; min-height: 48px; padding: 0 8px; border-bottom: 1px solid var(--line); }
+.back-btn { min-height: var(--tap); display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; font-size: var(--fs-ui); font-weight: 600; }
+.page-back .spacer { flex: 1; }
+/* die Leiste steht nur auf einer Detailseite - und die gibt es auf Entscheidungen auch
+   zwischen 900 und 1179 px, wo das Panel noch nicht danebenpasst (Reviewer-Fund 1) */
+
+/* Filter-Pillen (#5, #11): one row, horizontally scrolling on a phone, a pill is 40 visible in
+   44 of tap area. A pressed pill is an outline in ink - filled stays the primary's (029b). */
+.fpills { display: flex; gap: 8px; overflow-x: auto; padding: 10px var(--gutter) 2px; scrollbar-width: none; }
+.fpills::-webkit-scrollbar { display: none; }
+/* E3: 44 Tap-Fläche, 40 sichtbar - wie beim Segment liegt die sichtbare Pille als Schicht im
+   44er Knopf, statt das Ziel auf 40 zu verkleinern */
+.fpill { position: relative; isolation: isolate; flex: none; min-height: var(--tap); display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; font-size: var(--fs-ui); font-weight: 400; color: var(--ink); }
+.fpill::before { content: ""; position: absolute; inset: 2px 0; z-index: -1; border-radius: var(--r-pill); background: var(--card); border: 1px solid var(--line); }
+.fpill[aria-pressed="true"] { font-weight: 600; }
+.fpill[aria-pressed="true"]::before { border: 1.5px solid var(--ink); }
+.fpill-n { color: var(--ink-2); font-weight: 400; }
+@media (min-width: 900px) {
+  .fpills { padding: 12px var(--gutter) 0; overflow-x: visible; flex-wrap: wrap; }
+  .fpill { min-height: 32px; padding: 0 12px; font-size: var(--fs-meta); }
+  .fpill::before { inset: 0; }
+}
+
+/* ---------- the shell (docs/changes/038, Abweichungsliste Zeile 1 und 2) ----------
+   One head for every route, rendered once by app/shell.js. Phone (< 900): title, Vorschau-Chip
+   and avatar in one 40er row, the countdown under it - 90 high instead of the ~150 the icon row
+   used to cost (Zeile 2). Desktop (>= 900): one 64er row, title left, underline tabs right.
+   The head is sticky and grows a soft edge as soon as the page is scrolled. */
+.shell-head { position: sticky; top: 0; z-index: 20; background: var(--paper); border-bottom: 1px solid var(--line); }
+.shell-head.scrolled { box-shadow: 0 1px 2px rgba(0, 0, 0, .03), 0 4px 8px rgba(0, 0, 0, .03); }
+.shell-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px var(--gutter) 8px; }
+.shell-title { font-size: var(--fs-title); font-weight: 600; letter-spacing: var(--ls-title); margin: 0; line-height: 40px; }
+.shell-meta { display: contents; }
+/* the countdown takes the whole second line on a phone, next to the title on a desktop */
+.shell-count { flex: 1 0 100%; order: 3; font-size: var(--fs-meta); color: var(--ink-2); }
+.shell-count .cd-n { font-weight: 600; color: var(--ink); }
+.shell-count .cd-date { color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.shell-count .cd-date:hover { color: var(--ink); }
+.shell-row .spacer { flex: 1; }
+.shell-avatar { flex: none; margin-left: auto; }
 /* 029b #3: ein leiser Chip statt der losen Textzeile - kein gefuelltes Badge */
 .preview-chip { display: inline-flex; align-items: center; min-height: 20px; line-height: 18px; padding: 0 7px; border: 1px solid var(--ink-3); border-radius: var(--r-tag); font-size: var(--fs-nano); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); }
-.apphead2 .mainnav { margin-left: auto; }
-.apphead2 .avatar-wrap { flex: none; }
+
+/* Unterstrich-Tabs (Zeile 1): no shell around the target - the active one is ink 600 with a 3 px
+   bar on the head's own bottom edge, the resting ones --ink-2. Phone: the tab bar below has the
+   same four targets, so the head nav steps aside. */
+.shell-nav { display: none; }
+@media (min-width: 900px) {
+  .shell-nav { display: flex; align-self: stretch; gap: 4px; }
+  .navtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; font-size: var(--fs-meta); font-weight: 400; color: var(--ink-2); }
+  .navtab .ic { width: 16px; height: 16px; }
+  .navtab.on { color: var(--ink); font-weight: 600; }
+  .navtab.on::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 3px; border-radius: 2px 2px 0 0; background: var(--ink); }
+  .nav-badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-pill); background: var(--ink); color: #fff; font-size: var(--fs-nano); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+}
+
+/* Tab-Leiste (Zeile 2): 56 plus the safe area, four equal targets in the thumb's reach, the
+   avatar stays in the head (no fifth tab). */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+.tabbtn { position: relative; height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--ink-2); font-size: var(--fs-micro); font-weight: 400; }
+.tabbtn.on { color: var(--ink); font-weight: 600; }
+.tabbtn.on::before { content: ""; position: absolute; top: 0; left: 50%; width: 32px; height: 3px; border-radius: 0 0 2px 2px; transform: translateX(-50%); background: var(--ink); }
+.tab-ico { position: relative; display: flex; }
+.tab-ico .ic { width: 22px; height: 22px; }
+.tab-badge { position: absolute; top: -4px; right: -11px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--r-pill); background: var(--ink); color: #fff; font-size: var(--fs-nano); font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--card); }
+/* the fixed bar must not sit on the last row of the page */
+@media (max-width: 899px) { body { padding-bottom: calc(56px + env(safe-area-inset-bottom)); } }
+@media (min-width: 900px) { .tabbar { display: none; } }
+
+/* Zweite Ebene (#4, #18): one connected control for every page that has one, directly under the
+   head - not three loose pills under the search. E3: 40 visible on a phone, 44 of tap area. */
+.shell-sub:empty { display: none; }
+.shell-sub { padding: 10px var(--gutter) 0; display: flex; flex-direction: column; gap: 10px; }
+.shell-sub .search-row { margin: 0; }
+.subseg { display: flex; padding: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-tag); }
+/* E3: 44 of tap area, 40 visible - the white surface of the chosen segment is a layer inside
+   the 44er button, so the finger gets its 44 without the control growing. */
+.subseg-i { position: relative; isolation: isolate; flex: 1; min-height: 44px; display: flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 3px; font-size: var(--fs-ui); font-weight: 400; color: var(--ink-2); }
+.subseg-i[aria-pressed="true"] { color: var(--ink); font-weight: 600; }
+.subseg-i[aria-pressed="true"]::before { content: ""; position: absolute; inset: 2px 0; z-index: -1; border-radius: 3px; background: var(--card); box-shadow: var(--sh-card); }
+@media (min-width: 900px) {
+  /* #4: Segment und Suche in einer Zeile, direkt unter dem Kopf */
+  .shell-sub { padding: 12px var(--gutter) 0; flex-direction: row; align-items: center; gap: 12px; }
+  .shell-sub .search-row { flex: 1; }
+  .subseg { display: inline-flex; flex: none; }
+  .subseg-i { flex: none; min-height: 28px; font-size: var(--fs-meta); }
+  .subseg-i[aria-pressed="true"]::before { inset: 0; }
+  /* Zeile 1: one 64er row on a desktop - title, chip, countdown, tabs and avatar side by side */
+  .shell-row { flex-wrap: nowrap; min-height: 64px; padding: 0 24px; gap: 12px; }
+  .shell-count { flex: 0 1 auto; order: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .shell-avatar { margin-left: 0; }
+}
 
 /* 029 Regel 6: ein Fokusring überall, in Tinte statt in einer Personenfarbe */
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-tag); }
@@ -198,12 +411,6 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .avatar { width: 36px; height: 36px; flex: none; border-radius: var(--r-pill); background: var(--who-fg); color: #fff; font-size: var(--fs-ui); font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .avatar.S { --who-fg: var(--seb); --who-bg: var(--seb-bg); }
 .avatar.A { --who-fg: var(--anna); --who-bg: var(--anna-bg); }
-.mainnav { display: flex; gap: 4px; }
-.navbtn { position: relative; min-width: var(--tap); padding: 0 10px; }
-.navbtn .nl { display: none; font-size: var(--fs-small); font-weight: 600; }
-/* 032b #2: Zähler-Badge an der Entscheidungen-Pille - Ink statt Rot, zählt nur die eigene
-   fehlende Entscheidung, kein Rot (Rot bleibt überfällig/unwiderruflich vorbehalten) */
-.pill-badge { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: var(--r-pill); background: var(--ink); color: var(--paper); font-size: var(--fs-nano); font-weight: 700; line-height: 16px; text-align: center; }
 /* docs/changes/013 A1: the countdown is one line, not a poster */
 .countdown { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; margin-top: 4px; }
 .countdown .n { font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
@@ -243,25 +450,12 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* ---------- the three signals (docs/changes/018 §3) ---------- */
 /* 029 Regel 1: die Kacheln waren eine Linien-Grafik (1 px Spalt auf Linienfarbe) - jetzt eigene
    Karten mit Luft dazwischen, kein Rahmen-Trick mehr */
-.kpis { margin: 10px var(--gutter) 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+/* docs/changes/038 #5: .kpis, .tile, .quiet-counts und .pswitch sind mit den Filter-Pillen
+   verschwunden - ihre Regeln auch. */
 /* 030 #3: alle drei Kennzahlen 0 - eine leise Zeile an derselben Stelle wie die Kachelreihe */
-.kpis-empty { margin: 10px var(--gutter) 0; font-size: 14px; color: var(--ink-3); }
-.kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.tile { background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); min-height: 58px; padding: 8px 8px 7px; display: flex; flex-direction: column; justify-content: center; border-bottom: 2px solid transparent; text-align: left; }
-.tile[aria-pressed=true] { border-bottom-color: var(--ink); }
-.tile .n { font-size: 21px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
-.tile .n span { padding: 0 4px; margin-left: -4px; }
-.tile .l { font-size: var(--fs-micro); color: var(--ink-2); margin-top: 4px; line-height: 1.2; hyphens: auto; overflow-wrap: anywhere; }
-.tile.zero .n { color: var(--ink-3); }
 /* "wartet auf dich" is urgent, not wrong: weight and an outline, never red (Rot-Regel aus 015) */
-.sig-tile:not(.zero) .l { color: var(--ink); font-weight: 600; }
-.kpis.three .sig-tile:first-child:not(.zero) { box-shadow: inset 3px 0 0 var(--ink); }
 
 /* the four counts from 009 stay reachable, one quiet line below the signals */
-.quiet-counts { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px var(--gutter) 0; }
-.quiet-count { color: var(--ink-2); }
-.quiet-count[aria-pressed=true] { font-weight: 600; }
 
 /* the flat list behind a pressed signal: over all people, with the quote and one action */
 .siglist { margin: 10px var(--gutter) 0; }
@@ -273,11 +467,6 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .sigrow-quote .who { color: var(--ink-3); }
 
 /* ---------- the person switch (docs/changes/018 §1): one column at a time on a phone ---------- */
-.pswitch { display: flex; gap: 6px; margin: 16px var(--gutter) 0; }
-.pseg { flex: 1 1 0; min-width: 0; min-height: 52px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 6px 10px; border-radius: var(--r-tag); }
-.pseg b { font-size: var(--fs-meta); font-weight: 600; }
-.pseg .s { font-size: var(--fs-micro); font-weight: 400; color: var(--ink-3); }
-.pseg[aria-pressed=true] .s { color: rgba(255, 255, 255, 0.72); }
 
 /* ---------- time groups inside a column (docs/changes/018 §2) ---------- */
 .tgroup-head { display: flex; align-items: baseline; gap: 8px; padding: 12px 0 4px; }
@@ -363,6 +552,12 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 /* docs/changes/020: title left, deadline right on the same line */
 .t-row { display: flex; align-items: baseline; gap: var(--gap); }
 .task .t { flex: 1; min-width: 0; min-height: var(--tap); padding: 9px 0 4px; font-size: var(--fs-body); line-height: 1.35; color: var(--ink); overflow-wrap: anywhere; }
+/* docs/changes/038 #6: min 56, Titel hoechstens zwei Zeilen, Meta einzeilig - so bleibt jede
+   Zeile zwischen 56 und 78 hoch, ohne dass etwas abgeschnitten wird. */
+.task { min-height: 56px; }
+.task .t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.task .quiet { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task .quiet .sig-chip { flex: none; }
 .task .t:hover { text-decoration: underline; }
 .task.done .t { color: var(--ink-3); text-decoration: line-through; }
 .task.blocked .t { color: var(--ink-2); }
@@ -459,7 +654,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .brief-read:first-child { margin-top: 0; }
 .brief-read b { display: block; font-size: var(--fs-small); color: var(--claude); }
 .brief-read p { margin: 2px 0 0; font-size: var(--fs-ui); line-height: 1.5; white-space: pre-wrap; }
-.brief-read p.none { color: var(--ink-3); font-style: italic; }
+.brief-read p.none { color: var(--ink-3); }
 /* 029b #9: Beratung als Akkordeon statt Pillenreihe - eine Zeile je Thema, ein Hairline je Zeile */
 .adv-acc { margin-top: 4px; border-top: 1px solid var(--divider); }
 .adv-row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: var(--tap); padding: 10px 2px; border-bottom: 1px solid var(--divider); font-size: var(--fs-ui); font-weight: 600; color: var(--ink); text-align: left; }
@@ -567,7 +762,7 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .decision-row.replaced .dt-text { color: var(--ink-3); text-decoration: line-through; }
 .dr-meta2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .dr-task { font-size: var(--fs-meta); color: var(--ink-2); }
-.decision-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--paper); padding-left: 8px; margin-left: -8px; }
+.decision-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--bg); padding-left: 8px; margin-left: -8px; }
 /* docs/changes/032c: ab 900 px eine echte Tabelle statt der Karten - feste Prozentbreiten wie
    .fin-posts-table (029c #8: kein "width: 1%", sonst kollabieren die schmalen Spalten). */
 @media (min-width: 900px) {
@@ -576,32 +771,29 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
   .dt-table td { padding: 8px; border-bottom: 1px solid var(--divider); vertical-align: top; }
   .dt-table tbody tr { cursor: pointer; }
   .dt-table tbody tr:hover, .dt-table tbody tr:focus-visible { background: var(--divider); }
-  .dt-table tr.selected { background: var(--paper); }
+  .dt-table tr.selected { background: var(--bg); }
   .dt-table tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--ink); }
   .dt-table .dt-text { -webkit-line-clamp: 2; }
   .dt-table tr.replaced .dt-text { color: var(--ink-3); text-decoration: line-through; }
   .dt-table .dr-task { display: block; margin-top: 4px; }
-  .dt-table col.c-datum { width: 10%; }
-  .dt-table col.c-von { width: 10%; }
-  .dt-table col.c-entscheidung { width: 44%; }
-  .dt-table col.c-amzug { width: 14%; }
-  .dt-table col.c-aktion { width: 12%; }
-  .dt-table col.c-luft { width: 10%; }
+  /* docs/changes/038 E6: Textspalte flexibel, Datenspalten in Pixeln - die Prozentwerte aus
+     029c P8 und die Rest-Luft entfallen (der Export nennt in #19 noch Prozente, E6 korrigiert) */
+  .dt-table col.c-datum { width: 64px; }
+  .dt-table col.c-von { width: 112px; }
+  .dt-table col.c-amzug { width: 112px; }
+  .dt-table col.c-aktion { width: 100px; }
 }
 /* ---------- Anfragen (docs/changes/033) ----------
    List rows follow the Entscheidungen cards (032c); the detail reuses .detail/.lbl/.akte-line.
    The four-rung bar is the "Stand" bar (.steps), four wide instead of three. */
-.steps.four { grid-template-columns: repeat(4, 1fr); }
 .af-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--divider); cursor: pointer; }
 .af-row:hover, .af-row:focus-visible { background: var(--divider); }
-.af-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--paper); padding-left: 8px; margin-left: -8px; }
+.af-row.selected { box-shadow: inset 3px 0 0 var(--ink); background: var(--bg); padding-left: 8px; margin-left: -8px; }
 .af-row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .af-title { font-size: var(--fs-ui); font-weight: 600; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
 .af-row2 { margin-top: 2px; }
-.af-row .steps { margin-top: 8px; }
 .af-new { padding: 10px 0; border-bottom: 1px solid var(--divider); }
 .af-new .hint { margin: 0 0 6px; }
-.af-detail .steps { margin-bottom: 4px; }
 .detail .confirm.block { margin: 12px 0 0; }
 /* the recommendation is Claude speaking - Claude's colour, as the brief and its comments */
 .vg-reco { margin: 14px 0 0; padding: 10px 12px; background: var(--claude-bg); color: var(--claude); font-size: var(--fs-ui); font-weight: 600; line-height: 1.4; }
@@ -622,12 +814,13 @@ h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
 .vg-edit { margin-top: 12px; }
 @media (min-width: 900px) {
   /* 033: list a fixed 320 px, the anfrage takes the rest - the comparison table needs the width */
-  .board.af-board { display: grid; grid-template-columns: 320px minmax(0, 1fr); align-items: start; }
-  .af-board .col-list { min-width: 0; }
+  /* docs/changes/038 #21: Anfragen is the one page whose list is the narrow side - the
+     comparison table needs the rest. Same grid, other shares. */
+  .board.lp-wide { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
+  .lp-wide .col-list { min-width: 0; }
   /* offers as columns, the seven attributes as rows; table-layout fixed shares the width equally,
      so up to five offers never scroll sideways - long words wrap instead */
   .vg-table { width: 100%; margin-top: 14px; border-collapse: collapse; table-layout: fixed; font-size: var(--fs-meta); }
-  .vg-table col.c-label { width: 16%; }
   .vg-table th, .vg-table td { padding: 8px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--divider); overflow-wrap: anywhere; }
   .vg-table thead th { font-size: var(--fs-ui); font-weight: 600; color: var(--ink); border-bottom: 1px solid var(--ink); }
   .vg-table tbody th { font-size: var(--fs-micro); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; color: var(--ink-2); }
@@ -673,19 +866,8 @@ button.cost-amount:hover { background: var(--line); }
 .cost.open { background: var(--card); margin: 0 -8px; padding: 10px 8px; }
 .cost-actions { display: flex; flex-wrap: wrap; gap: var(--gap); align-items: center; margin-top: 8px; }
 .cost-quick { min-height: var(--tap); min-width: 100px; max-width: 100%; padding: 4px 8px; border: 1.5px solid var(--ink); background: var(--card); font-size: var(--fs-ui); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
-/* the ladder itself: dots filled up to the current rung, then the word - nothing to learn */
-.ladder { display: inline-flex; align-items: center; gap: 6px; }
-.ladder .dots { display: inline-flex; gap: 3px; }
-/* 029c #7: hohle Kreise mit 1-px-Rand statt der fast unsichtbaren gefuellten Punkte */
-.ladder .dots i { width: 6px; height: 6px; border-radius: var(--r-pill); background: transparent; border: 1px solid var(--ink-3); box-sizing: border-box; display: block; }
-/* 029b #14: die Stufe traegt ihre eigene Farbe - geschaetzt ink-3, fest ink, bezahlt gruen
-   (--ok, dieselbe wie erledigte Aufgaben; #2f6f4e auf #fff/--paper ≈ 6:1, 008b-Check gruen) */
-.ladder.ladder-low { color: var(--ink-3); }
-.ladder.ladder-low .dots i.on { background: var(--ink-3); border-color: var(--ink-3); }
-.ladder.ladder-mid { color: var(--ink); }
-.ladder.ladder-mid .dots i.on { background: var(--ink); border-color: var(--ink); }
-.ladder.ladder-paid { color: var(--ok); }
-.ladder.ladder-paid .dots i.on { background: var(--ok); border-color: var(--ok); }
+/* docs/changes/038 E5: die Punkte-Leiter (029c #7) und ihre drei Farben (029b P14) sind durch
+   die Segment-Leiter .ldr weiter oben ersetzt - Tinte und --line, die Stufe als Wort. */
 .cost-form { padding: 8px 0 10px; }
 .cost-form .row { margin-top: 8px; align-items: flex-end; }
 .cost-form .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); flex: 1 1 140px; min-width: 0; }
@@ -715,33 +897,16 @@ button.cost-amount:hover { background: var(--line); }
 .fin-head .avatar { width: 40px; height: 40px; }
 .fin-head .avatar-menu { left: auto; right: 0; }
 .avatar.named .an { display: none; }
-.fin-grid { display: flex; flex-direction: column; padding: 0 var(--gutter); }
-.fin-side { display: contents; }
-/* the phone order of the export: answer, Ausgleich, next, month by month, Laufend, posts, frame */
-.fin-answer { order: 1; }
-.fin-balance { order: 2; }
-.fin-next { order: 3; }
-.fin-mon { order: 4; }
-.fin-rec { order: 5; }
-.fin-postsec { order: 6; }
-.fin-rahmen { order: 7; }
+/* docs/changes/038: die Reihenfolge macht jetzt der Seitentyp (app/pages/dashboard.js) - die
+   alten order-/grid-area-Regeln von .fin-grid sind damit weg. */
 
 .fin-eyebrow { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 400; }
 .fin-answer { margin-top: 14px; }
-.fin-number { display: flex; align-items: baseline; gap: var(--gap); margin-top: 2px; }
-.fin-number .n { font-size: 44px; font-weight: 600; line-height: 1.05; letter-spacing: -0.03em; }
-.fin-number .u { font-size: var(--fs-meta); color: var(--ink-2); }
-.fin-break { margin-top: 11px; border-top: 1px solid var(--ink); }
-.fin-break-row { width: 100%; min-height: var(--tap); display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; gap: var(--gap); align-items: center; border-bottom: 1px solid var(--line); font-size: var(--fs-ui); text-align: left; }
-.fin-break-row .s { font-size: var(--fs-micro); color: var(--ink-3); }
-.fin-break-row .v { font-weight: 400; white-space: nowrap; }
-.fin-break-row .arr { color: var(--ink-3); }
-.fin-break-row.paid-row .l { color: var(--ink-2); }
-.fin-break-row[aria-pressed=true] { background: var(--card); box-shadow: inset 3px 0 0 var(--ink); }
 
 /* the balance: the one card with a primary action behind it (029 Regel 1: jetzt Karte statt
    Ink-Rahmen; die Trennlinien darin sind seit Regel 2 --divider) */
-.fin-balance { margin-top: 16px; background: var(--card); border-radius: var(--r-card); box-shadow: var(--sh-card); padding: 12px 14px; }
+/* docs/changes/038: die Karte ist der Block des Seitentyps (.db-card) - hier nur noch Inhalt */
+.fin-balance { margin: 0; }
 .fin-bal { font-size: 20px; font-weight: 600; margin-top: 2px; line-height: 1.45; }
 .fin-bal-sub { font-size: var(--fs-small); color: var(--ink-2); margin-top: 2px; line-height: 1.4; }
 .fin-bal-rows { display: none; width: 100%; border-collapse: collapse; margin-top: 8px; font-size: var(--fs-small); color: var(--ink-2); }
@@ -760,7 +925,6 @@ button.cost-amount:hover { background: var(--line); }
 .fin-h-note { font-weight: 400; color: var(--ink-3); }
 .fin-h .btn-text { margin: -12px 0 -11px; }
 .fin-h .sort-right { font-size: var(--fs-micro); color: var(--ink-3); }
-.sort-inline { display: none; }
 
 /* what is next to pay */
 .fin-block { margin-top: 20px; }
@@ -785,11 +949,11 @@ button.cost-amount:hover { background: var(--line); }
 .st-chip.ausstehend { background: var(--ink); color: #fff; }
 .st-chip.late { background: var(--danger-bg); color: var(--danger); }
 /* titles and links that are smaller than a finger: the hit area grows, the line does not */
-.fin-task-title, .fp-title, .fin-link { position: relative; min-height: 0; padding: 0; font-size: 15px; line-height: 20px; text-align: left; overflow-wrap: anywhere; }
+.fin-task-title, .fp-title, .fin-link { position: relative; min-height: 0; padding: 0; font-size: var(--fs-ui); line-height: 20px; text-align: left; overflow-wrap: anywhere; }
 /* 029b #12: Zeile 2 der Posten-Zelle - der Aufgabentitel, leise, Unterstrich erst bei Hover */
-.fp-task-link { display: block; margin-top: 2px; font-size: 13px; line-height: 16px; color: var(--ink-3); text-decoration: none; }
+.fp-task-link { display: block; margin-top: 2px; font-size: var(--fs-small); line-height: 16px; color: var(--ink-3); text-decoration: none; }
 .fp-task-link:hover { text-decoration: underline; text-underline-offset: 2px; }
-.fp-no-task { display: block; margin-top: 2px; font-size: 13px; line-height: 16px; color: var(--ink-3); }
+.fp-no-task { display: block; margin-top: 2px; font-size: var(--fs-small); line-height: 16px; color: var(--ink-3); }
 /* 029b #13: "zahlt" ist eine Personen-Chip-Spalte, keine Textspalte - schmal, zentriert */
 .fp-who .own, .fin-pay-meta .own { min-width: 0; }
 .fin-task-title::before, .fp-title::before, .fin-link::before { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -12px; }
@@ -841,7 +1005,6 @@ button.cost-amount:hover { background: var(--line); }
 .fin-lead-sub { display: block; color: var(--ink-2); }
 
 /* all posts: filter pills, then the list (phone: at most two lines per post) */
-.fin-ph .fin-pills { padding-top: 10px; }
 .fin-pills { display: flex; gap: 6px; flex-wrap: wrap; }
 .fin-pills .pill, .fin-pills .pill[aria-pressed=true] { font-size: var(--fs-small); font-weight: 400; padding: 0 14px; }
 .fin-more { display: block; width: 100%; min-height: 40px; margin-top: 4px; font-size: var(--fs-meta); font-weight: 600; text-align: left; border-bottom: 1px solid var(--line); }
@@ -850,8 +1013,7 @@ button.cost-amount:hover { background: var(--line); }
 .fp-l1 { display: flex; justify-content: space-between; align-items: baseline; gap: var(--gap); }
 .fp-l2 { display: flex; justify-content: space-between; align-items: center; gap: var(--gap); margin-top: 4px; min-height: 32px; }
 .fp-meta { font-size: var(--fs-micro); color: var(--ink-3); min-width: 0; }
-.fp-meta .ladder { /* 029b #14: Farbe kommt von der Stufe, nicht mehr pauschal ink-2 */ }
-.fp-amt { font-size: 15px; font-weight: 600; white-space: nowrap; }
+.fp-amt { font-size: var(--fs-ui); font-weight: 600; white-space: nowrap; }
 /* 030 #5: der Betrag ist die Aktion einer geschaetzten Zeile - Unterstrich erst bei Hover, wie ein Link */
 .fp-amt-btn { font: inherit; color: inherit; text-decoration: none; }
 .fp-amt-btn:hover { text-decoration: underline; text-underline-offset: 2px; }
@@ -861,7 +1023,7 @@ button.cost-amount:hover { background: var(--line); }
 .fin-add { margin-top: 8px; }
 
 /* the frame data: one line on a phone, a small read block in the desktop rail */
-.fin-rahmen { margin-top: 16px; }
+.fin-rahmen { margin: 0; }
 .fin-rahmen-h, .fin-kv { display: none; }
 .fin-rahmen-line { margin: 0; padding: 10px 0; font-size: var(--fs-small); color: var(--ink-3); line-height: 1.45; border-top: 1px solid var(--line); }
 .fin-rahmen-line.fin-rahmen-one { padding: 0 0 10px; border-top: 0; }
@@ -888,36 +1050,9 @@ button.cost-amount:hover { background: var(--line); }
   .avatar.named { width: auto; height: 34px; padding: 0 12px 0 1px; gap: 7px; border: 1px solid var(--who-fg); background: var(--who-bg); color: var(--who-fg); font-size: var(--fs-meta); font-weight: 600; }
   .avatar.named .ai { width: 32px; height: 32px; border-radius: var(--r-pill); background: var(--who-fg); color: #fff; display: flex; align-items: center; justify-content: center; font-size: var(--fs-ui); font-weight: 700; }
   .avatar.named .an { display: inline; }
-  .fin-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "top top" "next mon" "side side" "posts posts"; padding: 0; }
-  .fin-grid > .fin-answer, .fin-grid > .fin-block { margin: 0; }
-  .fin-answer { grid-area: top; display: flex; align-items: stretch; gap: 20px; padding: 18px 20px 0; }
-  .fin-hero { flex: 0 0 auto; min-width: 237px; padding-top: 8px; }
-  .fin-number .n { font-size: 56px; letter-spacing: -0.035em; }
-  .fin-number .u { font-size: var(--fs-ui); }
-  /* 029 Regel 1: die vier Kennzahlen waren eine Linien-Grafik (1 px Spalt), jetzt eigene Karten */
-  .fin-break { flex: 1 1 auto; margin-top: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-  /* 029c #10: wieder eine Rand-Karte (--line), keine Schatten-Karte - Auftrag ausdruecklich so */
-  .fin-break-row { background: var(--card); border-radius: var(--r-card); border: 1px solid var(--line); min-height: 82px; display: flex; flex-direction: column-reverse; justify-content: center; align-items: flex-start; gap: 4px; padding: 10px 12px; }
-  .fin-break-row .v { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; line-height: 24px; }
-  .fin-break-row .l { font-size: var(--fs-micro); color: var(--ink-2); line-height: 15px; }
-  .fin-break-row .arr { display: none; }
-  .fin-break-row[aria-pressed=true] { border-color: var(--ink); box-shadow: inset 0 -3px 0 var(--ink); }
-  .fin-next { grid-area: next; padding: 24px 14px 0 20px; }
-  .fin-mon { grid-area: mon; padding: 24px 20px 0 14px; }
   .fin-months .paidcol { display: table-cell; }
   .fin-pay-meta::after { display: none; }
   .fin-pay-meta .btn-secondary { order: 0; margin: 0 0 0 0; }
-  .fin-side { grid-area: side; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "bal rec" "rahmen rahmen"; column-gap: 28px; padding: 24px 20px 0; align-items: start; }
-  .fin-side > .fin-balance { grid-area: bal; margin: 0; }
-  .fin-side > .fin-rec { grid-area: rec; margin: 0; }
-  .fin-side > .fin-rahmen { grid-area: rahmen; }
-  .fin-postsec { grid-area: posts; padding: 24px 20px 0; }
-  /* all posts: the pills sit in the head line, one table row per post */
-  .fin-ph { display: flex; align-items: center; gap: var(--gap); border-bottom: 1px solid var(--ink); padding-bottom: 6px; }
-  .fin-ph .fin-h { flex: 1 1 auto; border: 0; padding: 0; }
-  .fin-ph .fin-pills { padding: 0; flex-wrap: nowrap; }
-  .fin-ph .sort-right { display: none; }
-  .sort-inline { display: inline; }
   .fin-posts-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: var(--fs-meta); }
   /* 029b #12: die Posten-Zelle traegt jetzt zwei Zeilen - die Reihe waechst mit ihr, die uebrigen
      Zellen bleiben vertikal mittig */
@@ -926,16 +1061,17 @@ button.cost-amount:hover { background: var(--line); }
   /* 029c #8 (Fassung 24.09. 11:07): feste Prozentbreiten ueber <colgroup> - das vorherige
      "width: 1%"-Rezept liess die schmalen Spalten kollabieren. Aktionsspalte bleibt immer da,
      damit die Spalten beim Filterwechsel nicht springen. */
-  .fin-posts-table col.c-posten { width: 35%; }
-  .fin-posts-table col.c-stand { width: 10%; }
-  .fin-posts-table col.c-faellig { width: 10%; }
-  .fin-posts-table col.c-zahlt { width: 15%; }
-  .fin-posts-table col.c-betrag { width: 15%; }
-  .fin-posts-table col.c-aktion { width: 15%; }
+  /* docs/changes/038 E6: Textspalte flexibel, Datenspalten fest in Pixeln (ersetzt die
+     Prozentwerte aus 029c P8); table-layout: fixed bleibt */
+  .fin-posts-table col.c-stand { width: 128px; }
+  .fin-posts-table col.c-faellig { width: 64px; }
+  .fin-posts-table col.c-zahlt { width: 112px; }
+  .fin-posts-table col.c-betrag { width: 100px; }
+  .fin-posts-table col.c-aktion { width: 100px; }
   @media (max-width: 1099px) {
-    /* 029c #8: 10 % reicht fuer "Stand" nur ohne Wort - die drei Kreise bleiben, das Wort */
-    /* steht als title-Tooltip (siehe ladderHTML) statt gedruckt in der Zelle */
-    .fin-posts-table .ladder .word { display: none; }
+    /* 029c #8, seit 038 E5 an der Segment-Leiter: schmal reicht es nur ohne Wort - das steht
+       dann als title-Tooltip an der Leiter (siehe ladderHTML) */
+    .fin-posts-table .ldr-w { display: none; }
   }
   .fin-posts-table .r, .fin-posts-table .fp-amt, .fin-posts-table .fp-act { text-align: right; }
   .fin-posts-table .fp-amt { font-variant-numeric: tabular-nums; }
@@ -954,18 +1090,13 @@ button.cost-amount:hover { background: var(--line); }
   .fin-posts-table .fin-post.paid th, .fin-posts-table .fin-post.paid td, .fin-posts-table .fin-post.paid .fp-title, .fin-posts-table .fin-post.paid .fin-link { color: var(--ink-3); }
   .fin-posts-table .fin-post.late .fp-due { color: var(--danger); }
   .fin-posts-table .fin-post-open td { height: auto; padding: 8px 0; white-space: normal; overflow: visible; }
-  .fin-posts-table .ladder { font-size: var(--fs-micro); /* 029b #14: Farbe kommt von der Stufe */ }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .foot.fin-foot { padding: 4px 20px; }
 }
 
 /* ≥ 1100 px: three columns - A, B and the rail with Ausgleich, Laufend and the frame data */
 @media (min-width: 1100px) {
-  .fin-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 400px; grid-template-areas: "top top side" "next mon side" "posts posts side"; grid-template-rows: auto auto 1fr; }
-  .fin-side { display: block; align-self: start; border-left: 1px solid var(--line); padding: 18px 20px 24px; }
-  .fin-side > .fin-rec { margin-top: 24px; }
-  .fin-side > .fin-rahmen { margin-top: 16px; }
-  .fin-balance { padding: 14px 16px; }
+  .fin-balance { padding: 0; }
   .fin-bal { font-size: 22px; }
   .fin-bal-sub, .fin-bal-how { display: none; }
   .fin-bal-rows { display: table; }
@@ -992,7 +1123,7 @@ button.cost-amount:hover { background: var(--line); }
 .fin-setup { position: fixed; inset: 0; z-index: 60; background: var(--paper); display: flex; align-items: center; justify-content: center; padding: var(--gutter); overflow-y: auto; }
 .fs-card { width: 100%; max-width: 480px; }
 .fs-eyebrow { margin: 0; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
-.fs-card h2 { margin: 6px 0 18px; font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
+.fs-card h2 { margin: 6px 0 18px; font-size: var(--fs-kpi); font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; }
 .fs-card .lbl { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-small); color: var(--ink-2); margin-top: 12px; }
 .fs-card .lbl > input, .fs-card .lbl > select { width: 100%; min-width: 0; min-height: var(--tap); padding: 8px 10px; border: 1px solid var(--line); background: var(--card); font-size: var(--fs-ui); }
 .fs-card .row { display: flex; gap: var(--gap); margin-top: 12px; }
@@ -1038,7 +1169,7 @@ button.cost-amount:hover { background: var(--line); }
 /* ---------- "Was ist neu?" panel ---------- */
 .changelog { margin: 8px var(--gutter) 16px; background: var(--card); border: 1px solid var(--line); padding: 12px 14px 4px; }
 .changelog-head { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; }
-.changelog h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.changelog h2 { margin: 0; font-size: var(--fs-section); font-weight: 600; }
 .release { border-top: 1px solid var(--line); margin-top: 12px; padding: 12px 0 8px; }
 .release h3 { margin: 0; font-size: var(--fs-ui); font-weight: 600; line-height: 1.35; }
 .release h3 .v { display: block; font-size: var(--fs-micro); font-weight: 600; color: var(--ink-3); letter-spacing: 0.04em; margin-bottom: 2px; }
@@ -1068,26 +1199,20 @@ button.cost-amount:hover { background: var(--line); }
   .countdown .btn-text .short { display: none; }
   .countdown .n { font-size: 34px; }
   /* room for the labels on the tiles (issues.md #3: never show less on the bigger screen) */
-  .tile { padding: 10px 12px 8px; min-height: 64px; }
   /* all phases fit without scrolling; the label keeps to the first row when they wrap */
   .pchips { flex-wrap: wrap; overflow-x: visible; }
   .chips-row { align-items: flex-start; }
   .chips-label { padding-top: 15px; }
   /* docs/changes/018: more room for the three names from here on */
-  .pseg { min-height: 56px; padding: 8px 14px; }
 }
 
 @media (min-width: 900px) {
   .wrap { max-width: 1280px; }
-  /* docs/changes/013 A6: the two places carry their name here */
-  .navbtn .nl { display: inline; }
   /* docs/changes/013 A2/A3: the side panel only from 1180 px - below that the list uses the
      full width and the Akte is an overlay, so no empty panel stands around */
-  .board.mode-panel { display: grid; grid-template-columns: minmax(0, 1fr) clamp(420px, 30vw, 600px); align-items: start; }
-  /* 014e #6: nichts ausgewaehlt und nichts wartet zwischen ihnen - der Container bekommt die
-     Breite des leeren Panels zurueck, statt sie fuer eine leere Zeile vorzuhalten (Rest aus 030) */
-  .board.mode-panel.panel-empty { grid-template-columns: minmax(0, 1fr); }
-  .board.panel-empty .panel { display: none; }
+  /* docs/changes/038 #7: Liste 1fr, Panel 400 fest - auf allen drei Seiten dieselbe Breite.
+     Es gibt immer eine Auswahl (ohne eigene die erste Zeile), also auch kein leeres Panel. */
+  .board.lp-panel { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 16px; align-items: start; }
   .col-list { min-width: 0; }
   /* the person columns start here, as many as fit (029 Regel 1: Karten statt der Linien-Grafik;
      Regel 2: ihre Zeilen-Trennlinien werden hier innen zu --divider) */
@@ -1112,9 +1237,16 @@ button.cost-amount:hover { background: var(--line); }
   .col-list .btn-text.row { padding-left: 12px; padding-right: 12px; }
   .cols .task { grid-template-columns: 36px 1fr; }
   .cols .task .check { margin-left: -4px; }
-  .cols .task .t { font-size: var(--fs-ui); }
+  /* docs/changes/038 #6: in einer Spalte traegt die Zeile selbst die Tap-Hoehe (min 56), also
+     braucht der Titel keine eigene - so bleibt die Zeile mit zwei Titelzeilen unter 78. */
+  .cols .task { padding: 9px 0 8px; }
+  .cols .task .t { font-size: var(--fs-ui); line-height: 20px; min-height: 0; padding: 0; }
+  .cols .task .quiet { line-height: 18px; padding-bottom: 0; }
+  .cols .task .quiet .sig-chip { line-height: 16px; }
   /* the Akte as a sticky side panel that scrolls on its own */
-  .panel { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; min-width: 0; border-left: 1px solid var(--line); background: var(--paper); padding: 0 var(--gutter) 24px; }
+  /* 038: der Kopf ist sticky und 64 hoch - das Panel beginnt darunter, sonst laegen seine
+     oberen Zeilen beim Scrollen hinter ihm (Reviewer-Fund 8) */
+  .panel { position: sticky; top: 64px; align-self: start; max-height: calc(100vh - 64px); overflow-y: auto; min-width: 0; border-left: 1px solid var(--line); background: var(--paper); padding: 0 var(--gutter) 24px; }
   .panel.empty { display: flex; align-items: center; justify-content: center; min-height: 60vh; }
   .panel.empty p { margin: 0; color: var(--ink-3); font-size: var(--fs-ui); }
   .panel-head { display: flex; align-items: center; gap: 6px; padding: 8px 0 0; min-height: 52px; }
@@ -1153,8 +1285,8 @@ button.cost-amount:hover { background: var(--line); }
 
 .printsheet { margin: 8px var(--gutter) 16px; background: var(--card); border: 1px solid var(--line); padding: 12px 14px 16px; }
 .print-head { display: flex; align-items: center; gap: var(--gap); flex-wrap: wrap; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
-.print-head h2 { margin: 0; font-size: 18px; font-weight: 600; }
-.sheet h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 14px 0 0; }
+.print-head h2 { margin: 0; font-size: var(--fs-section); font-weight: 600; }
+.sheet h1 { font-size: var(--fs-kpi); font-weight: 600; letter-spacing: -0.02em; margin: 14px 0 0; }
 .sheet .psub-head { margin: 2px 0 0; font-size: var(--fs-meta); color: var(--ink-2); }
 .pgroup { margin-top: 18px; page-break-inside: avoid; break-inside: avoid; }
 .pgroup h3 { font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; margin: 0 0 6px; padding-bottom: 5px; border-bottom: 1px solid var(--ink); color: var(--ink-2); }
@@ -1186,6 +1318,8 @@ button.cost-amount:hover { background: var(--line); }
   .toast { display: none !important; }
   /* only while the sheet is open – printing the dashboard itself keeps working */
   body.printing .top, body.printing #view > .board, body.printing .foot, body.printing .changelog { display: none !important; }
+  /* 038: Kopf, zweite Ebene, Fusszeile und Tab-Leiste liegen jetzt ausserhalb von #view */
+  body.printing .shell-head, body.printing .shell-sub, body.printing #shell-date, body.printing #shell-hint, body.printing #shell-update, body.printing #shell-foot, body.printing .tabbar { display: none !important; }
   body.printing .printsheet { margin: 0; padding: 0; border: 0; }
   .noprint { display: none !important; }
   .onlyprint { display: block; white-space: pre-wrap; font-size: var(--fs-ui); }
@@ -1198,7 +1332,6 @@ button.cost-amount:hover { background: var(--line); }
    Every entry is one row of the same grid - date 60 px, rails 67 px (7 px gap + five lanes of
    12 px), content - so the rails run through months, today, Einzug and gates without a gap. The
    rails are borders and pseudo elements, never an inline style (CSP, 008). */
-.view-chips { margin: 14px var(--gutter) 0; }
 .timeline { margin: 10px 0 0; --tl-off: color-mix(in srgb, var(--line) 70%, var(--paper)); }
 .tl-filters { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); margin: 0 var(--gutter); }
 .tl-filters .pchips { flex-wrap: nowrap; overflow: visible; }
@@ -1316,7 +1449,7 @@ button.cost-amount:hover { background: var(--line); }
 .gm-gate { margin: 10px 0 0; font-size: var(--fs-ui); line-height: 1.5; color: var(--ink-2); }
 .gm-numbers { display: flex; gap: 1px; background: var(--line); border: 1px solid var(--line); margin: 18px 0 0; }
 .gm-numbers > div { flex: 1 1 0; background: var(--card); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
-.gm-numbers b { font-size: 24px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+.gm-numbers b { font-size: var(--fs-tile); font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
 .gm-numbers span { font-size: var(--fs-micro); color: var(--ink-2); }
 .gm-next { margin: 18px 0 0; font-size: var(--fs-ui); line-height: 1.45; }
 .gm-next .l { display: block; font-size: var(--fs-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }

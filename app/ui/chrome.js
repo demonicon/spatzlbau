@@ -4,7 +4,7 @@
 import { esc } from './dom.js';
 import { OWN } from './labels.js';
 import { BUILD } from '../config.js';
-import { state, ui, einzug, umzugstag, fmtDay, myOpenDecisionsCount, openAnfragenCount } from '../state.js';
+import { state, ui, einzug, umzugstag, fmtDay } from '../state.js';
 import { ICON } from './icons.js';
 import { hasUnread } from '../changelog.js';
 
@@ -32,7 +32,7 @@ export function avatarHTML(named) {
 // pills and the avatar (initial only, the name is the title attribute) on the right. Clicking
 // the date opens the same inline editor the dashboard has always had (main.js #einzug) - now
 // reachable from Finanzen too, since both screens share this one markup.
-function countdownHTML() {
+export function countdownHTML() {
   const base = einzug();
   if (!base) {
     return `Einzugstermin eintragen, dann zählt die App · <button class="cd-date" data-act="date-toggle" aria-expanded="${!!ui.dateEdit}" aria-label="Einzugstermin eintragen">eintragen ›</button>`;
@@ -52,36 +52,10 @@ function countdownHTML() {
   return `${n} · <button class="cd-date" data-act="date-toggle" aria-expanded="${!!ui.dateEdit}" aria-label="Einzugstermin ändern">${esc(dateText)}</button>`;
 }
 
-const NAV_ICON = { dashboard: 'home', finanzen: 'coin', anfragen: 'scale', entscheidungen: 'diamond' };
-const NAV_TITLE = { finanzen: 'Finanzen', anfragen: 'Anfragen', entscheidungen: 'Entscheidungen' };
-
-/** The head all screens share. `active`: 'dashboard' | 'finanzen' | 'anfragen' (033) | 'entscheidungen' (032b). */
-export function renderHeader(active) {
-  const title = NAV_TITLE[active] || 'Aufgaben';
-  const decisions = myOpenDecisionsCount();
-  const results = openAnfragenCount();
-  // badgeText says what the number counts, for the screen reader (the badge itself is aria-hidden)
-  const nav = (key, act, to, label, badge, badgeText) => {
-    const on = active === key;
-    return `<button class="pill navbtn ${on ? 'on' : ''}" data-act="${act}"${to ? ` data-to="${to}"` : ''} aria-label="${label}${badge ? ` – ${badge} ${badgeText}` : ''}" title="${label}" aria-current="${on ? 'page' : 'false'}">${ICON[NAV_ICON[key]]}<span class="nl" aria-hidden="true">${label}</span>${badge ? `<span class="pill-badge" aria-hidden="true">${badge}</span>` : ''}</button>`;
-  };
-  const showDate = ui.dateEdit || !einzug();
-  return `<header class="apphead2">
-    <div class="apphead2-left">
-      <h1 class="apphead2-title">${title}</h1>
-      ${ui.preview ? `<span class="preview-chip" title="Live-Daten · Lesestand wird nicht gespeichert">Vorschau</span>` : ''}
-      <span class="apphead2-count">${countdownHTML()}</span>
-    </div>
-    <nav class="mainnav" aria-label="Bereiche">
-      ${nav('dashboard', 'home', '', 'Aufgaben')}
-      ${nav('finanzen', 'screen', 'finanzen', 'Finanzen')}
-      ${nav('anfragen', 'screen', 'anfragen', 'Anfragen', results, results === 1 ? 'Ergebnis da' : 'Ergebnisse da')}
-      ${nav('entscheidungen', 'screen', 'entscheidungen', 'Entscheidungen', decisions, 'wartet auf dich')}
-    </nav>
-    ${avatarHTML(false)}
-  </header>
-  ${showDate ? `<div class="date-edit"><label class="hint" for="einzug">Einzugstermin</label><input type="date" id="einzug" value="${esc(einzug() || '')}"></div>` : ''}`;
-}
+/* docs/changes/038 Zeile 1: renderHeader() is gone. The head, the nav and the second level
+   live in app/shell.js and are rendered once; the nav order and the underline tabs moved there
+   with it. What stays here is what every route still asks for as a piece: the avatar with its
+   menu, the countdown line, the update bar, the setup hint and the footer. */
 
 /** docs/changes/026: "Später" was chosen - a way back in, not a lock. Mirrors 016b's own hint. */
 export function setupHintHTML() {
