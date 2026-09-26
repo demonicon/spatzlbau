@@ -6,8 +6,12 @@ import { esc, fmtTime } from '../ui/dom.js';
 import { OWN } from '../ui/labels.js';
 import { state, ui, byId, anfrageById, fmtDay } from '../state.js';
 import { commentsHTML, nextRunText, anfrageStepsHTML } from '../ui/detail.js';
+import { ladderHTML } from '../ui/ladder.js';
+import { listPanelHTML } from '../pages/listPanel.js';
+import { CHEV } from '../ui/icons.js';
 import {
   CATEGORIES, FIELDS, categoryOf, offersOf, shownOffers, cheapestId, isExpired, fmtPrice, PRICE_KIND,
+  STEPS as AF_STEPS, stepIndex,
 } from '../anfragen.js';
 
 const today = () => {
@@ -47,12 +51,14 @@ function whenText(a) {
 
 /* ---------- list ---------- */
 
+// docs/changes/038 #22: two lines, not a card with a rung ladder underneath - title with the
+// "Ergebnis da" chip above, the segment ladder with its state and the task below.
 function rowHTML(a, selectedId) {
   const t = taskOf(a);
+  const idx = stepIndex(a);
   return `<article class="af-row${a.id === selectedId ? ' selected' : ''}" data-act="anfrage-open" data-ref="${a.id}" tabindex="0" role="button" aria-label="Anfrage öffnen: ${esc(titleOf(a))}">
     <div class="af-row1"><b class="af-title">${esc(titleOf(a))}</b>${a.status === 'ergebnis' && !a.brief?.vergleich?.chosen ? '<span class="own C">Ergebnis da</span>' : ''}</div>
-    <div class="af-row2"><span class="dr-task">${t ? esc(t.title) : 'ohne Aufgabe'} · ${esc(whenText(a))}</span></div>
-    ${anfrageStepsHTML(a)}
+    <div class="af-row2">${ladderHTML(idx + 1, AF_STEPS.length, AF_STEPS[idx][1])}<span class="dr-task">· ${t ? esc(t.title) : 'ohne Aufgabe'}</span></div>
   </article>`;
 }
 
@@ -66,13 +72,27 @@ function newFormHTML() {
   </div>`;
 }
 
+// docs/changes/038 #21: the list is a collapsible section with a section head - "Anfragen · 3 ·
+// 1 Ergebnis", the anlegen "+" and the chevron. #24: the anlegen action stays where it was, top
+// right of the list, and stays secondary.
 function listHTML(selectedId) {
   const all = sortedAnfragen();
   const results = all.filter((a) => a.status === 'ergebnis').length;
-  const head = `Anfragen · ${all.length}${results ? ` · ${results} ${results === 1 ? 'Ergebnis' : 'Ergebnisse'}` : ''}`;
-  return `<div class="fin-h"><h2>${head}</h2><button class="btn-secondary" data-act="anfrage-new" aria-expanded="${!!ui.anfrageNew}">+ Anfrage</button></div>
-    ${newFormHTML()}
-    ${all.length ? all.map((a) => rowHTML(a, selectedId)).join('') : '<p class="empty">Noch keine Anfrage. „+ Anfrage“ stellt Claude einen Vergleich zusammen.</p>'}`;
+  const open = ui.anfragenList !== false;
+  const body = all.length
+    ? all.map((a) => rowHTML(a, selectedId)).join('')
+    : '<p class="empty">Noch keine Anfrage. „+ Anfrage“ stellt Claude einen Vergleich zusammen.</p>';
+  return `<section class="sect">
+    <div class="sect-h">
+      <h2 class="sect-t">Anfragen</h2>
+      <span class="sect-n">${all.length}</span>
+      ${results ? `<span class="sect-note">· ${results} ${results === 1 ? 'Ergebnis' : 'Ergebnisse'}</span>` : ''}
+      <span class="spacer"></span>
+      <button class="ico sect-add" data-act="anfrage-new" aria-expanded="${!!ui.anfrageNew}" aria-label="Anfrage anlegen" title="Anfrage anlegen">+</button>
+      <button class="ico sect-chev${open ? ' up' : ''}" data-act="anfragen-list" aria-expanded="${open}" aria-label="${open ? 'Liste einklappen' : 'Liste ausklappen'}">${CHEV}</button>
+    </div>
+    ${open ? newFormHTML() + body : ''}
+  </section>`;
 }
 
 /* ---------- detail: draft ---------- */
@@ -170,10 +190,14 @@ function cellHTML(o, key, cheap) {
   }
 }
 
+// docs/changes/038 #23: "Wählen" stands in every column, but filled only under the offer Claude
+// recommends - the other columns get the secondary. One primary on the page, and it is the one
+// the page suggests.
 function offerActionsHTML(a, o) {
   const v = a.brief?.vergleich || {};
   if (v.chosen === o.id) return `<span class="vg-chosen-mark">✓ gewählt</span>`;
-  const choose = a.status === 'ergebnis' && !v.chosen ? `<button class="btn-secondary" data-act="offer-choose" data-to="${esc(o.id)}">Wählen</button>` : '';
+  const kind = o.id === v.recommended ? 'btn-primary' : 'btn-secondary';
+  const choose = a.status === 'ergebnis' && !v.chosen ? `<button class="${kind}" data-act="offer-choose" data-to="${esc(o.id)}">Wählen</button>` : '';
   return `${choose}<button class="btn-text quiet" data-act="offer-edit" data-to="${esc(o.id)}">ändern</button>`;
 }
 
@@ -182,7 +206,11 @@ function tableHTML(a, offers, cheap) {
   return `<table class="vg-table">
     <colgroup><col class="c-label">${offers.map(() => '<col>').join('')}</colgroup>
     <thead><tr><th></th>${offers
-      .map((o) => `<th class="${v.chosen === o.id ? 'vg-chosen' : ''}" scope="col">${esc(o.name || 'Angebot')}<span class="vg-by">${esc(byText(o))}</span></th>`)
+      .map(
+        (o) => `<th class="${[v.chosen === o.id ? 'vg-chosen' : '', o.id === v.recommended ? 'vg-reco-col' : ''].filter(Boolean).join(' ')}" scope="col">${esc(o.name || 'Angebot')}<span class="vg-by">${esc(byText(o))}${
+          o.id === v.recommended ? ' · Claude empfiehlt' : ''
+        }</span></th>`,
+      )
       .join('')}</tr></thead>
     <tbody>${ROWS.map(
       ([k, l]) => `<tr><th scope="row">${l}</th>${offers.map((o) => `<td class="${v.chosen === o.id ? 'vg-chosen' : ''}">${cellHTML(o, k, cheap)}</td>`).join('')}</tr>`,
@@ -191,19 +219,30 @@ function tableHTML(a, offers, cheap) {
   </table>`;
 }
 
+// docs/changes/038 #23: on a phone the comparison is transposed - one row per offer with name
+// and price, and only the opened one unfolds the rest and shows "Wählen" (40).
 function cardsHTML(a, offers, cheap) {
   const v = a.brief?.vergleich || {};
   // the recommended offer first on a phone (033); the table keeps Claude's order
   const list = v.recommended ? [...offers.filter((o) => o.id === v.recommended), ...offers.filter((o) => o.id !== v.recommended)] : offers;
-  return list
-    .map(
-      (o) => `<article class="vg-card${v.chosen === o.id ? ' vg-chosen' : ''}">
-      <div class="vg-card-head"><b>${esc(o.name || 'Angebot')}</b><span class="vg-by">${esc(byText(o))}${o.id === v.recommended ? ' · empfohlen' : ''}</span></div>
-      <dl class="vg-dl">${ROWS.map(([k, l]) => `<dt>${l}</dt><dd>${cellHTML(o, k, cheap)}</dd>`).join('')}</dl>
-      <div class="row">${offerActionsHTML(a, o)}</div>
-    </article>`,
-    )
-    .join('');
+  return `<div class="vg-rows">${list
+    .map((o) => {
+      const open = ui.offerOpen === o.id;
+      return `<article class="vg-row${v.chosen === o.id ? ' vg-chosen' : ''}">
+      <button class="vg-row-h" data-act="offer-open" data-to="${esc(o.id)}" aria-expanded="${open}">
+        <span class="vg-row-n"><b>${esc(o.name || 'Angebot')}</b><span class="vg-by">${esc(byText(o))}${o.id === v.recommended ? ' · Claude empfiehlt' : ''}</span></span>
+        <span class="vg-row-p">${o.id === cheap ? `<b>${esc(fmtPrice(o))}</b>` : esc(fmtPrice(o))}</span>
+        <span class="vg-row-c" aria-hidden="true">${open ? '⌃' : '⌄'}</span>
+      </button>
+      ${
+        open
+          ? `<dl class="vg-dl">${ROWS.filter(([k]) => k !== 'price').map(([k, l]) => `<dt>${l}</dt><dd>${cellHTML(o, k, cheap)}</dd>`).join('')}</dl>
+             <div class="row vg-row-a">${offerActionsHTML(a, o)}</div>`
+          : ''
+      }
+    </article>`;
+    })
+    .join('')}</div>`;
 }
 
 function offerEditHTML(a) {
@@ -274,22 +313,20 @@ function detailHTML(a) {
 export function anfragenView() {
   const list = sortedAnfragen();
   const explicit = ui.anfrage ? anfrageById(ui.anfrage) : null;
-  // wide: nothing chosen yet shows the first row - the one that most likely waits for them
+  // #21: nothing chosen yet shows the first row - the one that most likely waits for them
   const shown = ui.wide ? explicit || list[0] || null : explicit;
-  let main;
-  if (ui.wide) {
-    main = `<div class="board af-board"><div class="col-list">${listHTML(shown?.id)}</div>${
-      shown
-        ? `<aside class="panel" id="panel" data-id="${shown.id}" aria-label="Anfrage: ${esc(titleOf(shown))}">${detailHTML(shown)}</aside>`
-        : `<aside class="panel empty" id="panel" aria-label="Anfrage"><p>Noch keine Anfrage – „+ Anfrage“ legt eine an.</p></aside>`
-    }</div>`;
-  } else if (shown) {
-    main = `<div class="board"><div class="col-list" data-id="${shown.id}">
-      <div class="fin-h"><button class="btn-text" data-act="anfrage-close">‹ Anfragen</button></div>
-      ${detailHTML(shown)}
-    </div></div>`;
-  } else {
-    main = `<div class="board"><div class="col-list">${listHTML(null)}</div></div>`;
-  }
-  return main;
+  return listPanelHTML({
+    key: 'anfragen',
+    wide: ui.wide,
+    panelMode: ui.wide,
+    layout: 'wide', // #21: list 320 | detail 1fr - the one exception from Panel 400
+    list: listHTML(shown?.id),
+    panel: shown ? detailHTML(shown) : '',
+    panelId: shown?.id,
+    panelLabel: shown ? 'Anfrage: ' + titleOf(shown) : 'Anfrage',
+    panelEmpty: '<p>Noch keine Anfrage – „+“ legt eine an.</p>',
+    detail: shown ? detailHTML(shown) : '',
+    backLabel: 'Anfragen',
+    backAct: 'anfrage-close',
+  });
 }

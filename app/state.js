@@ -114,7 +114,9 @@ export const doneByOther = (t) =>
   !!state.lastVisitAt && t.done && !!t.done_by && t.done_by !== state.person && t.updated_at > state.lastVisitAt;
 
 const fmtDate = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-const fmtShort = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+// docs/changes/038 #3: the one short date for lists, tables and the timeline - exported since
+// 038, because timeline.js had grown a fourth formatter of its own (038a-matrix.md, Merkmal 12)
+export const fmtShort = (d) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 const fmtWd = (d) => d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
 
 // docs/changes/029b #4: one date format for running text - "Mo 28.12.", year only when it

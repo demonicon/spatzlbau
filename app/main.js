@@ -55,6 +55,7 @@ import { parseAmount, bufferPct, bufferFixed, costsOf, num, eurShort } from './c
 import { OWN } from './ui/labels.js';
 import { icsToken, icsUrl, alarmStagesOf } from './views/finanzen.js';
 import { updateShell, shellVisible } from './shell.js';
+import { paint } from './ui/paint.js';
 
 const UI_KEY = 'spatzlbau-ui';
 const PERSON_KEY = 'spatzlbau-person';
@@ -114,6 +115,7 @@ ui.tlDone = false; // timeline: the ticked-off tasks unfolded at the end (019)
 ui.tlWait = null; // timeline: the row whose "wartet auf n ›" is unfolded (019c)
 ui.icsShow = null; // 'S' | 'A': the calendar address shown as text when copying failed (022)
 ui.col = 'me'; // which of the three columns the phone shows (018 §1), kept per device
+ui.listScroll = 0; // where the list stood when the phone left it for a detail page (038 #8)
 ui.visitOpen = false; // "Seit du zuletzt da warst" unfolded (018 §6)
 ui.openGroups = new Set(); // "<col>:<group>" - time groups opened by hand (018 §2)
 ui.akteEdit = null; // task id whose Akte is in edit mode (017)
@@ -139,6 +141,8 @@ ui.anfrage = null; // the anfrage open on #anfragen (033)
 ui.anfrageNew = false; // the category pills of "+ Anfrage" are open (033)
 ui.anfrageMoney = null; // { id, money } - the price question after "Wählen", until Ja/Nein (033)
 ui.offerEdit = null; // { id, offerId } - an offer being added ('new') or changed (033)
+ui.offerOpen = null; // the offer whose transposed row is unfolded on a phone (038 #23)
+ui.anfragenList = true; // the Anfragen list section, collapsed or not (038 #21)
 
 /* ---------- screens ---------- */
 function show(screen) {
@@ -182,7 +186,7 @@ onStatus(renderStatus);
 let renderPending = false;
 function isTyping() {
   const a = document.activeElement;
-  return a && $('#view').contains(a) && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type === 'text'));
+  return a && $('#app').contains(a) && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type === 'text'));
 }
 /** The route the shell marks as active - ui.screen, with the task list as the default. */
 const route = () => (['finanzen', 'entscheidungen', 'anfragen'].includes(ui.screen) ? ui.screen : 'dashboard');
@@ -209,19 +213,27 @@ function render() {
   // shell steps aside for it instead of framing it.
   shellVisible(!showSetup);
   if (!showSetup) updateShell(route());
-  $('#view').innerHTML = showSetup
-    ? startSetupHTML()
-    : ui.screen === 'finanzen'
-      ? finanzenView()
-      : ui.screen === 'entscheidungen'
-        ? entscheidungenView()
-        : ui.screen === 'anfragen'
-          ? anfragenView()
-          : dashboardView();
-  // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set via CSSOM
-  for (const el of $('#view').querySelectorAll('.bar i[data-pct]')) el.style.width = el.dataset.pct + '%';
+  paint(
+    showSetup
+      ? startSetupHTML()
+      : ui.screen === 'finanzen'
+        ? finanzenView()
+        : ui.screen === 'entscheidungen'
+          ? entscheidungenView()
+          : ui.screen === 'anfragen'
+            ? anfragenView()
+            : dashboardView(),
+  );
+  // CSP forbids style attributes (docs/changes/008): the gate fill is the one dynamic style, set
+  // via CSSOM. 038: only when it changed - a write that changes nothing is still a mutation.
+  for (const el of $('#view').querySelectorAll('.bar i[data-pct]')) {
+    const w = el.dataset.pct + '%';
+    if (el.style.width !== w) el.style.width = w;
+  }
   // docs/changes/021: a segment is as wide as its share of all tasks, at least 44 px
-  for (const el of $('#view').querySelectorAll('.pstrip [data-share]')) el.style.flexGrow = el.dataset.share;
+  for (const el of $('#view').querySelectorAll('.pstrip [data-share]')) {
+    if (el.style.flexGrow !== el.dataset.share) el.style.flexGrow = el.dataset.share;
+  }
   restoreFocus(focusKey);
   renderStatus('idle');
 }
@@ -423,7 +435,7 @@ async function finSetupSaveCost(seedKey, label, amountRaw, extra) {
    so remember which control had focus and give it back afterwards ---------- */
 const FOCUS_ATTRS = ['data-act', 'data-filter', 'data-phase', 'data-field', 'data-input', 'data-brief', 'data-adv', 'data-ref', 'data-anfrage-field', 'data-anfrage-task', 'role'];
 function keyOf(el) {
-  if (!el || el === document.body || !$('#view')?.contains(el)) return null;
+  if (!el || el === document.body || !$('#app')?.contains(el)) return null;
   // typing in a field triggers renders (the search does it on every character), so the cursor
   // position travels with the focus – otherwise it would jump to the end mid-word
   let at = null;
@@ -440,8 +452,8 @@ function keyOf(el) {
 }
 function restoreFocus(key) {
   if (!key) return;
-  const root = key.scope ? $(`#view [data-id="${CSS.escape(key.scope)}"]`) : $('#view');
-  const el = (root && root.querySelector(key.sel)) || $('#view').querySelector(key.sel);
+  const root = key.scope ? $(`#app [data-id="${CSS.escape(key.scope)}"]`) : $('#app');
+  const el = (root && root.querySelector(key.sel)) || $('#app').querySelector(key.sel);
   if (!el) return;
   el.focus({ preventScroll: true });
   if (key.at) {
@@ -573,6 +585,10 @@ function setExpanded(id) {
       saveUI();
     }
   }
+  // docs/changes/038 #8: the phone leaves the list for a detail page, so opening is a history
+  // step and the list gets its scroll position back when the person comes back
+  const leavingList = !ui.wide && id && !prev;
+  if (leavingList) ui.listScroll = window.scrollY;
   ui.expanded = id;
   ui.confirm = null;
   ui.akteEdit = null;
@@ -590,8 +606,19 @@ function setExpanded(id) {
   ui.costAdd = null;
   ui.costNewMore = false;
   ui.costQuick = null;
+  if (leavingList) {
+    history.pushState(null, '', location.pathname + location.search + '#task=' + encodeURIComponent(id));
+    render();
+    window.scrollTo({ top: 0 });
+    return;
+  }
   syncHash();
   render();
+  // coming back from the detail page: the list stands where it was left (#8)
+  if (!id && prev && !ui.wide) {
+    window.scrollTo({ top: ui.listScroll || 0 });
+    ui.listScroll = 0;
+  }
   // closing gives the keyboard focus back to the task's title in the list
   if (!id && prev) $(`#view .task[data-id="${CSS.escape(prev)}"] .t`)?.focus({ preventScroll: true });
 }
@@ -666,6 +693,7 @@ async function newIcsToken() {
 const OFFLINE_OK = new Set([
   'open', 'panel-close', 'filter-clear', 'changelog', 'changelog-close', 'reload', 'logout',
   'col-toggle', 'col-all', 'col-done', 'col-blocked', 'goto', 'col-person', 'visit-toggle', 'group-open',
+  'task-filter',
   'view-switch', 'tl-owner', 'tl-done', 'tl-today', 'tl-wait',
   'brief-read', 'adv-open', 'akte-cancel', 'akte-discard',
   'print', 'print-close', 'print-now',
@@ -675,11 +703,14 @@ const OFFLINE_OK = new Set([
   'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
   'entscheidungen-open', 'entscheidungen-close', 'decisions-filter', 'decisions-row-open',
   'anfrage-new', 'anfrage-open', 'anfrage-close', 'offer-edit', 'offer-cancel', 'money-no', 'anfrage-copy',
+  'anfragen-list', 'offer-open',
   'cost-cancel', 'cost-discard', 'fin-setup-back', 'fin-setup-skip', 'fin-setup-resume', 'fin-setup-household',
 ]);
 
 function wireEvents() {
-  const view = $('#view');
+  // docs/changes/038: #app, not #view - the shell (nav, second level, footer, tab bar) lives
+  // outside the content container and its controls have to reach the same switch
+  const view = $('#app');
   view.addEventListener('focusout', () => setTimeout(() => renderPending && !isTyping() && render(), 0));
   document.addEventListener('keydown', (e) => {
     // docs/changes/012: Escape empties the search field and leaves it, "/" jumps into it
@@ -992,6 +1023,14 @@ function wireEvents() {
           ui.filter = null;
           render();
           return;
+        // docs/changes/038 #5: the pills above the list are the filter now - "alle" is no filter
+        case 'task-filter': {
+          const key = b.dataset.to;
+          ui.qPrev = null;
+          ui.filter = key === 'all' || ui.filter === key ? null : FILTERS[key] ? key : null;
+          render();
+          return;
+        }
         case 'changelog':
           if (ui.changelogOpen) closeChangelog();
           else openChangelog(false);
@@ -1134,8 +1173,20 @@ function wireEvents() {
           toast('Erinnerung geschrieben');
           return;
         }
+        // docs/changes/038 #21/#23: the list section folds, and on a phone one offer row unfolds
+        case 'anfragen-list':
+          ui.anfragenList = ui.anfragenList === false;
+          render();
+          return;
+        case 'offer-open':
+          ui.offerOpen = ui.offerOpen === b.dataset.to ? null : b.dataset.to;
+          render();
+          return;
         case 'panel-close':
-          setExpanded(null);
+          // #8: the phone detail page is a history step - leaving it goes back, so the list is
+          // reached the same way by the button and by Browser-Zurück
+          if (!ui.wide && ui.expanded && /^#task=/.test(location.hash)) history.back();
+          else setExpanded(null);
           return;
         case 'unblock':
           if (ui.akteEdit === t.id) {

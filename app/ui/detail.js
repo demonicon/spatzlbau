@@ -221,8 +221,13 @@ function anfrageBlockHTML(t) {
   const step = AF_STEPS[stepIndex(a)][1];
   const small = a.status === 'ergebnis' ? 'Ergebnis da' : step;
   const link = a.status === 'ergebnis' || a.status === 'entschieden' ? 'Ergebnis ansehen ›' : 'Anfrage ansehen ›';
+  // docs/changes/038 #23: die Akte zeigt nur die Kurzfassung und den Weg zur Anfrage - die
+  // Vergleichstabelle braucht die Breite der Anfrage-Seite, ins Panel 400 passt sie nicht
+  const reco = a.brief?.vergleich?.recommendation || '';
+  const short = reco ? (/^claude empfiehlt/i.test(reco) ? reco : 'Claude empfiehlt: ' + reco) : '';
   return `<h3>Anfrage <small>${small}</small></h3>
     ${anfrageStepsHTML(a)}
+    ${short ? `<p class="vg-reco">${esc(short)}</p>` : ''}
     <p class="row"><button class="btn-text" data-act="anfrage-open" data-ref="${a.id}">${link}</button></p>`;
 }
 

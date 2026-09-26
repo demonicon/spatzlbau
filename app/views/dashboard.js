@@ -5,19 +5,19 @@
 import { esc } from '../ui/dom.js';
 import { OWN, STEPS } from '../ui/labels.js';
 import {
-  state, ui, byId, phases, einzug, umzugstag, dueInfo, dueShort, freshComments, doneByOther, claudeStep, fmtDay,
-  allDecisions, ackedBy, isConfirmedDecision, myOpenDecisionsCount, openDecisionsOf,
+  state, ui, byId, phases, einzug, umzugstag, dueInfo, dueShort, doneByOther, claudeStep, fmtDay,
+  allDecisions, ackedBy, isConfirmedDecision, openDecisionsOf,
 } from '../state.js';
-import { FILTERS, matches, count, isBlocked, isLate, isCritical, waitsOnMe, waitsOnYou, hasNews, other } from '../filters.js';
-import { timeGroups, gate, gateInDays } from '../groups.js';
+import { FILTERS, matches, count, isBlocked, isLate, isCritical, other } from '../filters.js';
+import { timeGroups, gate } from '../groups.js';
 import { taskHTML } from '../ui/task.js';
 import { detailHTML } from '../ui/detail.js';
 import { compareVersions } from '../changelog.js';
-import { summary, eurShort } from '../costs.js';
 import { isHit, term } from '../search.js';
 import { printHTML } from './print.js';
 import { timelineHTML, rows as timelineRows } from './timeline.js';
 import { gateHTML } from '../ui/gate.js';
+import { listPanelHTML, filterPillsHTML } from '../pages/listPanel.js';
 
 const CAP = 8; // rows per column before "alle n zeigen"
 // compact figure inside a longer sentence (changeLine, old -> new date) - not the running-text
@@ -158,28 +158,28 @@ const SIGNALS = [
   ['waityou', () => 'du wartest', 'Erinnern'],
 ];
 
-function signalsHTML() {
-  const counts = SIGNALS.map(([key]) => count(key));
-  // docs/changes/030 #3: three zeros are not three empty tiles - one quiet line instead. As soon
-  // as one value is > 0, all three tiles come back at their usual, stable positions.
-  if (counts.every((n) => n === 0)) {
-    return `<p class="kpis-empty">Zwischen euch ist nichts offen.</p>`;
+/** docs/changes/038 #5: the three signal tiles become one row of filter pills. Desktop: alle ·
+    überfällig · fristkritisch · wartet auf dich. Phone: one pill per person instead - they are
+    what the phone filters by (they replace the switch from 018 §1), labelled with the names and
+    not with "Du" (029b). A pill without a count stays away (030 #3). */
+function taskFiltersHTML() {
+  if (!ui.wide) {
+    const cur = currentCol();
+    return filterPillsHTML(
+      allColsForSwitch().map((c) => ({ key: c.key, label: shortName(c), n: c.open.length + c.blocked.length, on: cur === c.key, always: c.key === cur })),
+      { act: 'col-person', label: 'Wessen Aufgaben' },
+    );
   }
-  const tiles = SIGNALS.map(([key, label]) => {
-    const n = count(key);
-    return `<button class="tile sig-tile ${n ? '' : 'zero'}" data-filter="${key}" aria-pressed="${ui.filter === key}">
-      <span class="n"><span>${n}</span></span>
-      <span class="l">${esc(label(n))}</span>
-    </button>`;
-  }).join('');
-  // the four counts from 009 stay reachable, but quietly: they are not what this screen is about
-  const quiet = [['critical', 'fristkritisch'], ['late', 'überfällig'], ['blocked', 'blockiert'], ['claude', 'bei Claude']]
-    .map(([key, label]) => [key, label, count(key)])
-    .filter(([, , n]) => n > 0)
-    .map(([key, label, n]) => `<button class="pill quiet-count" data-filter="${key}" aria-pressed="${ui.filter === key}">${n} ${esc(label)}</button>`)
-    .join('');
-  return `<section class="kpis three" aria-label="Signale">${tiles}</section>
-    ${quiet ? `<div class="quiet-counts">${quiet}</div>` : ''}`;
+  const f = ui.filter;
+  return filterPillsHTML(
+    [
+      { key: 'all', label: 'alle', on: !f, always: true },
+      { key: 'late', label: 'überfällig', n: count('late'), on: f === 'late' },
+      { key: 'critical', label: 'fristkritisch', n: count('critical'), on: f === 'critical' },
+      { key: 'waitme', label: 'wartet auf dich', n: count('waitme'), on: f === 'waitme' },
+    ],
+    { act: 'task-filter', label: 'Aufgaben filtern' },
+  );
 }
 
 /** The last comment of a task, as the quote under a signal row. */
@@ -265,7 +265,8 @@ export function columns() {
   return all.filter((c) => c.key === currentCol());
 }
 
-/** True while the phone shows the switch: then the switch is the column head (018 §1). */
+/** True while the phone filters by person: the pills above say whose column this is, so the
+    column keeps no head of its own (018 §1, pills since 038 #5). */
 export const switchShown = () => currentView() === 'personen' && !ui.wide && !term() && !(ui.filter && FILTERS[ui.filter]);
 
 /** All three columns, whatever the phone is showing - the switch needs every counter. */
@@ -285,24 +286,8 @@ export function currentCol() {
   return ['me', 'B', 'you'].includes(ui.col) ? ui.col : 'me';
 }
 
-/** The switch: three segments with their own counters, phone only. */
-function switchHTML(cols) {
-  const cur = currentCol();
-  return `<div class="pswitch" role="group" aria-label="Wessen Aufgaben">${cols
-    .map((c) => {
-      const open = c.open.length + c.blocked.length;
-      const late = [...c.open, ...c.blocked].filter(isLate).length;
-      const wait = [...c.open, ...c.blocked].filter((t) => waitsOnMe(t, state.person)).length;
-      // the number stands on its own from 600 px on, so the note never repeats it
-      const note = late ? `${late} überfällig` : wait ? `${wait} ${wait === 1 ? 'wartet' : 'warten'}` : `${open} offen`;
-      return `<button class="pill pseg" data-act="col-person" data-to="${c.key}" aria-pressed="${cur === c.key}">
-        <b>${esc(shortName(c))}</b><span class="s">${esc(note)}</span>
-      </button>`;
-    })
-    .join('')}</div>`;
-}
-
-const shortName = (c) => (c.key === 'me' ? 'Du' : c.key === 'B' ? 'Gemeinsam' : c.name);
+// docs/changes/038 #5: die Pillen tragen die Namen, nicht „Du“ (029b)
+const shortName = (c) => (c.key === 'me' ? OWN[state.person] : c.key === 'B' ? 'Gemeinsam' : c.name);
 
 function columnNote(c) {
   const all = [...c.open, ...c.blocked];
@@ -385,46 +370,16 @@ function groupedHTML(c, rows, all) {
     .join('');
 }
 
-/* ---------- "Zwischen euch" (docs/changes/018 §5): the desktop panel without a selection ---------- */
-
-const BETWEEN = [
-  ['waitme', (n) => `${n} ${n === 1 ? 'wartet' : 'warten'} auf dich`, 'Antworten'],
-  ['news', (n) => `${n} ${n === 1 ? 'neuer Kommentar' : 'neue Kommentare'}`, 'Ansehen'],
-  ['waityou', (n) => `${n}× du wartest auf ${OWN[other(state.person)]}`, 'Erinnern'],
-];
-
-// docs/changes/032: the card only appears once at least one decision exists at all. 032b: it now
-// links to the dedicated #entscheidungen page (own nav pill) instead of an embedded panel.
-function decisionsCardHTML() {
-  const all = allDecisions();
-  if (!all.length) return '';
-  const n = myOpenDecisionsCount();
-  return `<section class="between-block">
-    <h3><button class="between-title" data-act="entscheidungen-open">Entscheidungen · ${n}</button></h3>
-  </section>`;
-}
-
-function betweenHTML() {
-  const blocks = BETWEEN.map(([key, label, action]) => {
-    const rows = state.tasks.filter((t) => matches(t, key)).sort(order);
-    if (!rows.length) return '';
-    const t = rows[0];
-    const q = quoteOf(t);
-    return `<section class="between-block">
-      <h3>${esc(label(rows.length))}</h3>
-      <button class="between-title" data-act="open" data-ref="${t.id}">${esc(t.title)}</button>
-      ${q ? `<p class="sigrow-quote">„${esc(q.body.length > 120 ? q.body.slice(0, 120) + ' …' : q.body)}“ <span class="who">${esc(OWN[q.author] || q.author)}</span></p>` : ''}
-      <div class="row">
-        <button class="btn-secondary" data-act="${action === 'Erinnern' ? 'remind' : 'answer'}" data-ref="${t.id}">${action}</button>
-        ${rows.length > 1 ? `<button class="btn-text" data-filter="${key}">alle ${rows.length} zeigen</button>` : ''}
-      </div>
-    </section>`;
-  }).join('') + decisionsCardHTML();
-  if (!blocks) return `<aside class="panel empty" id="panel" aria-label="Akte"><p>Nichts hängt gerade zwischen euch.</p></aside>`;
-  return `<aside class="panel between" id="panel" aria-label="Zwischen euch">
-    <div class="panel-head"><span class="hint">Zwischen euch</span></div>
-    ${blocks}
-  </aside>`;
+/** docs/changes/038 #7: the panel is never empty - without a selection it shows the row that
+    most likely wants something, which is the first one in the list the page is showing. This
+    replaces the "Zwischen euch" block (018 §5): the same three counts now live in the filter
+    pills above the list, and the Akte itself is the more useful thing to look at. */
+function defaultTask() {
+  for (const c of columns()) {
+    const first = c.open[0] || c.blocked[0] || c.done[0];
+    if (first) return first;
+  }
+  return null;
 }
 
 /* ---------- Entscheidungen (docs/changes/032): the list of every decision, newest first ---------- */
@@ -471,7 +426,6 @@ function decisionRowHTML(c, selectedTaskId) {
       <td><p class="dt-text">${esc(c.body)}</p><span class="dr-task">${esc(t.title)}</span></td>
       <td>${decisionStatusHTML(c)}</td>
       <td>${decisionActionHTML(c)}</td>
-      <td></td>
     </tr>`;
   }
   return `<article class="decision-row ${cls}" ${attrs} tabindex="0" role="button" aria-label="Akte öffnen: ${esc(t.title)}">
@@ -504,8 +458,8 @@ export function decisionsListHTML(selectedTaskId) {
     ? `<p class="empty">${empty}</p>`
     : ui.wide
       ? `<table class="dt-table">
-          <colgroup><col class="c-datum"><col class="c-von"><col class="c-entscheidung"><col class="c-amzug"><col class="c-aktion"><col class="c-luft"></colgroup>
-          <thead><tr>${DT_HEAD.map((h) => `<th>${h}</th>`).join('')}<th></th></tr></thead>
+          <colgroup><col class="c-datum"><col class="c-von"><col class="c-entscheidung"><col class="c-amzug"><col class="c-aktion"></colgroup>
+          <thead><tr>${DT_HEAD.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
           <tbody>${rows.map((c) => decisionRowHTML(c, selectedTaskId)).join('')}</tbody>
         </table>`
       : rows.map((c) => decisionRowHTML(c, selectedTaskId)).join('');
@@ -522,25 +476,21 @@ export function entscheidungenView() {
   const all = allDecisions();
   const openCount = all.filter((c) => !isConfirmedDecision(c) && !c.superseded_by).length;
   const confirmedCount = all.filter((c) => isConfirmedDecision(c) && !c.superseded_by).length;
-  const list = `<div class="col-list">
-      <div class="fin-h"><h2>Entscheidungen · ${openCount} offen · ${confirmedCount} bestätigt</h2></div>
-      ${decisionsListHTML(panelTask?.id)}
-    </div>`;
-  const akte = explicitOpen
-    ? `<div class="col-list">
-      <div class="fin-h"><button class="btn-text" data-act="panel-close">‹ Entscheidungen</button></div>
-      ${detailHTML(explicitOpen)}
-    </div>`
-    : '';
-  return (
-    (wide
-      ? `<div class="board mode-panel">${list}${
-          panelTask
-            ? `<aside class="panel" id="panel" data-id="${panelTask.id}" aria-label="Akte: ${esc(panelTask.title)}">${panelHeadHTML(panelTask)}${detailHTML(panelTask)}</aside>`
-            : `<aside class="panel empty" id="panel" aria-label="Akte"><p>Keine Entscheidungen – halte eine im Kommentar einer Aufgabe fest.</p></aside>`
-        }</div>`
-      : `<div class="board">${explicitOpen ? akte : list}</div>`)
-  );
+  const list = `<div class="fin-h"><h2>Entscheidungen · ${openCount} offen · ${confirmedCount} bestätigt</h2></div>
+      ${decisionsListHTML(panelTask?.id)}`;
+  return listPanelHTML({
+    key: 'entscheidungen',
+    wide: ui.wide,
+    panelMode: wide,
+    list,
+    panel: panelTask ? panelHeadHTML(panelTask) + detailHTML(panelTask) : '',
+    panelId: panelTask?.id,
+    panelLabel: panelTask ? 'Akte: ' + panelTask.title : 'Akte',
+    panelEmpty: '<p>Keine Entscheidungen – halte eine im Kommentar einer Aufgabe fest.</p>',
+    detail: explicitOpen ? detailHTML(explicitOpen) : '',
+    backLabel: 'Entscheidungen',
+    backAct: 'panel-close',
+  });
 }
 
 function addBoxHTML(disablePrimary) {
@@ -575,70 +525,65 @@ export function dashboardView() {
         <span class="filter-count">${hits} ${hits === 1 ? 'Aufgabe' : 'Aufgaben'}${ui.phase ? ' in Phase ' + ui.phase : ''}</span>
       </div>`
     : '';
-  // docs/changes/006 + 013 A3: from 1180 px the list and a quiet side panel sit next to each
-  // other; between 900 and 1179 px the list uses the full width and the Akte is an overlay
   const open = ui.expanded ? byId(ui.expanded) : null;
-  // docs/changes/019c: the timeline keeps its list at most 720 px wide and puts the Akte (or
-  // "Zwischen euch") next to it from 900 px on - the overlay step of 013 A3 is skipped there
+  // docs/changes/019c: the timeline keeps the Akte next to it from 900 px on - the overlay step
+  // of 013 A3 is skipped there
   const mode = tl && ui.mode === 'overlay' ? 'panel' : ui.mode;
-  // docs/changes/014e #5: without a selection the Timeline panel used to say "Nichts hängt
-  // gerade zwischen euch" - the first row due at or after today answers that better, and a click
-  // on another row still overrides it (`open` wins whenever something really is selected)
-  const defaultTlTask = () => {
-    if (!tl || open) return null;
+  // docs/changes/014e #5 / 038 #7: without a selection the panel shows the first row of the list
+  // that is showing - for the timeline that is the first row due at or after today
+  const defaultShown = () => {
+    if (!tl) return defaultTask();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const first = timelineRows().find(({ at }) => at >= today);
-    return first ? first.t : null;
+    return first ? first.t : defaultTask();
   };
-  const panelTask = mode === 'panel' ? open || defaultTlTask() : null;
-  // docs/changes/014e #6: with nothing selected and nothing waiting between them, the panel
-  // shows only "Zwischen euch ist nichts offen" - give that width back to the columns instead of
-  // reserving it forever (030's own Abweichung). The Timeline almost always has a default task
-  // (#5) and keeps its panel share regardless.
-  const panelEmpty = mode === 'panel' && !panelTask && !tl && BETWEEN.every(([key]) => !state.tasks.some((t) => matches(t, key)));
+  const panelTask = mode === 'panel' ? open || defaultShown() : null;
   // docs/changes/037 Reviewer-Fund, behoben in 032b #1: "Hinzufügen" wird sekundär, sobald die
   // gezeigte Akte selbst eine offene, auf mich wartende Entscheidung mit primärem "Einverstanden"
   // zeigt - sonst stünden zwei gefüllte Buttons gleichzeitig auf dem Schirm (Regel: einer je Ansicht)
   const akteTask = mode === 'panel' ? panelTask : open;
   const hasPrimaryDecision = !!akteTask && openDecisionsOf(akteTask).some((c) => !isConfirmedDecision(c) && !ackedBy(c, state.person));
-  // docs/changes/029c #3: der Kopf sitzt jetzt ueber dem Grid, nicht mehr in der schmaleren
-  // col-list - genau wie in Finanzen, auf allen drei Ansichten deckungsgleich
-  return (
-    `<div class="board mode-${mode}${tl ? ' v-timeline' : ''}${panelEmpty ? ' panel-empty' : ''}"><div class="col-list">` +
+  const list =
     phaseStripHTML() +
     searchHTML() +
-    (tl ? '' : visitHTML() + signalsHTML()) +
+    (tl ? '' : visitHTML()) +
+    taskFiltersHTML() +
     phaseNoteHTML() +
     filterRow +
     (tl ? timelineHTML() : '') +
     (isSignal && !tl ? signalListHTML(filter) : '') +
     (isSignal || tl
       ? ''
-      : (switchShown() ? switchHTML(allColsForSwitch()) : '') +
-        (q && !cols.length ? `<p class="empty no-hits">Kein Treffer für „${esc(q)}“ – auch nicht in den Teilschritten.</p>` : `<div class="cols${currentView() === 'phasen' ? ' cols-phasen' : ''}">${cols.map(columnHTML).join('')}</div>`)) +
-    addBoxHTML(hasPrimaryDecision) +
-    `</div>` +
-    (mode === 'panel' ? panelHTML(panelTask) : '') +
-    `</div>` +
-    (mode === 'overlay' ? overlayHTML(open) : '') +
-    (ui.gate !== null && ui.gate !== undefined ? gateHTML(ui.gate) : '') +
-    (ui.printOpen ? printHTML() : '') +
-    (ui.changelogOpen ? changelogHTML() : '')
-  );
+      : q && !cols.length
+        ? `<p class="empty no-hits">Kein Treffer für „${esc(q)}“ – auch nicht in den Teilschritten.</p>`
+        : `<div class="cols${currentView() === 'phasen' ? ' cols-phasen' : ''}">${cols.map(columnHTML).join('')}</div>`) +
+    addBoxHTML(hasPrimaryDecision);
+  return listPanelHTML({
+    key: 'aufgaben',
+    wide: ui.wide,
+    panelMode: mode === 'panel',
+    list,
+    panel: panelTask ? panelHeadHTML(panelTask) + detailHTML(panelTask) : '',
+    panelId: panelTask?.id,
+    panelLabel: panelTask ? 'Akte: ' + panelTask.title : 'Akte',
+    panelEmpty: '<p>Noch keine Aufgabe – über „Hinzufügen“ entsteht die erste.</p>',
+    detail: open ? detailHTML(open) : '',
+    backLabel: 'Aufgaben',
+    backAct: 'panel-close',
+    after:
+      (mode === 'overlay' ? overlayHTML(open) : '') +
+      (ui.gate !== null && ui.gate !== undefined ? gateHTML(ui.gate) : '') +
+      (ui.printOpen ? printHTML() : '') +
+      (ui.changelogOpen ? changelogHTML() : ''),
+  });
 }
 
-function panelHTML(t) {
-  if (!t) return betweenHTML(); // docs/changes/018 §5: no selection = "Zwischen euch"
-  return `<aside class="panel" id="panel" data-id="${t.id}" aria-label="Akte: ${esc(t.title)}">
-    ${panelHeadHTML(t)}
-    ${detailHTML(t)}
-  </aside>`;
-}
-
-function panelHeadHTML(t) {
+function panelHeadHTML(t, closable = false) {
   const ph = phases().find((p) => p.id === t.phase);
-  return `<div class="panel-head"><span class="hint">Phase ${t.phase}${ph ? ' · ' + esc(ph.name) : ''}</span><span class="spacer"></span><button class="ico" data-act="panel-close" aria-label="Akte schließen">×</button></div>`;
+  return `<div class="panel-head"><span class="hint">Phase ${t.phase}${ph ? ' · ' + esc(ph.name) : ''}</span><span class="spacer"></span>${
+    closable ? `<button class="ico" data-act="panel-close" aria-label="Akte schließen">×</button>` : ''
+  }</div>`;
 }
 
 /* docs/changes/013 A3: between 900 and 1179 px there is no room for a quiet panel next to the
@@ -647,7 +592,7 @@ function overlayHTML(t) {
   if (!t) return '';
   return `<div class="overlay" data-act="overlay-close">
     <aside class="sheet" id="panel" data-id="${t.id}" role="dialog" aria-modal="true" aria-label="Akte: ${esc(t.title)}">
-      ${panelHeadHTML(t)}
+      ${panelHeadHTML(t, true)}
       ${detailHTML(t)}
     </aside>
   </div>`;

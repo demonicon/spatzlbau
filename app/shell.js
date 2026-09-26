@@ -77,6 +77,12 @@ function segmentHTML(active) {
 /** True while this route shows a second level - the content gets its top padding from it. */
 export const hasSegment = (active) => !!SEGMENTS[active];
 
+/** docs/changes/038 #8: on a phone the detail is a page of its own. It replaces the head with
+    "‹ <Liste>" (the page type draws that bar), so head and second level step aside; the tab bar
+    stays where it is. */
+const phoneDetail = (active) =>
+  !ui.wide && (active === 'anfragen' ? !!ui.anfrage : (active === 'dashboard' || active === 'entscheidungen') && !!ui.expanded);
+
 /* ---------- mount ---------- */
 
 let mounted = false;
@@ -139,6 +145,11 @@ export function updateShell(active) {
   slot('shell-date', ui.dateEdit || !einzug() ? `<div class="date-edit"><label class="hint" for="einzug">Einzugstermin</label><input type="date" id="einzug" value="${esc(einzug() || '')}"></div>` : '');
   // Finanzen carries the status line in its footer (016c), the other routes the two actions
   slot('shell-foot', footHTML({ status: active === 'finanzen' }));
+  const detail = phoneDetail(active);
+  for (const id of ['shell-head', 'shell-sub', 'shell-date']) {
+    const part = $('#' + id);
+    if (part) part.hidden = detail;
+  }
   document.body.classList.toggle('route-' + active, true);
   for (const r of ROUTES) if (r.key !== active) document.body.classList.remove('route-' + r.key);
 }
