@@ -202,7 +202,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; text-align: l
    die Karte in der rechten Leiste braucht) waere dort die zweite. Die Zeile selbst bleibt: in
    ihr steht "Bearbeiten" (Reviewer-Fund 9 und die Regression daraus). */
 .db-sect .fin-h > h2 { display: none; }
-.db-sect .fin-h { border: 0; padding-top: 0; justify-content: flex-end; }
+.db-sect .fin-h { border: 0; min-height: 0; padding: 0; justify-content: flex-end; }
 .fin-months tr.now { background: var(--bg); font-weight: 600; }
 .fin-months td.back { color: var(--ok); }
 @media (min-width: 900px) {
