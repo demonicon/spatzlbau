@@ -117,13 +117,19 @@ Signal-Kacheln, die Personen-Umschaltung, das `fin-grid` und die Aufschlüsselun
 | 2 – Liste + Panel, erste Zeile vorgewählt | **grün** – Aufgaben 400 px, Entscheidungen 400 px, beide mit gefülltem Panel; Anfragen 942 px (Detail 1fr, festgelegte Ausnahme #21) |
 | 3 – Finanzen: Kacheln filtern, Sektionen klappen | **grün** – Posten 18 → 2 → 18, Filter-Pille im Sektionskopf, „Monat für Monat" zu → offen |
 | 4 – 380: Tab-Leiste, Detailseite, Zurück | **grün** – 4 Tabs auf allen vier Routen, Detailseite mit „‹ Aufgaben", Browser-Zurück landet auf der Liste, Scroll 300 → 300. **Das Badge an „Entscheidungen" war nicht zu sehen, weil für das Testkonto gerade 0 Entscheidungen offen sind** – mit simulierter offener Entscheidung erscheint es (lokal geprüft) |
-| 5 – Realtime, Mutationen ≤ 3 | **nicht ausgeführt** – braucht einen echten Kommentar von Person A in der Live-Datenbank (angesagt, wartet auf Sebastians Freigabe) und das Konto A. Lokal mit simuliertem Zustand gemessen: **2 Mutationen** (betroffene Zeile + „Seit du zuletzt da warst"), Kopf 0 |
+| 5 – Realtime, Mutationen ≤ 3 | **grün** (26.09., von Sebastian freigegeben) – Anna schreibt einen Kommentar an „Keller ausmisten", bei Sebastian kommt er an, **2 Mutationen** im Inhalt (beide `childList`), **0** im Kopf |
 | 6 – Messwerte, Konsole | **grün** – Konsole leer auf sechs Routen; Routenwechsel `#aufgaben` 10 ms, `#finanzen` 32 ms |
-| 7 – zweite Person | **nicht getestet – Testkonto A meldet sich nicht an** („E-Mail oder Passwort stimmt nicht"). `TEST_EMAIL_A`/`TEST_PW_A` stehen in `.env`, das Konto ist in Supabase offenbar nicht (mehr) gültig – dasselbe Muster wie bei Konto S in 038a |
-| 8 – Primär je Seite | **grün** – Finanzen genau ein `.btn-primary` („+ Posten"), Ausgleich keiner; Aufgaben, Entscheidungen und Anfragen keinen in der Liste (siehe offener Punkt unten) |
+| 7 – zweite Person | **grün** (26.09., nachdem Sebastian das Konto geprüft hat) – zweiter Kontext, Avatar A, 47 Zeilen, Panel 400, vier Tabs, Konsole leer |
+| 8 – Primär je Seite (neue Fassung Sebastian 26.09.) | **grün** – Finanzen genau ein `.btn-primary` („+ Posten"), Ausgleich keiner; Liste+Panel höchstens einer und nur im Panel, „Hinzufügen" sekundär |
 
-Kein Schreibzugriff im ganzen Lauf: nur Anmeldung als Person S gegen den Vorschau-Pfad, dort
-schreibt die App den Lesestand nicht. Nichts aufzuräumen.
+**Änderungen am Nutzerstand in diesem Lauf** (`rules/tests.md`): genau eine – der Kommentar für
+Test 5. Angelegt als Person A mit dem Marker `Testkommentar 038 1790414154346`, `decision` false
+(der Trigger `comments_before_write` fasst deshalb keine andere Zeile an), im selben Lauf
+gelöscht. **Nachweis vom Server**, nicht aus dem lokalen Zustand:
+`select id, body, author, created_at from comments where body = 'Testkommentar 038 1790414154346'`
+→ **0 Zeilen**. Sonst nur Anmeldungen als S und A gegen den Vorschau-Pfad; dort schreibt die App
+`last_seen_version`, `last_visit_at`, `seen_comments` und `markGateSeen` nicht (vier
+`ui.preview`-Guards in `app/state.js:301,321,343,352`). Nichts bleibt stehen.
 
 ## Offen für Sebastian
 
