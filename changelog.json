@@ -1,6 +1,17 @@
 {
   "entries": [
     {
+      "version": "2.3.2",
+      "release": "2.3",
+      "date": "2026-09-26",
+      "title": "Der Hinweis auf neue Kommentare war verschwunden – jetzt wieder da.",
+      "new": [],
+      "improved": [],
+      "fixed": [
+        "Die Zahl am Tab „Aufgaben“ für neue Kommentare, der Filter „neu“ und „Seit deinem letzten Besuch“ zeigten seit den Testkonten nichts mehr an – behoben."
+      ]
+    },
+    {
       "version": "2.3.1",
       "release": "2.3",
       "date": "2026-09-26",
