@@ -2,10 +2,10 @@
 // else: what does the move cost us, what is next to pay, who owes whom. No charts, no new money
 // colours - yellow stays the deadline, red stays overdue.
 import { esc } from '../ui/dom.js';
+import { dashboardPageHTML, answerHTML, tilesHTML, sectionHTML } from '../pages/dashboard.js';
 import { OWN, PAID_BY } from '../ui/labels.js';
-import { state, ui, byId, einzug, umzugstag } from '../state.js';
+import { state, ui, byId, einzug, umzugstag, fmtShort } from '../state.js';
 import { costHTML, costNewHTML, ladderHTML } from '../ui/detail.js';
-import { updateBarHTML, footHTML, setupHintHTML, renderHeader } from '../ui/chrome.js';
 import { SUPABASE_URL } from '../config.js';
 import {
   summary, balance, balanceParts, cashflow, peakMonth, moveOutMissing, bufferInfo, bufferPct, bufferFixed,
@@ -14,7 +14,8 @@ import {
 } from '../costs.js';
 
 const money = (v) => (v === null || v === undefined ? '–' : eur(v));
-const fmtDay = (iso) => (iso ? new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '');
+// docs/changes/038 #3/#17: dieselbe Kurzform wie in den Aufgabenlisten, kein eigener Formatierer
+const fmtDay = (iso) => (iso ? fmtShort(new Date(iso + 'T00:00:00')) : '');
 const head = (title, extra = '') => `<div class="fin-h"><h2>${title}${extra ? ` <span class="fin-h-note">${extra}</span>` : ''}</h2>`;
 
 /* ---------- 0. Ersteinrichtung: vier Fragen (docs/changes/016b) ----------
@@ -164,24 +165,70 @@ export function breakdown() {
   return rows;
 }
 
-function answerHTML() {
-  const s = summary();
-  const rows = breakdown()
-    .map(
-      (r) => `<button class="fin-break-row ${r.quiet ? 'paid-row' : ''}" data-act="fin-filter" data-to="${r.key}" aria-pressed="${ui.finFilter === r.key}">
-        <span class="l">${r.label} <span class="s">${esc(r.sub)}</span></span>
-        <span class="v">${r.value === null || r.value === undefined ? '–' : signed(r.value, r.key === 'double')}</span>
-        <span class="arr" aria-hidden="true">›</span>
-      </button>`,
-    )
+/** docs/changes/038 E9: der Rechenweg als ein Satz unter der Zahl - dieselben Zeilen wie die
+    Kacheln, nur als Text ("10.122 € Posten inkl. Puffer − 4.950 € Rückflüsse + 0 € Doppelmiete"). */
+function calcLine() {
+  const parts = breakdown()
+    .filter((r) => !r.quiet && r.value !== null && r.value !== undefined)
+    .map((r, i) => {
+      const v = r.value;
+      const sign = i === 0 ? '' : v < 0 ? '− ' : '+ ';
+      return `${sign}${eurShort(Math.abs(v))} ${r.label}${r.key === 'planned' ? ' inkl. Puffer' : ''}`;
+    });
+  return esc(parts.join(' '));
+}
+
+/** docs/changes/038 E9: die Mini-Balken "Monat für Monat" als eigene Karte neben der Zahl. Acht
+    Monate, bezahlt in Tinte, geplant in --line, Rückflüsse nach unten in Grün. Ein Tipp öffnet
+    die Sektion. Höhen kommen per CSSOM (data-h), weil CSP keine style-Attribute erlaubt (008). */
+function miniBarsHTML() {
+  const rows = cashflow().slice(0, 8);
+  if (!rows.length) return '';
+  const peak = peakMonth(rows);
+  const top = Math.max(1, ...rows.map((r) => Math.abs(r.total)));
+  const bars = rows
+    .map((r) => {
+      const up = r.total > 0 ? Math.max(2, Math.round((r.total / top) * 60)) : 0;
+      const paid = r.total > 0 ? Math.round((Math.min(r.paid, r.total) / top) * 60) : 0;
+      const down = r.total < 0 ? Math.round((-r.total / top) * 44) : 0;
+      return `<span class="mb-c" title="${esc(monthLabel(r.key))}: ${esc(fig(r.total))} €">
+        <span class="mb-up"><span class="mb-plan" data-h="${up}"><span class="mb-paid" data-h="${paid}"></span></span></span>
+        <span class="mb-dn"><span class="mb-back" data-h="${down}"></span></span>
+        <span class="mb-m${peak && r.key === peak.key ? ' peak' : ''}">${esc(MONTHS[Number(r.key.split('-')[1]) - 1])}</span>
+      </span>`;
+    })
     .join('');
-  return `<section class="fin-answer">
-    <div class="fin-hero">
-      <div class="fin-eyebrow">Der Umzug kostet euch</div>
-      <div class="fin-number"><span class="n">${s.net === null ? '–' : eurShort(s.net)}</span><span class="u">netto</span></div>
-    </div>
-    <div class="fin-break">${rows}</div>
-  </section>`;
+  return `<button class="db-mini" data-act="db-section" data-to="monate" data-open="1" aria-label="Monat für Monat öffnen">
+    <span class="db-mini-h"><span class="db-a-label">Monat für Monat</span><span class="db-mini-max">${peak ? `max ${esc(eurShort(peak.total))} · ${esc(MONTHS[Number(peak.key.split('-')[1]) - 1])}` : ''}</span></span>
+    <span class="db-mini-b">${bars}</span>
+    <span class="db-mini-l"><span><i class="k-paid"></i>bezahlt</span><span><i class="k-plan"></i>geplant</span><span><i class="k-back"></i>Rückfluss</span></span>
+  </button>`;
+}
+
+/** docs/changes/038 #12 + E8: die Aufschlüsselungs-Zeilen werden Kacheln, und die Kachel ist der
+    Filter der Posten-Sektion. Gutschriften (Rückflüsse) tragen als einzige Grün - Rot bleibt
+    überfällig vorbehalten (rules/design.md). */
+function finTilesHTML() {
+  return tilesHTML(
+    breakdown().map((r) => ({
+      key: r.key,
+      label: r.label + (r.sub ? ' · ' + r.sub : ''),
+      value: r.value === null || r.value === undefined ? '–' : signed(r.value, r.key === 'double'),
+      // E8: der Zusatz sagt die Anzahl - oder, wenn diese Kachel gerade filtert, was sie tut
+      note: ui.finFilter === r.key ? '✓ filtert Posten' : countOf(r.key),
+      tone: r.key === 'refunds' ? 'ok' : '',
+      on: ui.finFilter === r.key,
+    })),
+    { act: 'fin-filter', label: 'Kennzahlen, zugleich Filter der Posten' },
+  );
+}
+
+/** Wie viele Posten hinter einer Kachel stehen - der Zusatz in der dritten Zeile (E8). */
+function countOf(key) {
+  const test = { planned: (c) => c.kind !== 'rueckfluss' && c.status !== 'bezahlt', paid: (c) => c.status === 'bezahlt', refunds: (c) => c.kind === 'rueckfluss' }[key];
+  if (!test) return '';
+  const n = state.costs.filter((c) => c.kind !== 'ausgleich' && test(c)).length;
+  return n ? `${n} Posten` : '';
 }
 
 /* ---------- 2. who owes whom, with one action behind it (F3) ---------- */
@@ -216,8 +263,10 @@ function balanceHTML() {
   const mine = ME() === 'S' ? p.paidS : p.paidA;
   const theirs = ME() === 'S' ? p.paidA : p.paidS;
   const owed = Math.abs(balance());
-  // 014 #4: one primary per view - while a post is being edited its "Fertig" is the primary
-  const balBtn = ui.costEdit ? 'btn-secondary' : 'btn-primary';
+  // docs/changes/038 #13/E12: der Primär lebt jetzt im Sektionskopf ("+ Posten"). Die
+  // Ausgleich-Karte behält die Funktion, aber als leiser Link - der Export zeigt hier noch den
+  // Primär, Sebastians Entscheidung vom 25.09. geht vor (E12).
+  const balBtn = 'btn-secondary';
   const form = ui.balPay
     ? `<div class="cost-form">
         <div class="row">
@@ -230,7 +279,7 @@ function balanceHTML() {
         </div>
       </div>`
     : `<div class="row fin-bal-actions">
-        <button class="${balBtn}" data-act="bal-pay">Überweisung erfassen</button>
+        <button class="btn-text fin-link" data-act="bal-pay">Überweisung erfassen ›</button>
         <button class="btn-text fin-bal-how" data-act="bal-how" aria-expanded="${!!ui.balHow}">Wie gerechnet?</button>
       </div>`;
   const how = ui.balHow
@@ -301,7 +350,11 @@ function payRowHTML(c) {
 function nextPayHTML() {
   const { late, next } = nextPayments();
   const rows = [...late, ...next];
-  return `${head('Als Nächstes zahlen', late.length ? `· ${late.length} überfällig` : '· nichts überfällig')}</div>
+  // docs/changes/038 E7: derselbe Kopf auf --bg wie ein Sektionskopf, aber ohne Chevron - diese
+  // Liste klappt nicht zu, sie ist die Frage, mit der die Seite anfängt
+  return `<div class="sect-h sect-h-plain"><span class="db-a-label">Als Nächstes zahlen</span><span class="sect-note">${
+    late.length ? `· ${late.length} überfällig` : '· nichts überfällig'
+  }</span></div>
     ${rows.length ? rows.map(payRowHTML).join('') : '<p class="empty">Nichts offen.</p>'}`;
 }
 
@@ -311,18 +364,21 @@ function monthsHTML() {
   const rows = cashflow();
   const peak = peakMonth(rows);
   const missing = moveOutMissing();
-  return `${head('Monat für Monat')}</div>
-    <div class="fin-table-wrap"><table class="fin-table fin-months">
+  const now = new Date();
+  const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  // docs/changes/038 E11: Monat · Posten · davon bezahlt · Doppelmiete · gesamt; der laufende
+  // Monat fett auf --bg, Rückflüsse (negative Summen) grün
+  return `<div class="fin-table-wrap"><table class="fin-table fin-months">
       <thead><tr><th>Monat</th><th>Posten</th><th class="paidcol">davon bezahlt</th><th>Doppelmiete</th><th>gesamt</th></tr></thead>
       <tbody>
         ${rows
           .map(
-            (r) => `<tr class="${peak && r.key === peak.key ? 'peak' : ''}">
+            (r) => `<tr class="${[peak && r.key === peak.key ? 'peak' : '', r.key === cur ? 'now' : ''].filter(Boolean).join(' ')}">
               <th scope="row">${esc(monthLabel(r.key))}</th>
               <td>${fig(r.due)}</td>
               <td class="paidcol calc">${fig(r.paid)}</td>
               <td class="calc">${fig(r.rent)}</td>
-              <td>${fig(r.total)}</td>
+              <td class="${r.total < 0 ? 'back' : ''}">${fig(r.total)}</td>
             </tr>`,
           )
           .join('')}
@@ -491,31 +547,18 @@ function postLineHTML(c) {
   </div>`;
 }
 
-function postsHTML() {
-  // a transfer between the two ("ausgleich") settles the balance - it is no post (016c)
-  const all = state.costs.filter((c) => c.kind !== 'ausgleich' && (isCounted(c) || c.status === 'bezahlt' || c.status === 'angebot'));
-  const key = ui.postFilter && POST_FILTERS[ui.postFilter] ? ui.postFilter : 'alle';
-  // a tap on a derivation row narrows this list, too (Kennzahl = Filter)
-  const fromBreak = { planned: 'offen', paid: 'bezahlt', refunds: 'rueckfluss' }[ui.finFilter];
-  const active = fromBreak || key;
+/** Die Posten-Sektion (#12, #13): die eigenen Pillen entfallen - gefiltert wird über die
+    Kacheln, und der aktive Filter steht als Pille im Sektionskopf. */
+function postsBodyHTML() {
+  const all = postRows();
+  const active = activePostFilter();
   const rows = all.filter(POST_FILTERS[active].test).sort(postOrder);
-  const pills = Object.entries(POST_FILTERS)
-    .map(([k, f]) => `<button class="pill" data-act="post-filter" data-to="${k}" aria-pressed="${active === k}">${f.label} ${all.filter(f.test).length}</button>`)
-    .join('');
   const open = ui.postOpen || ui.wide || active !== 'alle';
   const openCount = all.filter(POST_FILTERS.offen.test).length;
-  const filterRow = ui.finFilter
-    ? `<div class="filter-row">
-        <button class="pill on filter-chip" data-act="fin-filter-clear" aria-label="Filter entfernen">Filter: ${esc(breakdown().find((r) => r.key === ui.finFilter)?.label || ui.finFilter)}<span class="x" aria-hidden="true">×</span></button>
-      </div>`
-    : '';
-  // docs/changes/029c #8 (Fassung 24.09. 11:07): feste Prozentbreiten statt "width: 1%" - das
-  // liess die schmalen Spalten kollabieren. Die Aktionsspalte bleibt jetzt immer da (auch leer),
-  // damit die Spalten nicht springen, sobald der Filter auf eine andere Auswahl wechselt.
   const list = !open
     ? `<button class="fin-more" data-act="post-open" data-to="offen">${openCount} offene Posten zeigen →</button>`
     : !rows.length
-      ? '<p class="empty">Keine Zeile in dieser Auswahl.</p>'
+      ? `<div class="db-empty"><p>Keine Posten in dieser Auswahl.</p>${ui.finFilter ? `<button class="btn-text" data-act="fin-filter-clear">Filter aufheben</button>` : ''}</div>`
       : ui.wide
         ? `<table class="fin-posts-table">
             <colgroup><col class="c-posten"><col class="c-stand"><col class="c-faellig"><col class="c-zahlt"><col class="c-betrag"><col class="c-aktion"></colgroup>
@@ -523,14 +566,19 @@ function postsHTML() {
             <tbody>${rows.map(postRowHTML).join('')}</tbody>
           </table>`
         : `<div class="fin-posts">${rows.map(postLineHTML).join('')}</div>`;
-  return `<div class="fin-ph">
-      <div class="fin-h"><h2>Alle Posten <span class="fin-h-note">${all.length}<span class="sort-inline"> · nach Fälligkeit</span></span></h2><span class="sort-right">nach Fälligkeit</span></div>
-      <div class="fin-pills">${pills}</div>
-    </div>
-    ${filterRow}
-    ${list}
-    ${bufferFootHTML()}
-    ${ui.finPostAdd ? costNewHTML(null) : `<button class="btn-text row fin-add" data-act="fin-post-add">+ Posten</button>`}`;
+  return `${list}${bufferFootHTML()}${ui.finPostAdd ? costNewHTML(null) : ''}`;
+}
+
+/** Every row the Posten section is about - a transfer between the two settles the balance and
+    is no post (016c). */
+function postRows() {
+  return state.costs.filter((c) => c.kind !== 'ausgleich' && (isCounted(c) || c.status === 'bezahlt' || c.status === 'angebot'));
+}
+
+/** Welcher Filter gerade gilt: die angetippte Kachel schlägt die alte Pillen-Auswahl (#12). */
+function activePostFilter() {
+  const key = ui.postFilter && POST_FILTERS[ui.postFilter] ? ui.postFilter : 'alle';
+  return { planned: 'offen', paid: 'bezahlt', refunds: 'rueckfluss' }[ui.finFilter] || key;
 }
 
 /* ---------- 7. the frame data, read first (§8) ---------- */
@@ -705,41 +753,79 @@ function rahmenHTML() {
               ([key, label, kind]) => `<label class="lbl">${label}<input type="${kind === 'date' ? 'date' : 'text'}" ${kind === 'num' ? 'inputmode="decimal"' : ''} data-setting="${key}" value="${esc(state.settings[key] ?? '')}"></label>`,
             ).join('')}
           </div>
-          ${bufferSettingHTML()}
-          ${alarmStagesHTML()}`
+          ${bufferSettingHTML()}`
         : ''
     }
     ${icsHTML()}
+    ${/* docs/changes/038 #16: Kalender-Abo und Erinnerungen sind Zeilen der Rahmendaten, nicht
+          etwas, das erst im Änderungsmodus auftaucht - der Erinnerungen-Block aus Skizze 8a
+          wandert damit hierher (8a: "nur Darstellung wandert", die Stufen kommen aus 022c) */ ''}
+    ${alarmStagesHTML()}
   </section>`;
 }
 
-/* docs/changes/029b #2: die Kopfzeile kommt jetzt aus chrome.js (renderHeader), geteilt mit Aufgaben */
+/* docs/changes/038 Zeile 1: Kopfzeile, Fusszeile und Update-Leiste kommen aus app/shell.js -
+   diese Ansicht liefert nur noch ihren Inhalt. */
 
 export function finanzenView() {
   // docs/changes/016b: without settings.fin_setup_done, Finanzen opens to the four questions
   // instead of an empty view - "Später" leaves it empty with a way back in
-  if (!state.settings.fin_setup_done && !ui.finSetupSkip) return updateBarHTML() + setupHTML();
+  if (!state.settings.fin_setup_done && !ui.finSetupSkip) return setupHTML();
   const setupHint = !state.settings.fin_setup_done
     ? `<p class="fin-setup-hint"><button class="btn-text" data-act="fin-setup-resume">Einrichtung abschließen ›</button></p>`
     : '';
+  const s = summary();
+  const all = postRows();
+  const paidCount = all.filter((c) => c.status === 'bezahlt').length;
+  const active = activePostFilter();
+  // die Pille im Sektionskopf zeigt jeden gesetzten Filter - auch den, den "N offene Posten
+  // zeigen" am Handy setzt; sonst gäbe es keinen Weg zurück auf alle (Reviewer-Fund 6)
+  const filterLabel = ui.finFilter
+    ? breakdown().find((r) => r.key === ui.finFilter)?.label
+    : active !== 'alle'
+      ? POST_FILTERS[active].label
+      : '';
+  const open = (key, dflt) => (ui.finSections[key] === undefined ? dflt : ui.finSections[key]);
+  // #13: "+ Posten" ist der Primär dieser Sektion - und auf Finanzen der einzige der Seite,
+  // solange die Verträge-Sektion (031) noch nicht da ist (Test 8).
+  const sections =
+    sectionHTML({
+      key: 'posten',
+      title: 'Posten',
+      count: all.length,
+      progress: all.length ? { pct: Math.round((paidCount / all.length) * 100), text: `${paidCount}/${all.length} bezahlt` } : null,
+      filter: filterLabel ? { label: filterLabel, act: 'fin-filter-clear' } : null,
+      add: ui.finPostAdd ? null : { label: '+ Posten', act: 'fin-post-add', primary: !ui.costEdit && !ui.costSet && !ui.costPay },
+      open: open('posten', true),
+      body: postsBodyHTML(),
+    }) +
+    // #14: Monat für Monat ist eingeklappt - es beantwortet eine Frage, die man stellt, nicht eine,
+    // die einen begrüßt
+    sectionHTML({ key: 'monate', title: 'Monat für Monat', count: '', open: open('monate', false), body: monthsHTML() }) +
+    // #16: am Handy zerfällt die rechte Leiste - Laufend und Rahmendaten werden Sektionen am Ende
+    (ui.wide
+      ? ''
+      : sectionHTML({ key: 'laufend', title: 'Laufend', count: '', open: open('laufend', false), body: recurringHTML() }) +
+        sectionHTML({ key: 'rahmen', title: 'Rahmendaten', count: '', open: open('rahmen', false), body: rahmenHTML() }));
   return (
-    updateBarHTML() +
-    setupHintHTML() +
     `<div class="fin">` +
-    renderHeader('finanzen') +
     setupHint +
-    `<div class="fin-grid">` +
-    answerHTML() +
-    `<aside class="fin-side" aria-label="Ausgleich, laufende Kosten, Rahmendaten">` +
-    balanceHTML() +
-    `<section class="fin-block fin-rec">${recurringHTML()}</section>` +
-    rahmenHTML() +
-    `</aside>` +
-    `<section class="fin-block fin-next">${nextPayHTML()}</section>` +
-    `<section class="fin-block fin-mon">${monthsHTML()}</section>` +
-    `<section class="fin-block fin-postsec">${postsHTML()}</section>` +
-    `</div>` +
-    footHTML({ status: true }) +
+    dashboardPageHTML({
+      key: 'finanzen',
+      wide: ui.wide,
+      answer: answerHTML({
+        label: 'Der Umzug kostet euch',
+        value: s.net === null ? '–' : eurShort(s.net),
+        unit: 'netto',
+        derivation: calcLine(),
+        aside: miniBarsHTML(),
+      }),
+      tiles: finTilesHTML(),
+      lead: `<section class="sect db-sect fin-next">${nextPayHTML()}</section>`,
+      sections,
+      sideTop: `<section class="sect db-card fin-balance-card">${balanceHTML()}</section>`,
+      side: `<section class="sect db-card fin-rec">${recurringHTML()}</section><section class="sect db-card">${rahmenHTML()}</section>`,
+    }) +
     `</div>`
   );
 }

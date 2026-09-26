@@ -47,3 +47,31 @@ der WCAG-Formel (relative Luminanz, `(L1+0,05)/(L2+0,05)`). `--paper` (`#f4f6f2`
   Teil dieser Matrix (Flächen/Rahmen, keine Text-Token, CLAUDE.md-Regel unverändert).
 - **Nachtrag 032b:** `--decision` (Entscheidungs-Kommentare, Violett) neu aufgenommen - alle drei
   Paare (auf `--paper`, `--card`, dem eigenen `--decision-bg`) liegen deutlich über 4,5:1.
+
+## Nachtrag 038 (E7, E8): die Fläche `--bg` als Textgrund
+
+`--bg` (`#f3f3f3`) gab es schon als Grund außerhalb der Spalte; mit 038 trägt sie zusätzlich
+Sektionsköpfe, den Kopf von „Als Nächstes zahlen", die gewählte Zeile und die Segment-Hülle –
+also **Text**. Deshalb hier die volle Spalte, gemessen wie oben (WCAG 2.1, sRGB).
+
+| Token | Wert | gegen | Verhältnis | Urteil |
+|---|---|---|---|---|
+| `--ink` | `#1e2b24` | `--bg` `#f3f3f3` | 13,27:1 | grün |
+| `--ink-2` | `#4d5751` | `--bg` | 6,76:1 | grün |
+| `--ink-3` | `#616161` | `--bg` | 5,58:1 | grün |
+| `--ok` | `#2f6f4e` | `--bg` | 5,40:1 | grün |
+| `--ok` | `#2f6f4e` | `--card` | 5,99:1 | grün |
+| `--danger` | `#b33a2e` | `--bg` | 5,31:1 | grün |
+| `--claude` | `#6b4e16` | `--bg` | 6,94:1 | grün |
+| `--decision` | `#5c2e91` | `--bg` | 8,39:1 | grün |
+| `--seb` | `#2e5a9c` | `--bg` | 6,19:1 | grün |
+| `--anna` | `#9a3d64` | `--bg` | 5,87:1 | grün |
+
+- **Kein Fund.** Jedes Text-Token liegt auf `--bg` über 4,5:1; kein Wert musste angefasst werden.
+  Die Farben selbst sind unverändert, die Matrix aus 029c bleibt damit gültig (Bedingung aus
+  Zeile 0 der Abweichungsliste).
+- **Neu als Textfarbe freigegeben:** `--ok` (`#2f6f4e`) für den Wert einer Kachel, die eine
+  Gutschrift zeigt (E8) – 5,99:1 auf Weiß, 5,40:1 auf `--bg`. Grün heißt ab jetzt
+  „Gutschrift/erreicht", nie „Warnung" (Regelzeile in `.claude/rules/design.md`).
+- `--line` (1,19:1) und `--line-dash` (1,52:1) auf `--bg` sind wie bisher nur Rahmen und Flächen –
+  die Segmente der Leiter (E5) nutzen `--line` als *offene* Stufe, nicht als Text.
