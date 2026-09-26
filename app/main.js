@@ -100,6 +100,7 @@ ui.balPay = false; // the transfer form (016 F3)
 ui.recEdit = false; // monthly costs in edit mode instead of read mode (016 F4)
 ui.postFilter = 'alle'; // which posts the list shows (016 §7)
 ui.postOpen = false; // the phone shows the list only after a tap (016 §7)
+ui.finSections = {}; // welcher Abschnitt des Dashboards offen ist, je Schluessel (038 #13/#14)
 ui.bufferMode = null; // Satz|Betrag-Segment in den Rahmendaten, null = aus buffer_fixed ableiten (014c)
 ui.recAdd = false; // the "new monthly cost" field in the Finanzen view
 ui.printOpen = false; // "Umzugstag drucken" sheet
@@ -233,6 +234,11 @@ function render() {
   // docs/changes/021: a segment is as wide as its share of all tasks, at least 44 px
   for (const el of $('#view').querySelectorAll('.pstrip [data-share]')) {
     if (el.style.flexGrow !== el.dataset.share) el.style.flexGrow = el.dataset.share;
+  }
+  // docs/changes/038 E9: die Hoehe eines Mini-Balkens - derselbe Weg, aus demselben Grund
+  for (const el of $('#view').querySelectorAll('[data-h]')) {
+    const h = el.dataset.h + 'px';
+    if (el.style.height !== h) el.style.height = h;
   }
   restoreFocus(focusKey);
   renderStatus('idle');
@@ -703,7 +709,7 @@ const OFFLINE_OK = new Set([
   'sub-edit', 'sub-edit-done', 'com-edit', 'com-cancel',
   'entscheidungen-open', 'entscheidungen-close', 'decisions-filter', 'decisions-row-open',
   'anfrage-new', 'anfrage-open', 'anfrage-close', 'offer-edit', 'offer-cancel', 'money-no', 'anfrage-copy',
-  'anfragen-list', 'offer-open',
+  'anfragen-list', 'offer-open', 'db-section',
   'cost-cancel', 'cost-discard', 'fin-setup-back', 'fin-setup-skip', 'fin-setup-resume', 'fin-setup-household',
 ]);
 
@@ -1182,6 +1188,15 @@ function wireEvents() {
           ui.offerOpen = ui.offerOpen === b.dataset.to ? null : b.dataset.to;
           render();
           return;
+        // docs/changes/038 #13/#14: ein Abschnitt des Dashboards klappt auf und zu; die
+        // Mini-Balken oeffnen damit "Monat fuer Monat"
+        case 'db-section': {
+          const k = b.dataset.to;
+          const dflt = k === 'posten';
+          ui.finSections[k] = ui.finSections[k] === undefined ? !dflt : !ui.finSections[k];
+          render();
+          return;
+        }
         case 'panel-close':
           // #8: the phone detail page is a history step - leaving it goes back, so the list is
           // reached the same way by the button and by Browser-Zurück

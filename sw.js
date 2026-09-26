@@ -19,6 +19,7 @@ const SHELL = [
   './app/main.js',
   './app/config.js',
   './app/supabase.js',
+  './app/pages/dashboard.js',
   './app/pages/listPanel.js',
   './app/shell.js',
   './app/state.js',
