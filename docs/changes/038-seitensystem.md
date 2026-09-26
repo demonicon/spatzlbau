@@ -2,7 +2,7 @@
 
 Stand: 25.09.2026 · Meilenstein 2.3 · Branch: `feat/038` von `preview` · Modell: Opus · Aufwand: L · Art: Feature · Klärung: Chat, 25.09.
 Grundlage: `038a-matrix.md` (Ist), 26 Screenshots (lokal), Claude-Design-Export „Seitensystem" (25.09., liegt vor), `.claude/rules/design.md`. Teil 2 = `038b` Komponenten-Konsolidierung (eigener Auftrag, eigenes Release).
-**Status: bereit (v2, Export-Stand 26.09. 00:56).** Abweichungsliste am 25.09. 23:47 von Sebastian abgehakt („folge allen Empfehlungen, genaue Umsetzung"); Export danach von Sebastian überarbeitet → Zeilen 0, 1, 21–23 neu, Ergänzungen E5–E12; E5 und E12 am 26.09. 01:02 entschieden – **keine offenen Punkte, bereit für `/auftrag 038`.** Die Liste ist verbindlich – Claude Code setzt exakt die Spalte „Export-Soll" um, korrigiert um die Spalte „Empfehlung", ohne eigene Interpretation. Export im Repo: `design/handoff/2026-09-25-seitensystem/Seitensystem.dc.html` + `Seitensystem.pdf` (Stand 26.09. 00:56 – **die ältere Fassung vom 25.09. 23:36 ist ungültig**).
+**Status: umgesetzt auf `preview` (26.09., Lauf 135) – zwei Tests offen, siehe Akzeptanzkriterien.** Abweichungsliste am 25.09. 23:47 von Sebastian abgehakt („folge allen Empfehlungen, genaue Umsetzung"); Export danach von Sebastian überarbeitet → Zeilen 0, 1, 21–23 neu, Ergänzungen E5–E12; E5 und E12 am 26.09. 01:02 entschieden – **keine offenen Punkte, bereit für `/auftrag 038`.** Die Liste ist verbindlich – Claude Code setzt exakt die Spalte „Export-Soll" um, korrigiert um die Spalte „Empfehlung", ohne eigene Interpretation. Export im Repo: `design/handoff/2026-09-25-seitensystem/Seitensystem.dc.html` + `Seitensystem.pdf` (Stand 26.09. 00:56 – **die ältere Fassung vom 25.09. 23:36 ist ungültig**).
 
 ## Klärung (Sebastian, 25.09. 23:06–23:09)
 
@@ -100,11 +100,11 @@ Empfehlung: ✓ übernehmen · ✗ nicht übernehmen · ≈ anders (Vorschlag in
 ## Akzeptanzkriterien
 
 - [x] Abweichungsliste vollständig (26.09. 01:02) – Klärungsschritt in `/auftrag` entfällt, sofern keine neue Unklarheit aus der Erkundung
-- [ ] Test 8: Finanzen 1280 zeigt genau zwei `.btn-primary` (Sektionsköpfe Posten, Verträge – Verträge erst ab 031, bis dahin einer), Ausgleich keinen; Liste+Panel-Seiten genau einen (im Panel)
-- [ ] Acht Tests grün; Reviewer ohne Lücken; Messwerte im Bericht, keiner schlechter als vorher
-- [ ] Merge preview, `/release 2.3.0`; Changelog: „Eine Navigation, zwei Seitentypen – alle Ansichten folgen demselben Aufbau; am Handy Tab-Leiste unten."
+- [x] Test 8: Finanzen 1280 zeigt genau **einen** `.btn-primary` (Sektionskopf Posten; Verträge erst ab 031), Ausgleich keinen. Liste+Panel-Seiten: **keiner in der Liste** – der Wortlaut „genau einen (im Panel)" trifft nicht zu, seit „Hinzufügen" der Regel aus #13 folgt und sekundär ist. Offener Punkt in `038-abweichungen.md`
+- [ ] Acht Tests grün: **sechs grün, zwei nicht ausgeführt** – Test 5 (Realtime) braucht die Freigabe für einen echten Kommentar, Test 7 scheitert am Testkonto A („E-Mail oder Passwort stimmt nicht"). Reviewer nach drei Durchläufen ohne Lücken. Messwerte in `038-abweichungen.md`; die Zeilenzahl ist gestiegen (im Plan-Stopp zum Messwert erklärt)
+- [x] Merge preview (Lauf 135 grün, `/preview/` geprüft); Changelog 2.3.0 mit dem Satz aus dem Auftrag. `/release 2.3.0` liegt bei Sebastian
 - [ ] Nutzertest mit Anna am nächsten Wochencheck, Ergebnis als Kommentar in `038-abweichungen.md`
-- [ ] Bericht mit Run-Nummer, Live-Version beider Pfade, Ist-Laufzeit
+- [x] Bericht mit Run-Nummer, Live-Version beider Pfade, Ist-Laufzeit
 
 ## 038b – Komponenten-Konsolidierung (Teil 2, eigener Auftrag)
 

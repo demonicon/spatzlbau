@@ -109,6 +109,22 @@ stehen unverändert da, und die zwei Seitentypen, die Shell, der Zeichen-Diff, d
 Mini-Balken kommen dazu. Abgezogen wurden immerhin `renderHeader`, „Zwischen euch", die
 Signal-Kacheln, die Personen-Umschaltung, das `fin-grid` und die Aufschlüsselungs-Zeilen.
 
+## Testlauf gegen `/preview/` (26.09., Lauf 135, Playwright, Chromium)
+
+| Test | Ergebnis |
+|---|---|
+| 1 – 1280: Kopf bleibt dieselbe Node, Tab aktiv, Segment je Seite | **grün** – vier Routen, jedes Mal dieselbe `#shell-head`-Node; Segmente 3 / 0 / 2 / 0 |
+| 2 – Liste + Panel, erste Zeile vorgewählt | **grün** – Aufgaben 400 px, Entscheidungen 400 px, beide mit gefülltem Panel; Anfragen 942 px (Detail 1fr, festgelegte Ausnahme #21) |
+| 3 – Finanzen: Kacheln filtern, Sektionen klappen | **grün** – Posten 18 → 2 → 18, Filter-Pille im Sektionskopf, „Monat für Monat" zu → offen |
+| 4 – 380: Tab-Leiste, Detailseite, Zurück | **grün** – 4 Tabs auf allen vier Routen, Detailseite mit „‹ Aufgaben", Browser-Zurück landet auf der Liste, Scroll 300 → 300. **Das Badge an „Entscheidungen" war nicht zu sehen, weil für das Testkonto gerade 0 Entscheidungen offen sind** – mit simulierter offener Entscheidung erscheint es (lokal geprüft) |
+| 5 – Realtime, Mutationen ≤ 3 | **nicht ausgeführt** – braucht einen echten Kommentar von Person A in der Live-Datenbank (angesagt, wartet auf Sebastians Freigabe) und das Konto A. Lokal mit simuliertem Zustand gemessen: **2 Mutationen** (betroffene Zeile + „Seit du zuletzt da warst"), Kopf 0 |
+| 6 – Messwerte, Konsole | **grün** – Konsole leer auf sechs Routen; Routenwechsel `#aufgaben` 10 ms, `#finanzen` 32 ms |
+| 7 – zweite Person | **nicht getestet – Testkonto A meldet sich nicht an** („E-Mail oder Passwort stimmt nicht"). `TEST_EMAIL_A`/`TEST_PW_A` stehen in `.env`, das Konto ist in Supabase offenbar nicht (mehr) gültig – dasselbe Muster wie bei Konto S in 038a |
+| 8 – Primär je Seite | **grün** – Finanzen genau ein `.btn-primary` („+ Posten"), Ausgleich keiner; Aufgaben, Entscheidungen und Anfragen keinen in der Liste (siehe offener Punkt unten) |
+
+Kein Schreibzugriff im ganzen Lauf: nur Anmeldung als Person S gegen den Vorschau-Pfad, dort
+schreibt die App den Lesestand nicht. Nichts aufzuräumen.
+
 ## Offen für Sebastian
 
 - **Test 8 wörtlich gelesen schlägt fehl.** Das Kriterium sagt „Liste+Panel-Seiten genau einen
@@ -117,6 +133,8 @@ Signal-Kacheln, die Personen-Umschaltung, das `fin-grid` und die Aufschlüsselun
   „Fertig", „An Claude senden"). Das folgt der Regel aus #13, nicht dem Wortlaut des Kriteriums.
   Entweder das Kriterium liest sich künftig „höchstens einen, und nur im Panel", oder
   „Hinzufügen" bleibt doch der Primär der Aufgabenliste – deine Entscheidung.
+- **Testkonto A geht nicht.** Bitte in Supabase freischalten oder das Passwort in `.env`
+  richtigstellen – ohne das zweite Konto lassen sich Test 5 und Test 7 nicht fahren.
 - **`BRIEFING.md` ist an vier Stellen überholt** (Zeilen 88, 92, 96, 108: Nav-Pillen, Akte inline
   am Handy, die Breiten-Tabelle, das Anfragen-Layout). Die „Definition of Done" verlangt das
   Nachziehen, `CLAUDE.md` verlangt für `BRIEFING.md` eine ausdrückliche Bestätigung. Deshalb hier
